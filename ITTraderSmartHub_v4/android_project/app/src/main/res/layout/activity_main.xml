@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="#F8FAFC">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header -->
+        <TextView
+            android:id="@+id/txtHeaderTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ITTrader SmartHub v4"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#0F172A"
+            android:paddingBottom="4dp" />
+
+        <TextView
+            android:id="@+id/txtLivePrice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Live BTC/USDT: Connecting..."
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#0EA5E9"
+            android:paddingBottom="12dp" />
+
+        <!-- Infrastructure Audit Section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. IT Infrastructure Log Analysis"
+            android:textStyle="bold"
+            android:textColor="#334155"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/edtLogs"
+            android:layout_width="match_parent"
+            android:layout_height="90dp"
+            android:hint="Paste server/system logs here..."
+            android:gravity="top"
+            android:textSize="12sp"
+            android:background="#FFFFFF"
+            android:padding="8dp"
+            android:inputType="textMultiLine" />
+
+        <Button
+            android:id="@+id/btnProcess"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Process Logs &amp; Calculate Risk Factor"
+            android:layout_marginTop="6dp" />
+
+        <!-- Risk Calculation Section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2. Baseline Account Risk Parameters"
+            android:textStyle="bold"
+            android:textColor="#334155"
+            android:textSize="14sp"
+            android:layout_marginTop="12dp" />
+
+        <EditText
+            android:id="@+id/edtAccountBalance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Account Balance ($)"
+            android:inputType="numberDecimal"
+            android:text="10000" />
+
+        <EditText
+            android:id="@+id/edtRiskPercentage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Base Risk % (e.g. 1.0)"
+            android:inputType="numberDecimal"
+            android:text="1.0" />
+
+        <EditText
+            android:id="@+id/edtStopLossPrice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Stop Loss Price ($)"
+            android:inputType="numberDecimal" />
+
+        <!-- Gateway & MT5 Connection Section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="3. Secure Python Gateway Configuration"
+            android:textStyle="bold"
+            android:textColor="#334155"
+            android:textSize="14sp"
+            android:layout_marginTop="12dp" />
+
+        <EditText
+            android:id="@+id/edtGatewayIp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="HTTPS Gateway URL (e.g., https://127.0.0.1:5000)"
+            android:inputType="textUri"
+            android:text="https://127.0.0.1:5000" />
+
+        <EditText
+            android:id="@+id/edtApiToken"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Gateway Bearer API Token (Keystore Protected)"
+            android:inputType="textPassword" />
+
+        <Button
+            android:id="@+id/btnSaveToken"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save Token Securely to Android Keystore" />
+
+        <EditText
+            android:id="@+id/edtMt5Login"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Configured on gateway"
+            android:enabled="false" />
+
+        <EditText
+            android:id="@+id/edtMt5Password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Never enter MT5 password here"
+            android:enabled="false" />
+
+        <EditText
+            android:id="@+id/edtMt5Server"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Configured on gateway"
+            android:enabled="false" />
+
+        <Button
+            android:id="@+id/btnSyncMt5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sync Read-Only MT5 Diagnostics" />
+
+        <!-- V4 Risk Fusion Engine -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="4. V4 Risk Fusion Engine"
+            android:textStyle="bold"
+            android:textColor="#334155"
+            android:textSize="14sp"
+            android:layout_marginTop="12dp" />
+
+        <EditText
+            android:id="@+id/edtSymbol"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Symbol (e.g. BTCUSD or EURUSD)"
+            android:text="BTCUSD" />
+
+        <Button
+            android:id="@+id/btnQueryRiskContext"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Request V4 Risk Fusion Context" />
+
+        <!-- V4 Exposure-Aware Alert Center -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="5. V4 Exposure-Aware Alert Center"
+            android:textStyle="bold"
+            android:textColor="#334155"
+            android:textSize="14sp"
+            android:layout_marginTop="12dp" />
+
+        <Button
+            android:id="@+id/btnQueryAlerts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Fetch Infrastructure Alerts" />
+
+        <!-- V4 Incident Research -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="6. V4 Incident-to-Trade Research"
+            android:textStyle="bold"
+            android:textColor="#334155"
+            android:textSize="14sp"
+            android:layout_marginTop="12dp" />
+
+        <Button
+            android:id="@+id/btnQueryResearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Request Incident Research Impact" />
+
+        <!-- Consolidated Output Display -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Analysis Output &amp; System Telemetry"
+            android:textStyle="bold"
+            android:textColor="#0F172A"
+            android:textSize="14sp"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/txtAnalysisOutput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="System Ready."
+            android:textSize="13sp"
+            android:typeface="monospace"
+            android:background="#1E293B"
+            android:textColor="#F8FAFC"
+            android:padding="12dp"
+            android:minLines="6"
+            android:layout_marginTop="4dp" />
+
+    </LinearLayout>
+</ScrollView>

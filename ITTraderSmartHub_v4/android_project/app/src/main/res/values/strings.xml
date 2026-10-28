@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ITTrader SmartHub</string>
+    <string name="title_live_market">Live Market Stream</string>
+    <string name="title_log_audit">IT Infrastructure Log Audit</string>
+    <string name="title_mt5_sync">MT5 Read-Only Gateway Sync</string>
+    <string name="title_risk_fusion">V4 Risk Fusion Engine</string>
+    <string name="title_alert_center">Exposure-Aware Alert Center</string>
+    <string name="title_incident_research">Incident-to-Trade Research</string>
+</resources>
