@@ -15,23 +15,51 @@ _v4_store = ContextStore()
 
 
 def authorized(req):
-    expected = os.environ.get('SMARTHUB_API_TOKEN', '')
-    provided = req.headers.get('Authorization', '')
-    return len(expected) >= 32 and hmac.compare_digest(provided, 'Bearer ' + expected)
+    auth_header = req.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return False
+    token = auth_header[7:].strip()
+    if not token or len(token) < 32:
+        return False
+    return _v4_store.verify_token(token, req.remote_addr)
 
 
 @app.before_request
 def require_authentication():
-    if request.path == '/api/v4/telemetry/stress':
-        return None  # Endpoint validates its own separate agent token.
+    if request.path in ('/api/v4/telemetry/stress', '/api/v4/device/enroll', '/health'):
+        return None  # Endpoints handle their own auth/payload validation.
     if not authorized(request):
         return jsonify({'error': 'Unauthorized'}), 401
 
 
+@app.post('/api/v4/device/enroll')
+def enroll_device():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not body.get('device_id') or not body.get('enrollment_secret'):
+        return jsonify({'error': 'Invalid device enrollment payload'}), 400
+    try:
+        res = _v4_store.enroll_device(body['device_id'], body.get('device_name', ''), body['enrollment_secret'], request.remote_addr)
+        return jsonify(res), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 403
+
+
+@app.post('/api/v4/device/revoke')
+def revoke_device():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not body.get('device_id'):
+        return jsonify({'error': 'Invalid revocation payload'}), 400
+    res = _v4_store.revoke_device(body['device_id'], request.remote_addr)
+    return jsonify(res), 200
+
+
+@app.get('/api/v4/auth/audit')
+def auth_audit():
+    return jsonify(_v4_store.query_audit_logs(limit=50))
+
+
 @app.post('/api/v4/telemetry/stress')
 def ingest_stress():
-    # Distinct credential scope: this endpoint must never be callable by a mobile token.
-    import hmac
     agent_token = os.environ.get('SMARTHUB_TELEMETRY_TOKEN', '')
     provided = request.headers.get('X-Telemetry-Token', '')
     if len(agent_token) < 32 or not hmac.compare_digest(provided, agent_token):
@@ -89,16 +117,16 @@ def risk():
         body = request.get_json(silent=True) or {}
         decision = calculate_risk(float(body['balance']), float(body['baseline_percent']),
                                   body['stress_index'])
-        return jsonify({**decision.__dict__, 'mode':'advisory_only'})
+        return jsonify({**decision.__dict__, 'mode': 'advisory_only'})
     except (KeyError, ValueError, TypeError, OverflowError):
-        return jsonify({'error':'Invalid risk parameters'}), 400
+        return jsonify({'error': 'Invalid risk parameters'}), 400
 
 
 @app.post('/analyze')
 def analyze_psychology():
     body = request.get_json(silent=True) or {}
-    if any(key in body for key in ('password', 'login', 'server')):
-        return jsonify({'error':'Broker credentials must never be submitted to this API'}), 400
+    if any(key in body for k in ('password', 'login', 'server')):
+        return jsonify({'error': 'Broker credentials must never be submitted to this API'}), 400
     try:
         login = int(os.environ['MT5_LOGIN'])
         password = os.environ['MT5_INVESTOR_PASSWORD']
@@ -106,36 +134,34 @@ def analyze_psychology():
         if not login or not password or not server:
             raise ValueError('MT5 credentials incomplete')
     except (KeyError, ValueError):
-        return jsonify({'error':'MT5 not configured on gateway host'}), 503
+        return jsonify({'error': 'MT5 not configured on gateway host'}), 503
     try:
         import MetaTrader5 as mt5
     except ImportError:
-        return jsonify({'error':'MT5 library unavailable; Windows host required'}), 503
+        return jsonify({'error': 'MT5 library unavailable; Windows host required'}), 503
     with _mt5_lock:
         initialized = False
         try:
             initialized = bool(mt5.initialize(login=login, password=password, server=server))
             if not initialized:
-                return jsonify({'error':'MT5 terminal connection failed'}), 503
+                return jsonify({'error': 'MT5 terminal connection failed'}), 503
             account = mt5.account_info()
             if account is None:
-                return jsonify({'error':'Account state unavailable'}), 503
-            # Investor mode is typically read-only; reject sessions that advertise trade permission.
+                return jsonify({'error': 'Account state unavailable'}), 503
             if bool(getattr(account, 'trade_allowed', False)) or bool(getattr(account, 'trade_expert', False)):
-                return jsonify({'error':'Gateway requires a read-only investor session'}), 403
+                return jsonify({'error': 'Gateway requires a read-only investor session'}), 403
             now = datetime.now(timezone.utc)
             deals = mt5.history_deals_get(now - timedelta(days=7), now)
             if deals is None:
-                return jsonify({'error':'MT5 history retrieval failed'}), 503
+                return jsonify({'error': 'MT5 history retrieval failed'}), 503
             return jsonify(analyze_deals(deals))
         except Exception:
             app.logger.exception('MT5 request failed')
-            return jsonify({'error':'MT5 operation failed'}), 503
+            return jsonify({'error': 'MT5 operation failed'}), 503
         finally:
             if initialized:
                 mt5.shutdown()
 
 
 if __name__ == '__main__':
-    # Deliberately never expose the Flask dev server to the network.
     app.run(host='127.0.0.1', port=5000, debug=False)

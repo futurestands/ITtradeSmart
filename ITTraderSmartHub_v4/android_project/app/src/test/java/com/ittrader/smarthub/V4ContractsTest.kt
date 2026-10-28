@@ -7,6 +7,14 @@ import org.junit.Test
 class V4ContractsTest {
 
     @Test
+    fun testDeviceEnrollmentBuilder() {
+        val payload = V4ApiContracts.deviceEnroll("dev-123", "Test Phone", "secret-45678901234567890123456789012")
+        assertEquals("dev-123", payload.getString("device_id"))
+        assertEquals("Test Phone", payload.getString("device_name"))
+        assertEquals("secret-45678901234567890123456789012", payload.getString("enrollment_secret"))
+    }
+
+    @Test
     fun testRiskContextBuilder() {
         val payload = V4ApiContracts.riskContext(1.5, "EURUSD")
         assertEquals(1, payload.getInt("schema_version"))
@@ -55,11 +63,14 @@ class V4ContractsTest {
     }
 
     @Test
-    fun testGatewaySessionUnauthenticated() {
+    fun testGatewaySessionAuthentication() {
         GatewaySession.apiToken = ""
         assertFalse(GatewaySession.isAuthenticated())
 
         GatewaySession.apiToken = "12345678901234567890123456789012"
         assertTrue(GatewaySession.isAuthenticated())
+
+        GatewaySession.logout(null)
+        assertFalse(GatewaySession.isAuthenticated())
     }
 }

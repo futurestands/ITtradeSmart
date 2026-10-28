@@ -91,11 +91,11 @@
             android:hint="Stop Loss Price ($)"
             android:inputType="numberDecimal" />
 
-        <!-- Gateway & MT5 Connection Section -->
+        <!-- Gateway & Device Enrollment Section -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="3. Secure Python Gateway Configuration"
+            android:text="3. Gateway &amp; Secure Device Enrollment"
             android:textStyle="bold"
             android:textColor="#334155"
             android:textSize="14sp"
@@ -110,17 +110,24 @@
             android:text="https://127.0.0.1:5000" />
 
         <EditText
-            android:id="@+id/edtApiToken"
+            android:id="@+id/edtEnrollSecret"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Gateway Bearer API Token (Keystore Protected)"
+            android:hint="Gateway Master Secret (for Device Enrollment)"
             android:inputType="textPassword" />
 
         <Button
-            android:id="@+id/btnSaveToken"
+            android:id="@+id/btnEnrollDevice"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save Token Securely to Android Keystore" />
+            android:text="Enroll Device &amp; Save Token to Android Keystore" />
+
+        <Button
+            android:id="@+id/btnLogout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Revoke / Safe Logout Credentials"
+            android:layout_marginTop="4dp" />
 
         <EditText
             android:id="@+id/edtMt5Login"

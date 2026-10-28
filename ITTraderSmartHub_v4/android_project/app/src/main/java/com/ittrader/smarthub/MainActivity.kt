@@ -32,16 +32,14 @@ class MainActivity : AppCompatActivity() {
         val edtStopLossPrice = findViewById<EditText>(R.id.edtStopLossPrice)
 
         val edtGatewayIp = findViewById<EditText>(R.id.edtGatewayIp)
-        val edtApiToken = findViewById<EditText>(R.id.edtApiToken)
-        val btnSaveToken = findViewById<Button>(R.id.btnSaveToken)
+        val edtEnrollSecret = findViewById<EditText>(R.id.edtEnrollSecret)
+        val btnEnrollDevice = findViewById<Button>(R.id.btnEnrollDevice)
+        val btnLogout = findViewById<Button>(R.id.btnLogout)
 
-        // Pre-fill existing stored token/gateway URL if available
+        // Pre-fill stored gateway URL
         edtGatewayIp.setText(GatewaySession.gatewayUrl)
-        if (GatewaySession.isAuthenticated()) {
-            edtApiToken.setText(GatewaySession.apiToken)
-        }
 
-        // Legacy credential inputs are disabled. Credentials remain on Windows gateway.
+        // Legacy credential inputs remain disabled. Credentials stay on Windows gateway.
         findViewById<EditText>(R.id.edtMt5Login).apply { isEnabled = false; hint = "Configured on gateway"; setText("") }
         findViewById<EditText>(R.id.edtMt5Password).apply { isEnabled = false; hint = "Never enter MT5 password here"; setText("") }
         findViewById<EditText>(R.id.edtMt5Server).apply { isEnabled = false; hint = "Configured on gateway"; setText("") }
@@ -70,7 +68,55 @@ class MainActivity : AppCompatActivity() {
         )
         webSocketManager.connect()
 
-        // 1. Process System Logs & Compute Infrastructure Risk Factor
+        // 1. Device Enrollment & Keystore Storage
+        btnEnrollDevice.setOnClickListener {
+            val secret = edtEnrollSecret.text.toString().trim()
+            val url = edtGatewayIp.text.toString().trim()
+
+            if (secret.length < 32) {
+                Toast.makeText(this, "Enrollment secret must be at least 32 characters long", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            txtAnalysisOutput.text = "Enrolling device with gateway..."
+            repository.enrollDevice(url, secret, "Android " + android.os.Build.MODEL) { result ->
+                runOnUiThread {
+                    result.fold(
+                        onSuccess = { json ->
+                            val token = json.optString("device_token")
+                            val expiresAt = json.optString("expires_at")
+                            if (token.isNotBlank()) {
+                                val saved = GatewaySession.saveSession(this, token, url)
+                                if (saved) {
+                                    txtAnalysisOutput.text = "[Device Enrollment Successful]\n" +
+                                            "Device ID: ${GatewaySession.deviceId}\n" +
+                                            "Status: Enrolled & Token Saved to Android Keystore\n" +
+                                            "Token Expiration: $expiresAt"
+                                    Toast.makeText(this, "Device Enrolled & Credentials Saved!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    txtAnalysisOutput.text = "⚠️ Keystore Save Failed: Unable to persist credentials securely."
+                                    Toast.makeText(this, "Keystore Storage Failed!", Toast.LENGTH_LONG).show()
+                                }
+                            } else {
+                                txtAnalysisOutput.text = "Enrollment failed: No token received."
+                            }
+                        },
+                        onFailure = { err ->
+                            txtAnalysisOutput.text = "Enrollment Error: ${err.message}"
+                        }
+                    )
+                }
+            }
+        }
+
+        // Safe Logout / Credential Revocation
+        btnLogout.setOnClickListener {
+            GatewaySession.logout(this)
+            txtAnalysisOutput.text = "Logged out. Credentials removed from Android Keystore."
+            Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
+        }
+
+        // 2. Process System Logs & Compute Infrastructure Risk Factor
         btnProcess.setOnClickListener {
             val rawLogs = edtLogs.text.toString()
             val report = analyzeSystemLogs(rawLogs)
@@ -106,21 +152,9 @@ class MainActivity : AppCompatActivity() {
                     "Illustrative Spot Units (NOT MT5 lots): ${String.format("%.4f", optimizedPositionSize)}"
         }
 
-        // Save Token Securely to Keystore
-        btnSaveToken.setOnClickListener {
-            val token = edtApiToken.text.toString().trim()
-            val url = edtGatewayIp.text.toString().trim()
-            if (token.length < 32) {
-                Toast.makeText(this, "Bearer token must be at least 32 characters long", Toast.LENGTH_LONG).show()
-                return@setOnClickListener
-            }
-            GatewaySession.saveSession(this, token, url)
-            Toast.makeText(this, "Credentials saved to Android Keystore!", Toast.LENGTH_SHORT).show()
-        }
-
-        // 2. Sync Read-Only MT5 Diagnostics
+        // 3. Sync Read-Only MT5 Diagnostics
         btnSyncMt5.setOnClickListener {
-            updateGatewaySessionFromInput(edtGatewayIp, edtApiToken)
+            updateGatewayUrlFromInput(edtGatewayIp)
             txtAnalysisOutput.text = "Requesting MT5 diagnostic analysis from gateway..."
 
             repository.syncMt5 { result ->
@@ -137,9 +171,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 3. V4 Risk Fusion Query
+        // 4. V4 Risk Fusion Query
         btnQueryRiskContext.setOnClickListener {
-            updateGatewaySessionFromInput(edtGatewayIp, edtApiToken)
+            updateGatewayUrlFromInput(edtGatewayIp)
             val baseRisk = edtRiskPercentage.text.toString().toDoubleOrNull() ?: 1.0
             val symbol = edtSymbol.text.toString().trim().ifBlank { "BTCUSD" }
 
@@ -159,9 +193,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 4. V4 Exposure-Aware Alerts Query
+        // 5. V4 Exposure-Aware Alerts Query
         btnQueryAlerts.setOnClickListener {
-            updateGatewaySessionFromInput(edtGatewayIp, edtApiToken)
+            updateGatewayUrlFromInput(edtGatewayIp)
             txtAnalysisOutput.text = "Querying V4 Alert Center..."
 
             repository.queryAlerts { result ->
@@ -178,9 +212,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 5. V4 Incident-to-Trade Research
+        // 6. V4 Incident-to-Trade Research
         btnQueryResearch.setOnClickListener {
-            updateGatewaySessionFromInput(edtGatewayIp, edtApiToken)
+            updateGatewayUrlFromInput(edtGatewayIp)
             txtAnalysisOutput.text = "Querying V4 Incident Research API..."
 
             val now = System.currentTimeMillis()
@@ -203,11 +237,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateGatewaySessionFromInput(edtGatewayIp: EditText, edtApiToken: EditText) {
+    private fun updateGatewayUrlFromInput(edtGatewayIp: EditText) {
         val url = edtGatewayIp.text.toString().trim()
-        val token = edtApiToken.text.toString().trim()
         if (url.isNotBlank()) GatewaySession.gatewayUrl = url
-        if (token.isNotBlank()) GatewaySession.apiToken = token
     }
 
     private fun analyzeSystemLogs(rawLogs: String): LogReport {

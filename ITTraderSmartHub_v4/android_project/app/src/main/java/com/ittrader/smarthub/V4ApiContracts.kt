@@ -5,9 +5,19 @@ import org.json.JSONObject
 
 /**
  * V4 API Contract Builder & Result Formatter.
- * Ensures strict schema enforcement for Risk Fusion, Alerts, Research, and MT5 diagnostics.
+ * Ensures strict schema enforcement for Device Enrollment, Risk Fusion, Alerts, Research, and MT5 diagnostics.
  */
 object V4ApiContracts {
+
+    fun deviceEnroll(deviceId: String, deviceName: String, enrollmentSecret: String): JSONObject = JSONObject().apply {
+        put("device_id", deviceId)
+        put("device_name", deviceName)
+        put("enrollment_secret", enrollmentSecret)
+    }
+
+    fun deviceRevoke(deviceId: String): JSONObject = JSONObject().apply {
+        put("device_id", deviceId)
+    }
 
     fun riskContext(baselineRiskPct: Double, symbol: String): JSONObject = JSONObject().apply {
         put("schema_version", 1)

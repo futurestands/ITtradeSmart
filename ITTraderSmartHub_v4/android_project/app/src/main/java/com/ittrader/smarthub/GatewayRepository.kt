@@ -17,6 +17,25 @@ class GatewayRepository {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
+    fun enrollDevice(gatewayUrl: String, enrollmentSecret: String, deviceName: String, callback: (Result<JSONObject>) -> Unit) {
+        val endpoint = gatewayUrl.trim().trimEnd('/')
+        if (!endpoint.startsWith("https://") && !endpoint.startsWith("http://127.0.0.1") && !endpoint.startsWith("http://localhost")) {
+            callback(Result.failure(IllegalArgumentException("Use an HTTPS or localhost gateway URL.")))
+            return
+        }
+
+        val deviceId = GatewaySession.deviceId
+        val payload = V4ApiContracts.deviceEnroll(deviceId, deviceName, enrollmentSecret)
+        val body = payload.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+
+        val request = Request.Builder()
+            .url("$endpoint/api/v4/device/enroll")
+            .post(body)
+            .build()
+
+        executeRequest(request, callback)
+    }
+
     fun syncMt5(callback: (Result<JSONObject>) -> Unit) {
         val endpoint = GatewaySession.gatewayUrl
         val token = GatewaySession.apiToken
@@ -26,7 +45,7 @@ class GatewayRepository {
             return
         }
         if (!GatewaySession.isAuthenticated()) {
-            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Save a valid API token in Keystore.")))
+            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Enroll device or configure valid API token.")))
             return
         }
 
@@ -46,7 +65,7 @@ class GatewayRepository {
         val token = GatewaySession.apiToken
 
         if (!GatewaySession.isAuthenticated()) {
-            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Save a valid API token in Keystore.")))
+            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Enroll device or configure valid API token.")))
             return
         }
 
@@ -66,7 +85,7 @@ class GatewayRepository {
         val token = GatewaySession.apiToken
 
         if (!GatewaySession.isAuthenticated()) {
-            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Save a valid API token in Keystore.")))
+            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Enroll device or configure valid API token.")))
             return
         }
 
@@ -86,7 +105,7 @@ class GatewayRepository {
         val token = GatewaySession.apiToken
 
         if (!GatewaySession.isAuthenticated()) {
-            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Save a valid API token in Keystore.")))
+            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Enroll device or configure valid API token.")))
             return
         }
 
