@@ -8,10 +8,22 @@ class V4ContractsTest {
 
     @Test
     fun testDeviceEnrollmentBuilder() {
-        val payload = V4ApiContracts.deviceEnroll("dev-123", "Test Phone", "secret-45678901234567890123456789012")
+        val payload = V4ApiContracts.deviceEnroll("dev-123", "Test Phone", "PAIR-123456")
         assertEquals("dev-123", payload.getString("device_id"))
         assertEquals("Test Phone", payload.getString("device_name"))
-        assertEquals("secret-45678901234567890123456789012", payload.getString("enrollment_secret"))
+        assertEquals("PAIR-123456", payload.getString("pairing_code"))
+    }
+
+    @Test
+    fun testEndpointValidation() {
+        val repo = GatewayRepository()
+        assertTrue(repo.validateEndpointUrl("https://smarthub.internal").isSuccess)
+        assertTrue(repo.validateEndpointUrl("http://127.0.0.1:5000").isSuccess)
+        assertTrue(repo.validateEndpointUrl("http://localhost:5000").isSuccess)
+
+        val unencrypted = repo.validateEndpointUrl("http://192.168.1.100:5000")
+        assertTrue(unencrypted.isFailure)
+        assertTrue(unencrypted.exceptionOrNull()?.message?.contains("Strict TLS Required") == true)
     }
 
     @Test

@@ -95,7 +95,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="3. Gateway &amp; Secure Device Enrollment"
+            android:text="3. Gateway &amp; Secure Device Pairing"
             android:textStyle="bold"
             android:textColor="#334155"
             android:textSize="14sp"
@@ -110,23 +110,23 @@
             android:text="https://127.0.0.1:5000" />
 
         <EditText
-            android:id="@+id/edtEnrollSecret"
+            android:id="@+id/edtPairingCode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Gateway Master Secret (for Device Enrollment)"
-            android:inputType="textPassword" />
+            android:hint="One-Time Pairing Code (e.g., PAIR-123456)"
+            android:inputType="textCapCharacters" />
 
         <Button
             android:id="@+id/btnEnrollDevice"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Enroll Device &amp; Save Token to Android Keystore" />
+            android:text="Pair Device &amp; Save Token to Android Keystore" />
 
         <Button
             android:id="@+id/btnLogout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Revoke / Safe Logout Credentials"
+            android:text="Revoke Session &amp; Clear Keystore"
             android:layout_marginTop="4dp" />
 
         <EditText

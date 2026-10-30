@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
         val edtStopLossPrice = findViewById<EditText>(R.id.edtStopLossPrice)
 
         val edtGatewayIp = findViewById<EditText>(R.id.edtGatewayIp)
-        val edtEnrollSecret = findViewById<EditText>(R.id.edtEnrollSecret)
+        val edtPairingCode = findViewById<EditText>(R.id.edtPairingCode)
         val btnEnrollDevice = findViewById<Button>(R.id.btnEnrollDevice)
         val btnLogout = findViewById<Button>(R.id.btnLogout)
 
@@ -68,18 +68,18 @@ class MainActivity : AppCompatActivity() {
         )
         webSocketManager.connect()
 
-        // 1. Device Enrollment & Keystore Storage
+        // 1. One-Time Pairing Code Device Enrollment
         btnEnrollDevice.setOnClickListener {
-            val secret = edtEnrollSecret.text.toString().trim()
+            val code = edtPairingCode.text.toString().trim()
             val url = edtGatewayIp.text.toString().trim()
 
-            if (secret.length < 32) {
-                Toast.makeText(this, "Enrollment secret must be at least 32 characters long", Toast.LENGTH_LONG).show()
+            if (code.isBlank()) {
+                Toast.makeText(this, "Enter one-time pairing code from administrator", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
-            txtAnalysisOutput.text = "Enrolling device with gateway..."
-            repository.enrollDevice(url, secret, "Android " + android.os.Build.MODEL) { result ->
+            txtAnalysisOutput.text = "Pairing device with gateway..."
+            repository.enrollDevice(url, code, "Android " + android.os.Build.MODEL) { result ->
                 runOnUiThread {
                     result.fold(
                         onSuccess = { json ->
@@ -88,32 +88,49 @@ class MainActivity : AppCompatActivity() {
                             if (token.isNotBlank()) {
                                 val saved = GatewaySession.saveSession(this, token, url)
                                 if (saved) {
-                                    txtAnalysisOutput.text = "[Device Enrollment Successful]\n" +
+                                    txtAnalysisOutput.text = "[Device Pairing Successful]\n" +
                                             "Device ID: ${GatewaySession.deviceId}\n" +
-                                            "Status: Enrolled & Token Saved to Android Keystore\n" +
+                                            "Status: Paired & Token Saved to Android Keystore\n" +
                                             "Token Expiration: $expiresAt"
-                                    Toast.makeText(this, "Device Enrolled & Credentials Saved!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this, "Device Paired Successfully!", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    txtAnalysisOutput.text = "⚠️ Keystore Save Failed: Unable to persist credentials securely."
+                                    txtAnalysisOutput.text = "⚠️ Keystore Save Failed: Unable to persist token securely."
                                     Toast.makeText(this, "Keystore Storage Failed!", Toast.LENGTH_LONG).show()
                                 }
                             } else {
-                                txtAnalysisOutput.text = "Enrollment failed: No token received."
+                                txtAnalysisOutput.text = "Pairing failed: No token issued."
                             }
                         },
                         onFailure = { err ->
-                            txtAnalysisOutput.text = "Enrollment Error: ${err.message}"
+                            txtAnalysisOutput.text = "Pairing Error: ${err.message}"
                         }
                     )
                 }
             }
         }
 
-        // Safe Logout / Credential Revocation
+        // Safe Logout with Server-Side Revocation & Clear Local Keystore Credentials
         btnLogout.setOnClickListener {
-            GatewaySession.logout(this)
-            txtAnalysisOutput.text = "Logged out. Credentials removed from Android Keystore."
-            Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
+            val currentDeviceId = GatewaySession.deviceId
+            txtAnalysisOutput.text = "Revoking session with gateway server..."
+
+            repository.revokeSession(currentDeviceId) { result ->
+                runOnUiThread {
+                    result.fold(
+                        onSuccess = {
+                            GatewaySession.logout(this)
+                            txtAnalysisOutput.text = "✅ Session Revoked Server-Side & Local Credentials Wiped from Keystore."
+                            Toast.makeText(this, "Logged out & Server Session Revoked", Toast.LENGTH_SHORT).show()
+                        },
+                        onFailure = { err ->
+                            // Distinguish remote revocation failure while clearing local credentials
+                            GatewaySession.logout(this)
+                            txtAnalysisOutput.text = "⚠️ Remote Revocation Failed: ${err.message}\nLocal Keystore Session Wiped."
+                            Toast.makeText(this, "Remote Revocation Failed. Local Session Cleared.", Toast.LENGTH_LONG).show()
+                        }
+                    )
+                }
+            }
         }
 
         // 2. Process System Logs & Compute Infrastructure Risk Factor

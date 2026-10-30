@@ -5,14 +5,14 @@ import org.json.JSONObject
 
 /**
  * V4 API Contract Builder & Result Formatter.
- * Ensures strict schema enforcement for Device Enrollment, Risk Fusion, Alerts, Research, and MT5 diagnostics.
+ * Ensures strict schema enforcement for One-Time Pairing Code Device Enrollment, Risk Fusion, Alerts, Research, and MT5 diagnostics.
  */
 object V4ApiContracts {
 
-    fun deviceEnroll(deviceId: String, deviceName: String, enrollmentSecret: String): JSONObject = JSONObject().apply {
+    fun deviceEnroll(deviceId: String, deviceName: String, pairingCode: String): JSONObject = JSONObject().apply {
         put("device_id", deviceId)
         put("device_name", deviceName)
-        put("enrollment_secret", enrollmentSecret)
+        put("pairing_code", pairingCode)
     }
 
     fun deviceRevoke(deviceId: String): JSONObject = JSONObject().apply {

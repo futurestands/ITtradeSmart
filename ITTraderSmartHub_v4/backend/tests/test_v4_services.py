@@ -25,13 +25,19 @@ def test_alert_cursor():
 def test_device_enrollment_and_verification(monkeypatch):
     monkeypatch.setenv('SMARTHUB_API_TOKEN', 'a'*48)
     store = ContextStore()
-    enroll = store.enroll_device('dev-12345678', 'Tablet', 'a'*48)
+    pcode = store.generate_pairing_code()['pairing_code']
+    enroll = store.enroll_device('dev-12345678', 'Tablet', pcode)
     token = enroll['device_token']
-    assert store.verify_token(token) is True
+
+    valid, msg, info = store.verify_token(token)
+    assert valid is True and info['device_id'] == 'dev-12345678'
 
     # Revoke
-    store.revoke_device('dev-12345678')
-    assert store.verify_token(token) is False
+    req_info = {'role': 'device', 'device_id': 'dev-12345678'}
+    store.revoke_device('dev-12345678', req_info)
+
+    valid, msg, info = store.verify_token(token)
+    assert valid is False
 
 def test_persistence_survives_restart(tmp_path, monkeypatch):
     monkeypatch.setenv('SMARTHUB_API_TOKEN', 'a'*48)
@@ -39,12 +45,15 @@ def test_persistence_survives_restart(tmp_path, monkeypatch):
     path = str(tmp_path / "events.sqlite3")
     a = ContextStore(path)
     a.set_stress(67, "authorized_telemetry_agent")
-    dev = a.enroll_device("dev-77777777", "Phone", 'a'*48)
+    pcode = a.generate_pairing_code()['pairing_code']
+    dev = a.enroll_device("dev-77777777", "Phone", pcode)
 
     b = ContextStore(path)
     assert b.get_stress()["value"] == 67
     assert len(b.query_alerts()["alerts"]) == 1
-    assert b.verify_token(dev["device_token"]) is True
+
+    valid, msg, info = b.verify_token(dev["device_token"])
+    assert valid is True
 
 def test_stale_telemetry_not_used_for_risk():
     from v4_services import ContextStore, risk_context
