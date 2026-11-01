@@ -1,10 +1,10 @@
-"""Read-only MT5 monitoring API with administrator pairing codes, token hashing, RBAC scopes, and audit logging."""
+"""Read-only MT5 monitoring API with Pipnex smart lot sizing, prop firm drawdown shield, pairing codes, token hashing, RBAC scopes, and audit logging."""
 import hmac
 import os
 from datetime import datetime, timedelta, timezone
 from threading import Lock
 from flask import Flask, request, jsonify
-from risk_engine import calculate_risk
+from risk_engine import calculate_risk, calculate_pipnex_lot_size, calculate_prop_firm_rules
 from trade_analysis import analyze_deals
 from v4_services import ContextStore, risk_context, research_request
 
@@ -30,7 +30,6 @@ def require_authentication():
     if request.path in exempt_paths:
         return None
 
-    # Determine required role
     required_role = "admin" if request.path in ('/api/v4/auth/audit', '/api/v4/admin/pairing-code') else "device"
     ok, err_msg, auth_info = check_auth(request, required_role=required_role)
     if not ok:
@@ -40,9 +39,39 @@ def require_authentication():
     request.auth_info = auth_info
 
 
+@app.post('/api/v4/pipnex/calculator')
+def pipnex_calculator():
+    """Pipnex Smart Lot Size & Pip Value Calculation endpoint."""
+    body = request.get_json(silent=True) or {}
+    try:
+        balance = float(body.get('balance', 10000))
+        risk_pct = float(body.get('risk_pct', 1.0))
+        stop_loss_pips = float(body.get('stop_loss_pips', 20.0))
+        symbol = body.get('symbol', 'BTCUSD')
+
+        res = calculate_pipnex_lot_size(balance, risk_pct, stop_loss_pips, symbol)
+        return jsonify(res), 200
+    except (ValueError, TypeError) as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@app.post('/api/v4/pipnex/prop-firm')
+def pipnex_prop_firm():
+    """Pipnex Prop Firm Rules & Drawdown Shield endpoint."""
+    body = request.get_json(silent=True) or {}
+    try:
+        current_equity = float(body.get('current_equity', 10000))
+        initial_balance = float(body.get('initial_balance', 10000))
+        daily_starting_equity = float(body.get('daily_starting_equity', 10000))
+
+        res = calculate_prop_firm_rules(current_equity, initial_balance, daily_starting_equity)
+        return jsonify(res), 200
+    except (ValueError, TypeError) as e:
+        return jsonify({'error': str(e)}), 400
+
+
 @app.post('/api/v4/admin/pairing-code')
 def admin_pairing_code():
-    """Admin endpoint to generate a one-time, 10-minute pairing code for mobile enrollment."""
     body = request.get_json(silent=True) or {}
     ttl = body.get('ttl_minutes', 10)
     try:
@@ -58,12 +87,10 @@ def admin_pairing_code():
 
 @app.post('/api/v4/device/enroll')
 def enroll_device():
-    """Mobile enrollment endpoint accepting a one-time pairing code. No master secrets accepted from mobile."""
     body = request.get_json(silent=True)
     if not isinstance(body, dict) or not body.get('device_id') or not body.get('pairing_code'):
         return jsonify({'error': 'Device ID and pairing_code are required'}), 400
 
-    # Explicitly reject attempts to submit master API tokens from mobile app
     if 'enrollment_secret' in body or 'api_token' in body:
         return jsonify({'error': 'Master secrets must never be submitted from mobile devices. Use one-time pairing codes.'}), 400
 
@@ -76,7 +103,6 @@ def enroll_device():
 
 @app.post('/api/v4/device/renew')
 def renew_token():
-    """Renews a non-expired, active device token."""
     auth_header = request.headers.get('Authorization', '')
     token = auth_header[7:].strip()
     try:
@@ -88,7 +114,6 @@ def renew_token():
 
 @app.post('/api/v4/device/revoke')
 def revoke_device():
-    """Revokes a device session. Ordinary devices can only revoke their own session."""
     body = request.get_json(silent=True)
     if not isinstance(body, dict) or not body.get('device_id'):
         return jsonify({'error': 'device_id is required'}), 400
@@ -103,7 +128,6 @@ def revoke_device():
 
 @app.get('/api/v4/auth/audit')
 def auth_audit():
-    """Administrator-only audit log endpoint."""
     return jsonify(_v4_store.query_audit_logs(limit=50))
 
 

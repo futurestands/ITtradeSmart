@@ -30,6 +30,8 @@ class MainActivity : AppCompatActivity() {
         val edtAccountBalance = findViewById<EditText>(R.id.edtAccountBalance)
         val edtRiskPercentage = findViewById<EditText>(R.id.edtRiskPercentage)
         val edtStopLossPrice = findViewById<EditText>(R.id.edtStopLossPrice)
+        val edtStopLossPips = findViewById<EditText>(R.id.edtStopLossPips)
+        val edtDailyStartEquity = findViewById<EditText>(R.id.edtDailyStartEquity)
 
         val edtGatewayIp = findViewById<EditText>(R.id.edtGatewayIp)
         val edtPairingCode = findViewById<EditText>(R.id.edtPairingCode)
@@ -44,6 +46,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<EditText>(R.id.edtMt5Password).apply { isEnabled = false; hint = "Never enter MT5 password here"; setText("") }
         findViewById<EditText>(R.id.edtMt5Server).apply { isEnabled = false; hint = "Configured on gateway"; setText("") }
 
+        val btnPipnexCalc = findViewById<Button>(R.id.btnPipnexCalc)
+        val btnPipnexPropFirm = findViewById<Button>(R.id.btnPipnexPropFirm)
         val btnSyncMt5 = findViewById<Button>(R.id.btnSyncMt5)
         val edtSymbol = findViewById<EditText>(R.id.edtSymbol)
         val btnQueryRiskContext = findViewById<Button>(R.id.btnQueryRiskContext)
@@ -123,7 +127,6 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this, "Logged out & Server Session Revoked", Toast.LENGTH_SHORT).show()
                         },
                         onFailure = { err ->
-                            // Distinguish remote revocation failure while clearing local credentials
                             GatewaySession.logout(this)
                             txtAnalysisOutput.text = "⚠️ Remote Revocation Failed: ${err.message}\nLocal Keystore Session Wiped."
                             Toast.makeText(this, "Remote Revocation Failed. Local Session Cleared.", Toast.LENGTH_LONG).show()
@@ -133,7 +136,52 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 2. Process System Logs & Compute Infrastructure Risk Factor
+        // 2. PIPNEX Smart Lot Size & Pip Value Calculator
+        btnPipnexCalc.setOnClickListener {
+            updateGatewayUrlFromInput(edtGatewayIp)
+            val balance = edtAccountBalance.text.toString().toDoubleOrNull() ?: 10000.0
+            val riskPct = edtRiskPercentage.text.toString().toDoubleOrNull() ?: 1.0
+            val slPips = edtStopLossPips.text.toString().toDoubleOrNull() ?: 20.0
+            val symbol = edtSymbol.text.toString().trim().ifBlank { "BTCUSD" }
+
+            txtAnalysisOutput.text = "Calculating Pipnex Smart Lot Size for $symbol..."
+            repository.queryPipnexCalculator(balance, riskPct, slPips, symbol) { result ->
+                runOnUiThread {
+                    result.fold(
+                        onSuccess = { json ->
+                            txtAnalysisOutput.text = V4ApiContracts.pipnexCalculatorSummary(json)
+                        },
+                        onFailure = { err ->
+                            txtAnalysisOutput.text = "Pipnex Calculator Error: ${err.message}"
+                        }
+                    )
+                }
+            }
+        }
+
+        // 3. PIPNEX Prop Firm Drawdown Shield
+        btnPipnexPropFirm.setOnClickListener {
+            updateGatewayUrlFromInput(edtGatewayIp)
+            val equity = edtAccountBalance.text.toString().toDoubleOrNull() ?: 10000.0
+            val initialBalance = 10000.0
+            val dailyStart = edtDailyStartEquity.text.toString().toDoubleOrNull() ?: 10000.0
+
+            txtAnalysisOutput.text = "Checking Pipnex Prop Firm Drawdown Shield..."
+            repository.queryPipnexPropFirm(equity, initialBalance, dailyStart) { result ->
+                runOnUiThread {
+                    result.fold(
+                        onSuccess = { json ->
+                            txtAnalysisOutput.text = V4ApiContracts.pipnexPropFirmSummary(json)
+                        },
+                        onFailure = { err ->
+                            txtAnalysisOutput.text = "Pipnex Prop Firm Shield Error: ${err.message}"
+                        }
+                    )
+                }
+            }
+        }
+
+        // 4. Process System Logs & Compute Infrastructure Risk Factor
         btnProcess.setOnClickListener {
             val rawLogs = edtLogs.text.toString()
             val report = analyzeSystemLogs(rawLogs)
@@ -169,7 +217,7 @@ class MainActivity : AppCompatActivity() {
                     "Illustrative Spot Units (NOT MT5 lots): ${String.format("%.4f", optimizedPositionSize)}"
         }
 
-        // 3. Sync Read-Only MT5 Diagnostics
+        // 5. Sync Read-Only MT5 Diagnostics
         btnSyncMt5.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
             txtAnalysisOutput.text = "Requesting MT5 diagnostic analysis from gateway..."
@@ -188,7 +236,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 4. V4 Risk Fusion Query
+        // 6. V4 Risk Fusion Query
         btnQueryRiskContext.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
             val baseRisk = edtRiskPercentage.text.toString().toDoubleOrNull() ?: 1.0
@@ -210,7 +258,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 5. V4 Exposure-Aware Alerts Query
+        // 7. V4 Exposure-Aware Alerts Query
         btnQueryAlerts.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
             txtAnalysisOutput.text = "Querying V4 Alert Center..."
@@ -229,7 +277,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 6. V4 Incident-to-Trade Research
+        // 8. V4 Incident-to-Trade Research
         btnQueryResearch.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
             txtAnalysisOutput.text = "Querying V4 Incident Research API..."

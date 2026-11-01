@@ -4,10 +4,23 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * V4 API Contract Builder & Result Formatter.
- * Ensures strict schema enforcement for One-Time Pairing Code Device Enrollment, Risk Fusion, Alerts, Research, and MT5 diagnostics.
+ * V4 & Pipnex Smart Trading API Contract Builder & Result Formatter.
+ * Handles Lot Size & Pip Value Calculations, Prop Firm Drawdown Shielding, Device Pairing, Risk Fusion, Alerts, and MT5 Diagnostics.
  */
 object V4ApiContracts {
+
+    fun pipnexCalculator(balance: Double, riskPct: Double, stopLossPips: Double, symbol: String): JSONObject = JSONObject().apply {
+        put("balance", balance)
+        put("risk_pct", riskPct)
+        put("stop_loss_pips", stopLossPips)
+        put("symbol", symbol)
+    }
+
+    fun pipnexPropFirm(currentEquity: Double, initialBalance: Double, dailyStartEquity: Double): JSONObject = JSONObject().apply {
+        put("current_equity", currentEquity)
+        put("initial_balance", initialBalance)
+        put("daily_starting_equity", dailyStartEquity)
+    }
 
     fun deviceEnroll(deviceId: String, deviceName: String, pairingCode: String): JSONObject = JSONObject().apply {
         put("device_id", deviceId)
@@ -39,6 +52,40 @@ object V4ApiContracts {
         put("start_utc", startUtc)
         put("end_utc", endUtc)
         put("outcome", outcome)
+    }
+
+    fun pipnexCalculatorSummary(response: JSONObject): String {
+        val symbol = response.optString("symbol", "FOREX")
+        val lots = response.optDouble("recommended_lots", 0.01)
+        val cashRisk = response.optDouble("cash_at_risk", 0.0)
+        val pipVal = response.optDouble("pip_value_usd", 0.0)
+        val slPips = response.optDouble("stop_loss_pips", 0.0)
+
+        return "[PIPNEX SMART LOT SIZE CALCULATOR]\n" +
+               "Symbol: $symbol\n" +
+               "Exact MT5 Recommended Lots: ${String.format("%.2f", lots)} lots\n" +
+               "Actual Cash at Risk: $$cashRisk USD\n" +
+               "Pip Value: $$pipVal USD / pip\n" +
+               "Stop Loss Distance: $slPips pips"
+    }
+
+    fun pipnexPropFirmSummary(response: JSONObject): String {
+        val status = response.optString("status", "HEALTHY")
+        val dailyDd = response.optDouble("daily_drawdown_pct", 0.0)
+        val maxDd = response.optDouble("total_drawdown_pct", 0.0)
+        val dailyBuffer = response.optDouble("daily_cash_buffer_remaining", 0.0)
+        val maxBuffer = response.optDouble("total_cash_buffer_remaining", 0.0)
+        val profitProgress = response.optDouble("profit_progress_pct", 0.0)
+
+        val icon = if (response.optBoolean("is_violation", false)) "🔴" else if (response.optBoolean("is_warning", false)) "🟡" else "🟢"
+
+        return "[PIPNEX PROP FIRM DRAWDOWN SHIELD]\n" +
+               "Status: $icon $status\n" +
+               "Daily Drawdown: $dailyDd% (Max Allowed: 5.0%)\n" +
+               "Total Trailing Drawdown: $maxDd% (Max Allowed: 10.0%)\n" +
+               "Daily Cash Buffer Remaining: $$dailyBuffer USD\n" +
+               "Max Cash Buffer Remaining: $$maxBuffer USD\n" +
+               "Profit Target Progress: $profitProgress%"
     }
 
     fun riskResultSummary(response: JSONObject): String {
