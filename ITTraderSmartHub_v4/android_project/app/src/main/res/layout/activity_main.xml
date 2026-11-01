@@ -1,238 +1,481 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="#F8FAFC">
+    android:background="@color/bg_dark"
+    android:fillViewport="true"
+    android:padding="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Header -->
-        <TextView
-            android:id="@+id/txtHeaderTitle"
+        <!-- Header Dashboard Bar -->
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="ITTrader SmartHub v4"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="#0F172A"
-            android:paddingBottom="4dp" />
+            android:paddingBottom="12dp">
 
-        <TextView
-            android:id="@+id/txtLivePrice"
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true">
+
+                <TextView
+                    android:id="@+id/txtHeaderTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ITTRADER SMARTHUB"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:letterSpacing="0.05" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Quantitative Risk &amp; Crossover Gateway v4"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_muted" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● ACTIVE"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="@color/status_green"
+                android:background="@drawable/bg_pill_green"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true" />
+        </RelativeLayout>
+
+        <!-- Live Ticker Card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Live BTC/USDT: Connecting..."
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#0EA5E9"
-            android:paddingBottom="12dp" />
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
 
-        <!-- Infrastructure Audit Section -->
-        <TextView
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="REAL-TIME MARKET FEED"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_secondary"
+                    android:letterSpacing="0.08" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="BINANCE BTC/USDT"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/accent_blue"
+                    android:layout_alignParentEnd="true" />
+            </RelativeLayout>
+
+            <TextView
+                android:id="@+id/txtLivePrice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Live BTC/USDT: Connecting..."
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:paddingTop="6dp" />
+        </LinearLayout>
+
+        <!-- Section 1: Device Pairing Card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="1. IT Infrastructure Log Analysis"
-            android:textStyle="bold"
-            android:textColor="#334155"
-            android:textSize="14sp" />
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
 
-        <EditText
-            android:id="@+id/edtLogs"
-            android:layout_width="match_parent"
-            android:layout_height="90dp"
-            android:hint="Paste server/system logs here..."
-            android:gravity="top"
-            android:textSize="12sp"
-            android:background="#FFFFFF"
-            android:padding="8dp"
-            android:inputType="textMultiLine" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1. SECURE DEVICE PAIRING &amp; GATEWAY"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent_blue"
+                android:letterSpacing="0.05"
+                android:paddingBottom="10dp" />
 
-        <Button
-            android:id="@+id/btnProcess"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Process Logs &amp; Calculate Risk Factor"
-            android:layout_marginTop="6dp" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/card_stroke"
+                android:textColorHint="@color/text_muted"
+                android:layout_marginBottom="8dp">
 
-        <!-- Risk Calculation Section -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="2. Baseline Account Risk Parameters"
-            android:textStyle="bold"
-            android:textColor="#334155"
-            android:textSize="14sp"
-            android:layout_marginTop="12dp" />
+                <EditText
+                    android:id="@+id/edtGatewayIp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="HTTPS Gateway URL"
+                    android:inputType="textUri"
+                    android:text="https://127.0.0.1:5000"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-        <EditText
-            android:id="@+id/edtAccountBalance"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Account Balance ($)"
-            android:inputType="numberDecimal"
-            android:text="10000" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/card_stroke"
+                android:textColorHint="@color/text_muted"
+                android:layout_marginBottom="12dp">
 
-        <EditText
-            android:id="@+id/edtRiskPercentage"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Base Risk % (e.g. 1.0)"
-            android:inputType="numberDecimal"
-            android:text="1.0" />
+                <EditText
+                    android:id="@+id/edtPairingCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="One-Time Pairing Code (e.g. PAIR-123456)"
+                    android:inputType="textCapCharacters"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-        <EditText
-            android:id="@+id/edtStopLossPrice"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Stop Loss Price ($)"
-            android:inputType="numberDecimal" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
 
-        <!-- Gateway & Device Enrollment Section -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="3. Gateway &amp; Secure Device Pairing"
-            android:textStyle="bold"
-            android:textColor="#334155"
-            android:textSize="14sp"
-            android:layout_marginTop="12dp" />
+                <Button
+                    android:id="@+id/btnEnrollDevice"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Pair Device"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/accent_blue"
+                    android:textColor="@color/black"
+                    android:layout_marginEnd="6dp" />
 
-        <EditText
-            android:id="@+id/edtGatewayIp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="HTTPS Gateway URL (e.g., https://127.0.0.1:5000)"
-            android:inputType="textUri"
-            android:text="https://127.0.0.1:5000" />
+                <Button
+                    android:id="@+id/btnLogout"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Revoke Session"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/status_red"
+                    android:textColor="@color/white"
+                    android:layout_marginStart="6dp" />
+            </LinearLayout>
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/edtPairingCode"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="One-Time Pairing Code (e.g., PAIR-123456)"
-            android:inputType="textCapCharacters" />
-
-        <Button
-            android:id="@+id/btnEnrollDevice"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Pair Device &amp; Save Token to Android Keystore" />
-
-        <Button
-            android:id="@+id/btnLogout"
+        <!-- Section 2: Log Audit Card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Revoke Session &amp; Clear Keystore"
-            android:layout_marginTop="4dp" />
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
 
-        <EditText
-            android:id="@+id/edtMt5Login"
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="2. IT INFRASTRUCTURE LOG AUDIT"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent_blue"
+                android:letterSpacing="0.05"
+                android:paddingBottom="10dp" />
+
+            <EditText
+                android:id="@+id/edtLogs"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:hint="Paste server logs or infrastructure traces..."
+                android:gravity="top"
+                android:textSize="12sp"
+                android:background="@drawable/bg_input"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_muted"
+                android:padding="10dp"
+                android:inputType="textMultiLine"
+                android:layout_marginBottom="10dp" />
+
+            <Button
+                android:id="@+id/btnProcess"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="Audit System Logs &amp; Compute Stress Index"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/card_stroke"
+                android:textColor="@color/text_primary" />
+        </LinearLayout>
+
+        <!-- Section 3: Risk Parameters & MT5 Sync Card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Configured on gateway"
-            android:enabled="false" />
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
 
-        <EditText
-            android:id="@+id/edtMt5Password"
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="3. ACCOUNT RISK &amp; MT5 DIAGNOSTICS"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent_blue"
+                android:letterSpacing="0.05"
+                android:paddingBottom="10dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    app:hintTextColor="@color/text_secondary">
+
+                    <EditText
+                        android:id="@+id/edtAccountBalance"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Balance ($)"
+                        android:inputType="numberDecimal"
+                        android:text="10000"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    app:hintTextColor="@color/text_secondary">
+
+                    <EditText
+                        android:id="@+id/edtRiskPercentage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Base Risk %"
+                        android:inputType="numberDecimal"
+                        android:text="1.0"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    app:hintTextColor="@color/text_secondary">
+
+                    <EditText
+                        android:id="@+id/edtStopLossPrice"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Stop Price ($)"
+                        android:inputType="numberDecimal"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    app:hintTextColor="@color/text_secondary">
+
+                    <EditText
+                        android:id="@+id/edtSymbol"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Symbol"
+                        android:text="BTCUSD"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <!-- Disabled Legacy MT5 Inputs (Preserved for compatibility) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="0"
+                android:visibility="gone"
+                android:orientation="vertical">
+                <EditText android:id="@+id/edtMt5Login" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <EditText android:id="@+id/edtMt5Password" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <EditText android:id="@+id/edtMt5Server" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnQueryRiskContext"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="V4 Risk Fusion"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/accent_blue"
+                    android:textColor="@color/black"
+                    android:layout_marginEnd="4dp" />
+
+                <Button
+                    android:id="@+id/btnSyncMt5"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Sync Read-Only MT5"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/card_stroke"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginStart="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Section 4: Alert Center & Incident Research Card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Never enter MT5 password here"
-            android:enabled="false" />
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
 
-        <EditText
-            android:id="@+id/edtMt5Server"
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="4. ALERT CENTER &amp; INCIDENT RESEARCH"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent_blue"
+                android:letterSpacing="0.05"
+                android:paddingBottom="10dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnQueryAlerts"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Fetch Alerts"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/card_stroke"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="4dp" />
+
+                <Button
+                    android:id="@+id/btnQueryResearch"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Incident Impact"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/card_stroke"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginStart="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Section 5: Real-Time Telemetry & Terminal Monitor -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Configured on gateway"
-            android:enabled="false" />
+            android:background="@drawable/bg_terminal"
+            android:orientation="vertical"
+            android:padding="14dp"
+            android:layout_marginBottom="16dp">
 
-        <Button
-            android:id="@+id/btnSyncMt5"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Sync Read-Only MT5 Diagnostics" />
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="8dp">
 
-        <!-- V4 Risk Fusion Engine -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="4. V4 Risk Fusion Engine"
-            android:textStyle="bold"
-            android:textColor="#334155"
-            android:textSize="14sp"
-            android:layout_marginTop="12dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="TELEMETRY &amp; ANALYSIS CONSOLE"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/accent_blue"
+                    android:letterSpacing="0.08" />
 
-        <EditText
-            android:id="@+id/edtSymbol"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Symbol (e.g. BTCUSD or EURUSD)"
-            android:text="BTCUSD" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SYS MON v4.1"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_muted"
+                    android:layout_alignParentEnd="true" />
+            </RelativeLayout>
 
-        <Button
-            android:id="@+id/btnQueryRiskContext"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Request V4 Risk Fusion Context" />
-
-        <!-- V4 Exposure-Aware Alert Center -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="5. V4 Exposure-Aware Alert Center"
-            android:textStyle="bold"
-            android:textColor="#334155"
-            android:textSize="14sp"
-            android:layout_marginTop="12dp" />
-
-        <Button
-            android:id="@+id/btnQueryAlerts"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Fetch Infrastructure Alerts" />
-
-        <!-- V4 Incident Research -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="6. V4 Incident-to-Trade Research"
-            android:textStyle="bold"
-            android:textColor="#334155"
-            android:textSize="14sp"
-            android:layout_marginTop="12dp" />
-
-        <Button
-            android:id="@+id/btnQueryResearch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Request Incident Research Impact" />
-
-        <!-- Consolidated Output Display -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Analysis Output &amp; System Telemetry"
-            android:textStyle="bold"
-            android:textColor="#0F172A"
-            android:textSize="14sp"
-            android:layout_marginTop="16dp" />
-
-        <TextView
-            android:id="@+id/txtAnalysisOutput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="System Ready."
-            android:textSize="13sp"
-            android:typeface="monospace"
-            android:background="#1E293B"
-            android:textColor="#F8FAFC"
-            android:padding="12dp"
-            android:minLines="6"
-            android:layout_marginTop="4dp" />
+            <TextView
+                android:id="@+id/txtAnalysisOutput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="System Ready. Listening for telemetry &amp; market events..."
+                android:textSize="12sp"
+                android:typeface="monospace"
+                android:textColor="#38BDF8"
+                android:minLines="7"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
