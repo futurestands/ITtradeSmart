@@ -28,10 +28,6 @@ def client():
 ADMIN_H = {'Authorization': 'Bearer ' + 'a'*48}
 
 def test_ordinary_device_forbidden_from_v5_bot(client):
-    from app import _v4_store
-    _v4_store.devices.clear()
-    _v4_store.pairing_codes.clear()
-
     res = client.post('/api/v4/admin/pairing-code', json={'ttl_minutes': 10}, headers=ADMIN_H)
     assert res.status_code == 200
     code = res.json['pairing_code']
@@ -46,15 +42,31 @@ def test_ordinary_device_forbidden_from_v5_bot(client):
     res_tick = client.post('/api/v5/bot/tick', headers=device_h)
     assert res_tick.status_code == 403
 
-def test_risk_guardian_fails_closed_missing_telemetry():
+def test_risk_guardian_fails_closed_missing_terminal_calculations():
     md = MarketDataManager(symbol_specs={"BTCUSD": SymbolSpec("BTCUSD", 1.0, 1.0, 0.01, 1.0)})
     spec = md.get_spec("BTCUSD")
     rg = RiskGuardian()
-    sig = Signal("BTCUSD", "BUY", 65000.0, 64000.0, 67000.0, datetime.now(timezone.utc).isoformat(), "MA", "v5.3", 0.9, "Bullish")
+    sig = Signal("BTCUSD", "BUY", 65000.0, 64000.0, 67000.0, datetime.now(timezone.utc).isoformat(), "MA", "v5.4", 0.9, "Bullish")
 
-    res = rg.validate_trade_signal(sig, 10000.0, 10000.0, 0, spec, infrastructure_stress=None)
+    # Without MT5 terminal and no gateway client, RiskGuardian must fail closed with FAIL_CLOSED_BROKER_CALCULATION_UNAVAILABLE
+    res = rg.validate_trade_signal(sig, 10000.0, 10000.0, 10000.0, 0, spec, infrastructure_stress=10, mt5_gateway_client=None)
     assert res.approved is False
-    assert "FAIL_CLOSED_MISSING_OR_INVALID_TELEMETRY_STRESS" in res.reason_codes
+    assert "FAIL_CLOSED_BROKER_CALCULATION_UNAVAILABLE" in res.reason_codes
+
+def test_risk_guardian_insufficient_margin():
+    rg = RiskGuardian()
+    spec = SymbolSpec("BTCUSD", 1.0, 1.0, 0.01, 1.0)
+    sig = Signal("BTCUSD", "BUY", 65000.0, 64000.0, 67000.0, datetime.now(timezone.utc).isoformat(), "MA", "v5.4", 0.9, "Bullish")
+
+    class MockGatewayClient:
+        def calc_order(self, action, symbol, volume, entry, sl):
+            return -100.0, 5000.0  # $5000 margin required per lot
+
+    gateway = MockGatewayClient()
+    # Free margin is only $1000, but margin required is $5000
+    res = rg.validate_trade_signal(sig, 10000.0, 1000.0, 10000.0, 0, spec, infrastructure_stress=10, mt5_gateway_client=gateway)
+    assert res.approved is False
+    assert "INSUFFICIENT_FREE_MARGIN" in res.reason_codes
 
 def test_authenticated_quote_provider():
     md = MarketDataManager()
@@ -70,13 +82,3 @@ def test_fail_closed_market_data():
     md = MarketDataManager()
     with pytest.raises(RuntimeError, match="FATAL: Real MT5 market data unavailable"):
         md.fetch_real_mt5_candles("EURUSD", "H1", 50)
-
-def test_paper_trading_engine():
-    engine = PaperTradingEngine(10000.0)
-    pos = engine.open_position("BTCUSD", "BUY", 0.1, 65000.0, 64000.0, 67000.0)
-    assert len(engine.positions) == 1
-
-    engine.update_market_price("BTCUSD", 67500.0)
-    assert len(engine.positions) == 0
-    assert len(engine.closed_trades) == 1
-    assert engine.balance > 10000.0

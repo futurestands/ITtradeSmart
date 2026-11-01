@@ -1,4 +1,4 @@
-"""Risk Guardian: Mandatory risk layer enforcing strict broker-authoritative order_calc_profit() and order_calc_margin() results with zero fallback defaults."""
+"""Risk Guardian: Mandatory risk layer enforcing strict broker-authoritative order_calc_profit() and order_calc_margin() verification with zero test-mode fallbacks."""
 from dataclasses import dataclass
 from math import floor, isfinite
 from .strategies import Signal
@@ -23,7 +23,7 @@ class RiskGuardian:
     - Max 3 concurrent open positions.
     - Infrastructure Stress Index formula: EffectiveRisk = BaselineRisk * (1 - 0.5 * Stress / 100).
     - FAILS CLOSED if telemetry stress is missing or invalid.
-    - STRICT REQUIREMENT: Must obtain valid broker-authoritative order_calc_profit() and order_calc_margin() results. Rejects trade if broker calculation fails or is unavailable.
+    - STRICT REQUIREMENT: Requires valid broker-authoritative order_calc_profit() and order_calc_margin() responses with sufficient free margin. Zero test-mode fallback.
     """
 
     def __init__(self, max_trade_risk_pct: float = 0.5, max_daily_loss_pct: float = 2.0, max_open_positions: int = 3):
@@ -31,9 +31,10 @@ class RiskGuardian:
         self.max_daily_loss_pct = max_daily_loss_pct
         self.max_open_positions = max_open_positions
 
-    def validate_trade_signal(self, signal: Signal, verified_account_equity: float, daily_starting_equity: float,
-                              open_positions_count: int, symbol_spec: SymbolSpec, infrastructure_stress: int = None,
-                              data_fresh: bool = True) -> RiskValidationResult:
+    def validate_trade_signal(self, signal: Signal, verified_account_equity: float, verified_free_margin: float,
+                              daily_starting_equity: float, open_positions_count: int, symbol_spec: SymbolSpec,
+                              infrastructure_stress: int = None, data_fresh: bool = True,
+                              mt5_gateway_client=None) -> RiskValidationResult:
         reasons = []
 
         if not data_fresh:
@@ -44,6 +45,9 @@ class RiskGuardian:
 
         if verified_account_equity <= 0 or not isfinite(verified_account_equity):
             return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_VERIFIED_ACCOUNT_EQUITY"])
+
+        if verified_free_margin < 0 or not isfinite(verified_free_margin):
+            return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_FREE_MARGIN"])
 
         if daily_starting_equity <= 0 or not isfinite(daily_starting_equity):
             return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_DAILY_STARTING_EQUITY"])
@@ -78,37 +82,39 @@ class RiskGuardian:
         if sl_distance <= 0:
             return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_STOP_LOSS_DISTANCE"])
 
-        # STRICT REQUIREMENT: Obtain broker order_calc_profit() and order_calc_margin() results.
+        # STRICT REQUIREMENT: Obtain broker order_calc_profit() and order_calc_margin() results via serialized gateway service.
         cash_risk_per_lot = 0.0
-        margin_required = 0.0
+        margin_required_per_lot = 0.0
         broker_calc_success = False
 
-        try:
-            import MetaTrader5 as mt5
-            if mt5.initialize():
+        if mt5_gateway_client is not None:
+            try:
+                action = "BUY" if signal.direction == "BUY" else "SELL"
+                profit_res, margin_res = mt5_gateway_client.calc_order(action, symbol_spec.symbol, 1.0, signal.entry_price, signal.stop_loss)
+                if profit_res is not None and profit_res < 0 and margin_res is not None and margin_res > 0:
+                    cash_risk_per_lot = abs(profit_res)
+                    margin_required_per_lot = float(margin_res)
+                    broker_calc_success = True
+            except Exception:
+                pass
+        else:
+            try:
+                import MetaTrader5 as mt5
                 action = mt5.ORDER_TYPE_BUY if signal.direction == "BUY" else mt5.ORDER_TYPE_SELL
                 profit_res = mt5.order_calc_profit(action, symbol_spec.symbol, 1.0, signal.entry_price, signal.stop_loss)
                 margin_res = mt5.order_calc_margin(action, symbol_spec.symbol, 1.0, signal.entry_price)
-                mt5.shutdown()
-
                 if profit_res is not None and profit_res < 0 and margin_res is not None and margin_res > 0:
                     cash_risk_per_lot = abs(profit_res)
-                    margin_required = float(margin_res)
+                    margin_required_per_lot = float(margin_res)
                     broker_calc_success = True
-        except Exception:
-            pass
+            except Exception:
+                pass
 
-        # If broker calculation via MT5 terminal is unavailable (e.g. terminal absent), fail closed in production/paper execution!
         if not broker_calc_success:
-            # Allow fallback calculation ONLY in explicit test environments, otherwise reject execution
-            if os.environ.get("SMARTHUB_TEST_MODE") == "1":
-                ticks_in_sl = sl_distance / symbol_spec.tick_size
-                cash_risk_per_lot = ticks_in_sl * symbol_spec.tick_value
-            else:
-                return RiskValidationResult(False, 0.0, 0.0, 0.0, ["FAIL_CLOSED_BROKER_CALCULATION_UNAVAILABLE"])
+            return RiskValidationResult(False, 0.0, 0.0, 0.0, ["FAIL_CLOSED_BROKER_CALCULATION_UNAVAILABLE"])
 
-        if cash_risk_per_lot <= 0:
-            return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_BROKER_PROFIT_CALCULATION"])
+        if cash_risk_per_lot <= 0 or margin_required_per_lot <= 0:
+            return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_BROKER_CALCULATION_RESPONSE"])
 
         raw_lots = cash_at_risk_allowed / cash_risk_per_lot
 
@@ -122,6 +128,11 @@ class RiskGuardian:
 
         allocated_lots = max(symbol_spec.min_lot, min(symbol_spec.max_lot, stepped_lots))
         actual_cash_at_risk = allocated_lots * cash_risk_per_lot
+        total_margin_required = allocated_lots * margin_required_per_lot
+
+        # Verify sufficient free margin
+        if total_margin_required > verified_free_margin:
+            reasons.append("INSUFFICIENT_FREE_MARGIN")
 
         approved = len(reasons) == 0
 
