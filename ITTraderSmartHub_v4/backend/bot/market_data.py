@@ -1,4 +1,4 @@
-"""Market Data Manager: Real MT5 historical data ingestion, symbol specifications, UTC normalization, dataset validation, and fail-closed freshness checks."""
+"""Market Data Manager: Real MT5 historical data ingestion, symbol specifications, fail-closed data integrity, and strict separation of production vs test candles."""
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from math import isfinite
@@ -38,7 +38,7 @@ class Candle:
 
 
 class MarketDataManager:
-    """Manages real MT5 market data ingestion, symbol specs, dataset integrity, and fail-closed data freshness."""
+    """Manages real MT5 market data ingestion and fail-closed freshness checks. Synthetic data is prohibited in production."""
 
     SPECS = {
         "EURUSD": SymbolSpec("EURUSD", contract_size=100000.0, pip_size=0.0001, tick_size=0.00001, tick_value=1.0, min_lot=0.01, max_lot=100.0, lot_step=0.01),
@@ -60,7 +60,30 @@ class MarketDataManager:
 
     def get_spec(self, symbol: str) -> SymbolSpec:
         sym = symbol.upper().replace("/", "").replace("_", "")
-        return self.SPECS.get(sym, SymbolSpec(sym, contract_size=100000.0, pip_size=0.0001, tick_size=0.00001, tick_value=1.0))
+        spec = self.SPECS.get(sym)
+        if spec is None:
+            # Query live MT5 symbol info if available
+            try:
+                import MetaTrader5 as mt5
+                if mt5.initialize():
+                    info = mt5.symbol_info(sym)
+                    mt5.shutdown()
+                    if info is not None:
+                        return SymbolSpec(
+                            symbol=sym,
+                            contract_size=float(getattr(info, "trade_contract_size", 100000.0)),
+                            pip_size=float(getattr(info, "point", 0.0001)) * 10.0,
+                            tick_size=float(getattr(info, "trade_tick_size", 0.00001)),
+                            tick_value=float(getattr(info, "trade_tick_value", 1.0)),
+                            min_lot=float(getattr(info, "volume_min", 0.01)),
+                            max_lot=float(getattr(info, "volume_max", 100.0)),
+                            lot_step=float(getattr(info, "volume_step", 0.01)),
+                            currency=str(getattr(info, "currency_profit", "USD"))
+                        )
+            except Exception:
+                pass
+            raise ValueError(f"Unknown or unavailable symbol specification for {sym}")
+        return spec
 
     def update_price(self, symbol: str, price: float):
         if price <= 0 or not isfinite(price):
@@ -79,7 +102,7 @@ class MarketDataManager:
         return age <= max_age_seconds
 
     def fetch_real_mt5_candles(self, symbol: str, timeframe_str: str = "H1", num_bars: int = 500) -> list:
-        """Fetches real historical candles from MT5 terminal or persistent SQLite database."""
+        """Fetches real historical candles from MT5 terminal or SQLite cache. PROHIBITS synthetic fallback in production."""
         sym = symbol.upper().replace("/", "").replace("_", "")
 
         try:
@@ -112,11 +135,11 @@ class MarketDataManager:
                     self.validate_dataset(candles)
                     return candles
 
-        # In unit tests or offline environments where no DB/MT5 exists, fall back to test candles if explicitly configured
-        if os.environ.get("SMARTHUB_TEST_MODE") == "1" or True:
+        # STRICT FAIL-CLOSED: If test mode is enabled explicitly, allow test candles; otherwise raise RuntimeError.
+        if os.environ.get("SMARTHUB_TEST_MODE") == "1":
             return self.generate_test_candles(sym, num_bars=num_bars)
 
-        raise RuntimeError(f"Real MT5 market data unavailable for symbol {sym}. Fail-closed active.")
+        raise RuntimeError(f"FATAL: Real MT5 market data unavailable for symbol {sym}. Fail-closed active. No synthetic data permitted in production.")
 
     def store_candles_in_db(self, symbol: str, timeframe: str, candles: list):
         if not self.database_path or not candles:
@@ -152,7 +175,7 @@ class MarketDataManager:
 
     @staticmethod
     def generate_test_candles(symbol: str = "EURUSD", num_bars: int = 200, base_price: float = 1.0850) -> list:
-        """EXPLICITLY LABELED TEST HELPER: Generates synthetic candles for unit tests ONLY. Never used in production trading."""
+        """EXPLICIT TEST-ONLY HELPER: Generates synthetic candles for unit tests when SMARTHUB_TEST_MODE=1. Prohibited in production."""
         candles = []
         now = datetime.now(timezone.utc)
         curr_price = base_price

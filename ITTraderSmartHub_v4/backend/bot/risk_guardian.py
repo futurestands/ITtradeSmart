@@ -1,6 +1,6 @@
-"""Risk Guardian: Independent mandatory risk layer enforcing 0.5% max equity risk, 2% daily loss limit, broker volume steps, and lot-size rejection rules."""
+"""Risk Guardian: Independent mandatory risk layer enforcing 0.5% max equity risk, 2% daily loss stop, broker symbol specifications, and margin validation."""
 from dataclasses import dataclass
-from math import floor
+from math import floor, isfinite
 from .strategies import Signal
 from .market_data import SymbolSpec
 
@@ -16,7 +16,7 @@ class RiskValidationResult:
 
 class RiskGuardian:
     """
-    Independent Risk Guardian Layer.
+    Independent Risk Guardian Decision Layer.
     Rules:
     - Maximum 0.5% of verified equity at risk per trade.
     - 2% daily loss stop.
@@ -24,6 +24,7 @@ class RiskGuardian:
     - Infrastructure Stress Index formula: EffectiveRisk = BaselineRisk * (1 - 0.5 * Stress / 100).
     - Fractional lot volume stepping with floor rounding down.
     - EXPLICIT REJECTION if symbol min_lot exceeds cash risk allowance.
+    - Validation of stop loss direction compliance.
     """
 
     def __init__(self, max_trade_risk_pct: float = 0.5, max_daily_loss_pct: float = 2.0, max_open_positions: int = 3):
@@ -39,8 +40,20 @@ class RiskGuardian:
         if not data_fresh:
             return RiskValidationResult(False, 0.0, 0.0, 0.0, ["FAIL_CLOSED_STALE_MARKET_DATA"])
 
+        if account_equity <= 0 or not isfinite(account_equity):
+            return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_ACCOUNT_EQUITY"])
+
+        if not isinstance(infrastructure_stress, int) or not 0 <= infrastructure_stress <= 100:
+            return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_INFRASTRUCTURE_STRESS"])
+
         if not signal or signal.direction not in ("BUY", "SELL"):
             return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_SIGNAL_DIRECTION"])
+
+        # Validate Stop Loss Direction Compliance
+        if signal.direction == "BUY" and signal.stop_loss >= signal.entry_price:
+            reasons.append("INVALID_STOP_LOSS_BUY_DIRECTION")
+        if signal.direction == "SELL" and signal.stop_loss <= signal.entry_price:
+            reasons.append("INVALID_STOP_LOSS_SELL_DIRECTION")
 
         if open_positions_count >= self.max_open_positions:
             reasons.append("MAX_OPEN_POSITIONS_REACHED")
@@ -53,7 +66,7 @@ class RiskGuardian:
         if daily_loss_pct >= self.max_daily_loss_pct:
             reasons.append("DAILY_LOSS_LIMIT_EXCEEDED")
 
-        # Infrastructure Stress Mitigation
+        # Infrastructure Stress Mitigation Formula
         stress_factor = 1.0 - (0.5 * infrastructure_stress / 100.0)
         effective_risk_pct = self.max_trade_risk_pct * stress_factor
 
@@ -63,8 +76,6 @@ class RiskGuardian:
         if sl_distance <= 0:
             return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_STOP_LOSS_DISTANCE"])
 
-        # Calculate exact lot size using broker symbol specification & tick value
-        # Cash at Risk = Lots * SL_Distance_In_Ticks * Tick_Value
         ticks_in_sl = sl_distance / symbol_spec.tick_size
         cash_risk_per_lot = ticks_in_sl * symbol_spec.tick_value
 

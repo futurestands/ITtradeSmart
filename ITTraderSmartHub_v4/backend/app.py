@@ -1,4 +1,4 @@
-"""Read-only MT5 monitoring API with Pipnex smart lot sizing, prop firm drawdown shield, and ITTrader SmartHub v5 Automated Trading Bot Control."""
+"""Read-only MT5 monitoring API with Pipnex smart lot sizing, prop firm drawdown shield, and authoritative ITTrader SmartHub v5 Bot Control."""
 import hmac
 import os
 from datetime import datetime, timedelta, timezone
@@ -42,7 +42,7 @@ def require_authentication():
 
 
 # ====================================================================
-# V5 AUTOMATED TRADING BOT ENDPOINTS
+# V5 AUTOMATED TRADING BOT ENDPOINTS (Authoritative Broker Feed)
 # ====================================================================
 
 @app.get('/api/v5/bot/status')
@@ -70,12 +70,14 @@ def bot_emergency_stop():
 
 @app.post('/api/v5/bot/tick')
 def bot_tick():
-    body = request.get_json(silent=True) or {}
-    current_price = float(body.get('price', 65000.0))
+    """Triggers automated bot cycle using authoritative broker feed. Client-injected prices are prohibited."""
     stress = _v4_store.get_stress()
     stress_val = stress['value'] if stress else 0
-    res = _bot.tick(current_price, stress_val)
-    return jsonify(res), 200
+    try:
+        res = _bot.tick(stress_val)
+        return jsonify(res), 200
+    except RuntimeError as e:
+        return jsonify({'error': str(e)}), 503
 
 
 @app.post('/api/v5/bot/backtest')
@@ -84,8 +86,8 @@ def bot_backtest():
     symbol = body.get('symbol', 'BTCUSD')
     num_bars = int(body.get('num_bars', 200))
 
-    md = MarketDataManager()
-    candles = md.generate_synthetic_candles(symbol, num_bars=num_bars)
+    md = MarketDataManager(database_path=os.environ.get("SMARTHUB_STATE_DB"))
+    candles = md.fetch_real_mt5_candles(symbol, timeframe_str="H1", num_bars=num_bars)
     strat = TrendFollowingMACrossoverStrategy()
     bt_engine = BacktestEngine(10000.0)
 

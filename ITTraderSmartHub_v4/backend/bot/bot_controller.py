@@ -1,4 +1,4 @@
-"""Bot Controller: Mode state machine (OFF / BACKTEST / PAPER / DEMO), lifecycle scheduling, and emergency stop handler."""
+"""Bot Controller: Mode state machine (OFF / BACKTEST / PAPER / DEMO), lifecycle scheduling, and authoritative broker price feeding."""
 from enum import Enum
 from threading import RLock
 from .market_data import MarketDataManager
@@ -17,7 +17,7 @@ class BotMode(str, Enum):
 
 
 class BotController:
-    """Central Controller for ITTrader SmartHub v5 Automated Bot."""
+    """Central Controller for ITTrader SmartHub v5 Automated Bot. Prohibits client-injected prices."""
 
     def __init__(self, database_path=None):
         self.lock = RLock()
@@ -55,16 +55,19 @@ class BotController:
             self.demo_adapter.trigger_emergency_stop()
             return self.get_status()
 
-    def tick(self, current_price: float, infrastructure_stress: int = 0) -> dict:
-        """Executes one automated bot cycle using real market candles and symbol specs."""
+    def tick(self, infrastructure_stress: int = 0) -> dict:
+        """Executes one automated bot cycle using authoritative broker prices. Never accepts client-supplied prices."""
         with self.lock:
-            self.market_data.update_price(self.active_symbol, current_price)
-
-            if self.mode == BotMode.PAPER:
-                self.paper_engine.update_market_price(self.active_symbol, current_price)
-
             if self.mode == BotMode.OFF:
                 return self.get_status()
+
+            # Retrieve authoritative price from broker/market manager feed
+            curr_price = self.market_data.last_price.get(self.active_symbol)
+            if curr_price is None or not self.market_data.is_data_fresh(self.active_symbol):
+                raise RuntimeError(f"Authoritative market feed for {self.active_symbol} is missing or stale. Fail-closed active.")
+
+            if self.mode == BotMode.PAPER:
+                self.paper_engine.update_market_price(self.active_symbol, curr_price)
 
             # Fetch candles for active symbol
             candles = self.market_data.fetch_real_mt5_candles(self.active_symbol, timeframe_str="H1", num_bars=50)
@@ -90,13 +93,13 @@ class BotController:
                 if self.mode == BotMode.PAPER:
                     pos = self.paper_engine.open_position(
                         self.active_symbol, sig.direction, risk_res.allocated_lots,
-                        current_price, sig.stop_loss, sig.take_profit
+                        curr_price, sig.stop_loss, sig.take_profit
                     )
                     execution_res = {"status": "PAPER_POSITION_OPENED", "position_id": pos.position_id}
                 elif self.mode == BotMode.DEMO:
                     execution_res = self.demo_adapter.execute_demo_order(
                         f"order-{dec_id}", self.active_symbol, sig.direction,
-                        risk_res.allocated_lots, current_price, sig.stop_loss, sig.take_profit
+                        risk_res.allocated_lots, curr_price, sig.stop_loss, sig.take_profit
                     )
 
             status = self.get_status()
@@ -114,7 +117,7 @@ class BotController:
             return {
                 "mode": self.mode.value,
                 "strategy_name": self.strategy.name,
-                "strategy_version": "v5.2",
+                "strategy_version": "v5.3",
                 "active_symbol": self.active_symbol,
                 "demo_adapter_enabled": self.demo_adapter.enabled,
                 "emergency_stopped": self.demo_adapter.emergency_stopped,

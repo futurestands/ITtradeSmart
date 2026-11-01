@@ -8,11 +8,14 @@ from bot import (
     PaperTradingEngine, RiskGuardian, DemoMT5ExecutionAdapter, BotController, Signal
 )
 
-@pytest.fixture
-def client(monkeypatch):
+@pytest.fixture(autouse=True)
+def setup_test_mode(monkeypatch):
     monkeypatch.setenv('SMARTHUB_API_TOKEN', 'a'*48)
     monkeypatch.setenv('SMARTHUB_TELEMETRY_TOKEN', 'b'*48)
     monkeypatch.setenv('SMARTHUB_TEST_MODE', '1')
+
+@pytest.fixture
+def client():
     from app import app, _v4_store, _bot
     _v4_store.devices.clear()
     _v4_store.pairing_codes.clear()
@@ -23,9 +26,15 @@ def client(monkeypatch):
 
 ADMIN_H = {'Authorization': 'Bearer ' + 'a'*48}
 
+def test_fail_closed_market_data_without_test_mode(monkeypatch):
+    monkeypatch.delenv('SMARTHUB_TEST_MODE', raising=False)
+    md = MarketDataManager()
+    with pytest.raises(RuntimeError, match="FATAL: Real MT5 market data unavailable"):
+        md.fetch_real_mt5_candles("EURUSD", "H1", 50)
+
 def test_strategy_signal_generation():
     md = MarketDataManager()
-    candles = md.generate_test_candles("BTCUSD", num_bars=60)
+    candles = md.fetch_real_mt5_candles("BTCUSD", "H1", 60)
     strat = TrendFollowingMACrossoverStrategy()
     sig = strat.generate_signal("BTCUSD", candles)
     assert sig.symbol == "BTCUSD"
@@ -33,7 +42,7 @@ def test_strategy_signal_generation():
 
 def test_backtesting_and_monte_carlo():
     md = MarketDataManager()
-    candles = md.generate_test_candles("BTCUSD", num_bars=100)
+    candles = md.fetch_real_mt5_candles("BTCUSD", "H1", 100)
     strat = TrendFollowingMACrossoverStrategy()
     engine = BacktestEngine(10000.0)
 
@@ -59,9 +68,8 @@ def test_risk_guardian_limits():
     md = MarketDataManager()
     spec = md.get_spec("BTCUSD")
     rg = RiskGuardian(max_trade_risk_pct=0.5, max_daily_loss_pct=2.0, max_open_positions=2)
-    valid_sig = Signal("BTCUSD", "BUY", 65000.0, 64000.0, 67000.0, "2026-11-01T00:00:00Z", "MA", "v5.1", 0.9, "Bullish")
+    valid_sig = Signal("BTCUSD", "BUY", 65000.0, 64000.0, 67000.0, "2026-11-01T00:00:00Z", "MA", "v5.3", 0.9, "Bullish")
 
-    # Rejects when open positions limit reached
     res = rg.validate_trade_signal(valid_sig, 10000.0, 10000.0, open_positions_count=2, symbol_spec=spec)
     assert res.approved is False
     assert "MAX_OPEN_POSITIONS_REACHED" in res.reason_codes
@@ -69,8 +77,8 @@ def test_risk_guardian_limits():
 def test_risk_guardian_min_lot_rejection():
     md = MarketDataManager()
     spec = md.get_spec("EURUSD")
-    rg = RiskGuardian(max_trade_risk_pct=0.001)  # Extremely tiny risk allowance
-    sig = Signal("EURUSD", "BUY", 1.0850, 1.0750, 1.1050, "2026-11-01T00:00:00Z", "MA", "v5.1", 0.9, "Bullish")
+    rg = RiskGuardian(max_trade_risk_pct=0.001)
+    sig = Signal("EURUSD", "BUY", 1.0850, 1.0750, 1.1050, "2026-11-01T00:00:00Z", "MA", "v5.3", 0.9, "Bullish")
 
     res = rg.validate_trade_signal(sig, 1000.0, 1000.0, open_positions_count=0, symbol_spec=spec)
     assert res.approved is False
@@ -92,7 +100,10 @@ def test_bot_endpoints(client):
     assert res_mode.status_code == 200
     assert res_mode.json['mode'] == 'PAPER'
 
-    res_tick = client.post('/api/v5/bot/tick', json={'price': 65000.0}, headers=ADMIN_H)
+    from app import _bot
+    _bot.market_data.update_price("BTCUSD", 65000.0)
+
+    res_tick = client.post('/api/v5/bot/tick', headers=ADMIN_H)
     assert res_tick.status_code == 200
 
     res_stop = client.post('/api/v5/bot/emergency-stop', headers=ADMIN_H)
