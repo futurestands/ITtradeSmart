@@ -22,7 +22,7 @@ class BotController:
     def __init__(self, database_path=None):
         self.lock = RLock()
         self.mode = BotMode.OFF
-        self.market_data = MarketDataManager()
+        self.market_data = MarketDataManager(database_path)
         self.strategy = TrendFollowingMACrossoverStrategy()
         self.risk_guardian = RiskGuardian()
         self.paper_engine = PaperTradingEngine(10000.0, database_path)
@@ -56,7 +56,7 @@ class BotController:
             return self.get_status()
 
     def tick(self, current_price: float, infrastructure_stress: int = 0) -> dict:
-        """Executes one automated bot cycle."""
+        """Executes one automated bot cycle using real market candles and symbol specs."""
         with self.lock:
             self.market_data.update_price(self.active_symbol, current_price)
 
@@ -66,18 +66,21 @@ class BotController:
             if self.mode == BotMode.OFF:
                 return self.get_status()
 
-            # Generate Strategy Signal
-            candles = self.market_data.generate_synthetic_candles(self.active_symbol, num_bars=50, base_price=current_price)
+            # Fetch candles for active symbol
+            candles = self.market_data.fetch_real_mt5_candles(self.active_symbol, timeframe_str="H1", num_bars=50)
             sig = self.strategy.generate_signal(self.active_symbol, candles)
             sig_id = self.journal.record_signal(sig)
 
-            # Evaluate Risk Layer
+            # Evaluate Risk Layer with Symbol Spec and Freshness Check
+            sym_spec = self.market_data.get_spec(self.active_symbol)
+            is_fresh = self.market_data.is_data_fresh(self.active_symbol)
+
             account_balance = self.paper_engine.balance if self.mode == BotMode.PAPER else 10000.0
             daily_start = 10000.0
             open_pos = len(self.paper_engine.positions) if self.mode == BotMode.PAPER else 0
 
             risk_res = self.risk_guardian.validate_trade_signal(
-                sig, account_balance, daily_start, open_pos, infrastructure_stress
+                sig, account_balance, daily_start, open_pos, sym_spec, infrastructure_stress, is_fresh
             )
             dec_id = self.journal.record_decision(sig_id, risk_res, self.mode.value)
 
@@ -111,7 +114,7 @@ class BotController:
             return {
                 "mode": self.mode.value,
                 "strategy_name": self.strategy.name,
-                "strategy_version": "v5.1",
+                "strategy_version": "v5.2",
                 "active_symbol": self.active_symbol,
                 "demo_adapter_enabled": self.demo_adapter.enabled,
                 "emergency_stopped": self.demo_adapter.emergency_stopped,
