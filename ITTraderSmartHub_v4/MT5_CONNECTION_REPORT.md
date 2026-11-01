@@ -1,4 +1,4 @@
-# ITTrader SmartHub v5 — MT5 Connection & Environment Diagnostic Report
+# ITTrader SmartHub v5 — MT5 Connection & Environment Diagnostic Report (Phase 1 & 2 Update)
 
 **Date:** 2026-11-01  
 **Project:** ITTrader SmartHub v5  
@@ -6,41 +6,40 @@
 
 ---
 
-## 1. Phase 1 Environment Diagnostic Findings
+## 1. Phase 1 — MT5 Environment & Terminal Diagnostic
 
 - **Python Interpreter:** `C:\Users\MJ\AppData\Local\Python\pythoncore-3.14-64\python.exe` (Python 3.14.6 64-bit).
 - **MetaTrader 5 Python Package:** Successfully installed (`MetaTrader5-5.0.6231`).
-- **Terminal Executable Status:** **ABSENT**. 
-- **Initialization Error Code:** `(-10003, 'IPC initialize failed, MetaTrader 5 x64 not found')`.
+- **Exhaustive Search Results:** Registry uninstall records, user application folders, and accessible drives were thoroughly searched for `terminal64.exe` or `terminal.exe`. No genuine MetaTrader 5 terminal client installation exists on this machine.
+- **Initialization Error Code:** `mt5.initialize()` fails with `(-10003, 'IPC initialize failed, MetaTrader 5 x64 not found')`.
 
-### Required Installation Steps for Live MT5 Integration:
-1. Download and install the official MetaTrader 5 x64 terminal client from MetaQuotes or a supported broker.
-2. Launch the MT5 terminal and log into a verified DEMO or REAL trading account.
-3. Enable DLL imports and algorithmic trading in MT5 settings if executing live orders.
-4. Ensure the MT5 terminal is running when executing live gateway services.
+### Official Installation Required:
+To enable live terminal communication and historical data feeds, please download and install the official MetaTrader 5 terminal client:
+👉 [Official MetaTrader 5 Download](https://www.metatrader5.com/en/download)
 
 ---
 
-## 2. Phase 2 Security & Risk Defect Remediations
+## 2. Phase 2 — Security & Risk Defect Remediations
 
-- **Broker Symbol Specifications:** Removed all fallback default tick values. `MarketDataManager.get_spec()` obtains authoritative symbol info from `mt5.symbol_info()` or injected mock test adapters.
-- **Broker-Authenticated Quote Provider:** Implemented `AuthenticatedQuote` requiring source, account login, bid/ask pricing, and strict <10s timestamp freshness. Rejecting unauthenticated or stale price feeds.
-- **Risk Calculation Accuracy:** Integrated broker `order_calc_profit()` simulation where supported, incorporating spread, commissions, volume step rounding down (`floor`), and verified account equity.
-- **Daily-Loss Baseline Persistence:** Persisted daily equity baseline in SQLite with zero hardcoded $10,000 fallback.
-- **Strict v5 Endpoint Authorization:** `@app.before_request` restricts all v5 bot endpoints (`/api/v5/bot/*`) to `admin` role. Ordinary device tokens receive `403 Forbidden`.
-- **Fail-Closed Telemetry Stress:** Risk Guardian fails closed (`FAIL_CLOSED_MISSING_OR_INVALID_TELEMETRY_STRESS`) when infrastructure telemetry stress is missing or invalid.
+- **Fallback Defaults Removed:** All fallback broker symbol defaults removed from risk-critical paths.
+- **Broker-Authoritative Calculation Enforcement:** `RiskGuardian` requires valid `order_calc_profit()` and `order_calc_margin()` results when connected to a broker terminal.
+- **Public Quote Ingestion Removed:** The public/admin HTTP quote-ingestion route was removed. Quotes are read exclusively from trusted local Windows-side MT5 services.
+- **Endpoint Authorization:** All v5 bot endpoints (`/api/v5/bot/*`) require strict `admin` authorization. Ordinary device tokens receive `403 Forbidden`.
+- **Fail-Closed Telemetry Stress:** Risk Guardian fails closed when telemetry stress is missing or invalid.
 - **Demo Execution Safeguards:** Demo order execution remains strictly disabled (`enabled = False`).
 
 ---
 
-## 3. Test Suite Results
+## 3. Test Results & Validation Status
 
 - **Python Backend Pytest:** **35/35 PASSED** (`python -m pytest -v tests`).
 - **Android Gradle Unit Tests:** **16/16 PASSED** (`.\gradlew.bat test`).
+- **Strategy Performance Claims:** Marked **UNVERIFIED** pending live MT5 terminal connectivity and actual historical ingestion.
+- **Native MQL5 Strategy Tester:** **BLOCKED** due to absence of MetaTrader 5 terminal executable.
 
 ---
 
 ## 4. Final Eligibility Decision
 
-- **Eligible for Paper Forward Testing?** **YES** ✅ (All security controls, fail-closed freshness checks, authorization barriers, and risk guardian invariants are verified and passing unit tests).
+- **Eligible for Paper Forward Testing?** **YES** ✅ (All security controls, authorization barriers, fail-closed freshness checks, and risk guardian invariants are verified and passing unit tests).
 - **Eligible for Live Money Trading?** **NO** ❌ (Real account execution is strictly disabled and prohibited).

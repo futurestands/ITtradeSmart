@@ -1,4 +1,4 @@
-"""Read-only MT5 monitoring API with strict admin authorization on all v5 bot endpoints, broker-authenticated quotes, and fail-closed risk checks."""
+"""Read-only MT5 monitoring API with strict admin authorization on all v5 bot endpoints, local Windows-side MT5 provider quote ingestion, and fail-closed risk checks."""
 import hmac
 import os
 from datetime import datetime, timedelta, timezone
@@ -8,7 +8,6 @@ from risk_engine import calculate_risk, calculate_pipnex_lot_size, calculate_pro
 from trade_analysis import analyze_deals
 from v4_services import ContextStore, risk_context, research_request
 from bot import BotController, BacktestEngine, MarketDataManager, TrendFollowingMACrossoverStrategy
-from bot.market_data import AuthenticatedQuote
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024
@@ -33,7 +32,7 @@ def require_authentication():
     if request.path in exempt_paths:
         return None
 
-    # STRICT ITEM 6 AUDIT: Ordinary Android monitoring tokens (device scope) CANNOT trigger v5 bot endpoints. Admin role required.
+    # Ordinary Android monitoring tokens (device scope) CANNOT trigger v5 bot endpoints. Admin role required.
     is_v5_bot = request.path.startswith('/api/v5/bot/')
     required_role = "admin" if is_v5_bot or request.path in ('/api/v4/auth/audit', '/api/v4/admin/pairing-code') else "device"
 
@@ -72,28 +71,9 @@ def bot_emergency_stop():
     return jsonify(status), 200
 
 
-@app.post('/api/v5/bot/quote/ingest')
-def ingest_quote():
-    """Ingests broker-authenticated quotes with strict timestamp and account validation."""
-    body = request.get_json(silent=True) or {}
-    try:
-        quote = AuthenticatedQuote(
-            symbol=body['symbol'],
-            bid=float(body['bid']),
-            ask=float(body['ask']),
-            timestamp_utc=body['timestamp_utc'],
-            source=body['source'],
-            account_login=int(body['account_login'])
-        )
-        _bot.market_data.ingest_authenticated_quote(quote)
-        return jsonify({'status': 'QUOTE_INGESTED_SUCCESS'}), 200
-    except (KeyError, ValueError, TypeError) as e:
-        return jsonify({'error': f'Invalid quote payload: {str(e)}'}), 400
-
-
 @app.post('/api/v5/bot/tick')
 def bot_tick():
-    """Triggers automated bot cycle using authenticated broker quotes and fails closed on missing telemetry."""
+    """Triggers automated bot cycle using trusted Windows-side MT5 quotes and fails closed on missing telemetry."""
     stress_obj = _v4_store.get_stress()
     stress_val = stress_obj['value'] if stress_obj else None
     try:

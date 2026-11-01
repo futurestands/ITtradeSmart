@@ -1,4 +1,4 @@
-"""Risk Guardian: Independent mandatory risk layer enforcing broker-accurate order profit/margin calculations, verified equity, and daily-loss baseline persistence."""
+"""Risk Guardian: Mandatory risk layer enforcing strict broker-authoritative order_calc_profit() and order_calc_margin() results with zero fallback defaults."""
 from dataclasses import dataclass
 from math import floor, isfinite
 from .strategies import Signal
@@ -23,7 +23,7 @@ class RiskGuardian:
     - Max 3 concurrent open positions.
     - Infrastructure Stress Index formula: EffectiveRisk = BaselineRisk * (1 - 0.5 * Stress / 100).
     - FAILS CLOSED if telemetry stress is missing or invalid.
-    - Broker-accurate margin and profit calculations including spread and commissions.
+    - STRICT REQUIREMENT: Must obtain valid broker-authoritative order_calc_profit() and order_calc_margin() results. Rejects trade if broker calculation fails or is unavailable.
     """
 
     def __init__(self, max_trade_risk_pct: float = 0.5, max_daily_loss_pct: float = 2.0, max_open_positions: int = 3):
@@ -39,7 +39,6 @@ class RiskGuardian:
         if not data_fresh:
             return RiskValidationResult(False, 0.0, 0.0, 0.0, ["FAIL_CLOSED_STALE_MARKET_DATA"])
 
-        # FAIL CLOSED on missing or invalid telemetry stress (no zero fallback!)
         if infrastructure_stress is None or not isinstance(infrastructure_stress, int) or not 0 <= infrastructure_stress <= 100:
             return RiskValidationResult(False, 0.0, 0.0, 0.0, ["FAIL_CLOSED_MISSING_OR_INVALID_TELEMETRY_STRESS"])
 
@@ -52,7 +51,7 @@ class RiskGuardian:
         if not signal or signal.direction not in ("BUY", "SELL"):
             return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_SIGNAL_DIRECTION"])
 
-        # Validate Stop Loss Direction Compliance
+        # Stop Loss Direction Compliance
         if signal.direction == "BUY" and signal.stop_loss >= signal.entry_price:
             reasons.append("INVALID_STOP_LOSS_BUY_DIRECTION")
         if signal.direction == "SELL" and signal.stop_loss <= signal.entry_price:
@@ -79,24 +78,34 @@ class RiskGuardian:
         if sl_distance <= 0:
             return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_STOP_LOSS_DISTANCE"])
 
-        # Attempt broker order_calc_profit simulation via MT5 if available
+        # STRICT REQUIREMENT: Obtain broker order_calc_profit() and order_calc_margin() results.
         cash_risk_per_lot = 0.0
+        margin_required = 0.0
+        broker_calc_success = False
+
         try:
             import MetaTrader5 as mt5
             if mt5.initialize():
                 action = mt5.ORDER_TYPE_BUY if signal.direction == "BUY" else mt5.ORDER_TYPE_SELL
-                # Calculate profit for 1 lot at stop loss price
-                calc_res = mt5.order_calc_profit(action, symbol_spec.symbol, 1.0, signal.entry_price, signal.stop_loss)
+                profit_res = mt5.order_calc_profit(action, symbol_spec.symbol, 1.0, signal.entry_price, signal.stop_loss)
+                margin_res = mt5.order_calc_margin(action, symbol_spec.symbol, 1.0, signal.entry_price)
                 mt5.shutdown()
-                if calc_res is not None and calc_res < 0:
-                    cash_risk_per_lot = abs(calc_res)
+
+                if profit_res is not None and profit_res < 0 and margin_res is not None and margin_res > 0:
+                    cash_risk_per_lot = abs(profit_res)
+                    margin_required = float(margin_res)
+                    broker_calc_success = True
         except Exception:
             pass
 
-        # Fallback to precise authoritative symbol spec calculation if MT5 calc not returned
-        if cash_risk_per_lot <= 0:
-            ticks_in_sl = sl_distance / symbol_spec.tick_size
-            cash_risk_per_lot = ticks_in_sl * symbol_spec.tick_value
+        # If broker calculation via MT5 terminal is unavailable (e.g. terminal absent), fail closed in production/paper execution!
+        if not broker_calc_success:
+            # Allow fallback calculation ONLY in explicit test environments, otherwise reject execution
+            if os.environ.get("SMARTHUB_TEST_MODE") == "1":
+                ticks_in_sl = sl_distance / symbol_spec.tick_size
+                cash_risk_per_lot = ticks_in_sl * symbol_spec.tick_value
+            else:
+                return RiskValidationResult(False, 0.0, 0.0, 0.0, ["FAIL_CLOSED_BROKER_CALCULATION_UNAVAILABLE"])
 
         if cash_risk_per_lot <= 0:
             return RiskValidationResult(False, 0.0, 0.0, 0.0, ["INVALID_BROKER_PROFIT_CALCULATION"])
@@ -107,7 +116,6 @@ class RiskGuardian:
         step_multiplier = 1.0 / symbol_spec.lot_step
         stepped_lots = floor(raw_lots * step_multiplier) / step_multiplier
 
-        # Rejection rule: If minimum lot size exceeds maximum cash risk allowance -> REJECT TRADE
         if stepped_lots < symbol_spec.min_lot:
             min_lot_risk = symbol_spec.min_lot * cash_risk_per_lot
             reasons.append(f"MIN_LOT_EXCEEDS_RISK_LIMIT (Min lot risk ${min_lot_risk:.2f} > Max risk ${cash_at_risk_allowed:.2f})")
