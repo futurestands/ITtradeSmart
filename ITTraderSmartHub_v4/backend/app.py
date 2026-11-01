@@ -1,4 +1,4 @@
-"""Read-only MT5 monitoring API with Pipnex smart lot sizing, prop firm drawdown shield, pairing codes, token hashing, RBAC scopes, and audit logging."""
+"""Read-only MT5 monitoring API with Pipnex smart lot sizing, prop firm drawdown shield, and ITTrader SmartHub v5 Automated Trading Bot Control."""
 import hmac
 import os
 from datetime import datetime, timedelta, timezone
@@ -7,11 +7,13 @@ from flask import Flask, request, jsonify
 from risk_engine import calculate_risk, calculate_pipnex_lot_size, calculate_prop_firm_rules
 from trade_analysis import analyze_deals
 from v4_services import ContextStore, risk_context, research_request
+from bot import BotController, BacktestEngine, MarketDataManager, TrendFollowingMACrossoverStrategy
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024
 _mt5_lock = Lock()
 _v4_store = ContextStore()
+_bot = BotController(database_path=os.environ.get("SMARTHUB_STATE_DB"))
 
 
 def check_auth(req, required_role="device"):
@@ -30,7 +32,7 @@ def require_authentication():
     if request.path in exempt_paths:
         return None
 
-    required_role = "admin" if request.path in ('/api/v4/auth/audit', '/api/v4/admin/pairing-code') else "device"
+    required_role = "admin" if request.path in ('/api/v4/auth/audit', '/api/v4/admin/pairing-code', '/api/v5/bot/mode') else "device"
     ok, err_msg, auth_info = check_auth(request, required_role=required_role)
     if not ok:
         status_code = 403 if "Forbidden" in err_msg else 401
@@ -39,9 +41,69 @@ def require_authentication():
     request.auth_info = auth_info
 
 
+# ====================================================================
+# V5 AUTOMATED TRADING BOT ENDPOINTS
+# ====================================================================
+
+@app.get('/api/v5/bot/status')
+def bot_status():
+    return jsonify(_bot.get_status()), 200
+
+
+@app.post('/api/v5/bot/mode')
+def set_bot_mode():
+    body = request.get_json(silent=True) or {}
+    mode = body.get('mode', 'OFF')
+    passcode = body.get('admin_passcode', '')
+    try:
+        status = _bot.set_mode(mode, passcode)
+        return jsonify(status), 200
+    except PermissionError as e:
+        return jsonify({'error': str(e)}), 403
+
+
+@app.post('/api/v5/bot/emergency-stop')
+def bot_emergency_stop():
+    status = _bot.emergency_stop()
+    return jsonify(status), 200
+
+
+@app.post('/api/v5/bot/tick')
+def bot_tick():
+    body = request.get_json(silent=True) or {}
+    current_price = float(body.get('price', 65000.0))
+    stress = _v4_store.get_stress()
+    stress_val = stress['value'] if stress else 0
+    res = _bot.tick(current_price, stress_val)
+    return jsonify(res), 200
+
+
+@app.post('/api/v5/bot/backtest')
+def bot_backtest():
+    body = request.get_json(silent=True) or {}
+    symbol = body.get('symbol', 'BTCUSD')
+    num_bars = int(body.get('num_bars', 200))
+
+    md = MarketDataManager()
+    candles = md.generate_synthetic_candles(symbol, num_bars=num_bars)
+    strat = TrendFollowingMACrossoverStrategy()
+    bt_engine = BacktestEngine(10000.0)
+
+    bt_res = bt_engine.run_backtest(strat, candles, symbol)
+    mc_res = bt_engine.run_monte_carlo(bt_res)
+
+    return jsonify({
+        "backtest_result": bt_res.__dict__,
+        "monte_carlo_result": mc_res
+    }), 200
+
+
+# ====================================================================
+# PIPNEX SMART CALCULATOR & PROP FIRM ENDPOINTS
+# ====================================================================
+
 @app.post('/api/v4/pipnex/calculator')
 def pipnex_calculator():
-    """Pipnex Smart Lot Size & Pip Value Calculation endpoint."""
     body = request.get_json(silent=True) or {}
     try:
         balance = float(body.get('balance', 10000))
@@ -57,7 +119,6 @@ def pipnex_calculator():
 
 @app.post('/api/v4/pipnex/prop-firm')
 def pipnex_prop_firm():
-    """Pipnex Prop Firm Rules & Drawdown Shield endpoint."""
     body = request.get_json(silent=True) or {}
     try:
         current_equity = float(body.get('current_equity', 10000))

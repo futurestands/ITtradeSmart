@@ -4,10 +4,15 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * V4 & Pipnex Smart Trading API Contract Builder & Result Formatter.
- * Handles Lot Size & Pip Value Calculations, Prop Firm Drawdown Shielding, Device Pairing, Risk Fusion, Alerts, and MT5 Diagnostics.
+ * V4 & V5 Smart Trading API Contract Builder & Result Formatter.
+ * Handles Bot Controls, Backtesting, Paper Trading, Lot Size & Pip Value Calculations, Prop Firm Drawdown Shielding, Device Pairing, Risk Fusion, Alerts, and MT5 Diagnostics.
  */
 object V4ApiContracts {
+
+    fun botModeRequest(mode: String, adminPasscode: String = ""): JSONObject = JSONObject().apply {
+        put("mode", mode)
+        if (adminPasscode.isNotBlank()) put("admin_passcode", adminPasscode)
+    }
 
     fun pipnexCalculator(balance: Double, riskPct: Double, stopLossPips: Double, symbol: String): JSONObject = JSONObject().apply {
         put("balance", balance)
@@ -52,6 +57,52 @@ object V4ApiContracts {
         put("start_utc", startUtc)
         put("end_utc", endUtc)
         put("outcome", outcome)
+    }
+
+    fun botStatusSummary(response: JSONObject): String {
+        val mode = response.optString("mode", "OFF")
+        val strat = response.optString("strategy_name", "MA_Crossover_ATR")
+        val version = response.optString("strategy_version", "v5.1")
+        val symbol = response.optString("active_symbol", "BTCUSD")
+        val emgStopped = response.optBoolean("emergency_stopped", false)
+
+        val paper = response.optJSONObject("paper_trading") ?: JSONObject()
+        val eq = paper.optDouble("equity", 10000.0)
+        val posCount = paper.optInt("open_positions_count", 0)
+
+        val icon = if (emgStopped) "🛑 EMERGENCY STOPPED" else if (mode == "PAPER") "🟢 PAPER TRADING" else if (mode == "DEMO") "🟡 DEMO TRADING" else "⚪ OFF"
+
+        return "[V5 TRADING BOT STATUS]\n" +
+               "Bot Mode: $icon\n" +
+               "Strategy: $strat ($version)\n" +
+               "Active Symbol: $symbol\n" +
+               "Virtual Equity: $$eq USD\n" +
+               "Open Positions: $posCount"
+    }
+
+    fun botBacktestSummary(response: JSONObject): String {
+        val bt = response.optJSONObject("backtest_result") ?: JSONObject()
+        val mc = response.optJSONObject("monte_carlo_result") ?: JSONObject()
+
+        val strat = bt.optString("strategy_name", "MA_Crossover_ATR")
+        val netReturn = bt.optDouble("net_return_pct", 0.0)
+        val winRate = bt.optDouble("win_rate_pct", 0.0)
+        val profitFactor = bt.optDouble("profit_factor", 1.0)
+        val maxDd = bt.optDouble("max_drawdown_pct", 0.0)
+        val sharpe = bt.optDouble("sharpe_ratio", 0.0)
+        val totalTrades = bt.optInt("total_trades", 0)
+
+        val mcP95Dd = mc.optDouble("p95_max_drawdown_pct", 0.0)
+        val mcStatus = mc.optString("status", "PASS")
+
+        return "[V5 STRATEGY BACKTEST LAB]\n" +
+               "Strategy: $strat\n" +
+               "Net Return: $netReturn%\n" +
+               "Win Rate: $winRate% ($totalTrades trades)\n" +
+               "Profit Factor: $profitFactor\n" +
+               "Max Drawdown: $maxDd%\n" +
+               "Sharpe Ratio: $sharpe\n" +
+               "Monte Carlo 95% Drawdown Limit: $mcP95Dd% ($mcStatus)"
     }
 
     fun pipnexCalculatorSummary(response: JSONObject): String {

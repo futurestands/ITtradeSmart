@@ -8,7 +8,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
- * Repository layer handling HTTP communications with strict TLS certificate verification, centralized HTTPS validation, Pipnex calculator, and prop firm drawdown APIs.
+ * Repository layer handling HTTP communications with strict TLS certificate verification, centralized HTTPS validation, V5 Automated Bot Controls, Pipnex calculator, and prop firm drawdown APIs.
  */
 class GatewayRepository {
 
@@ -26,6 +26,105 @@ class GatewayRepository {
             return Result.failure(IllegalArgumentException("Strict TLS Required: Gateway URL must use an encrypted HTTPS endpoint."))
         }
         return Result.success(trimmed)
+    }
+
+    fun queryBotStatus(callback: (Result<JSONObject>) -> Unit) {
+        val valRes = validateEndpointUrl(GatewaySession.gatewayUrl)
+        val endpoint = valRes.getOrElse {
+            callback(Result.failure(it))
+            return
+        }
+
+        if (!GatewaySession.isAuthenticated()) {
+            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Enroll device with a pairing code.")))
+            return
+        }
+
+        val token = GatewaySession.apiToken
+        val request = Request.Builder()
+            .url("$endpoint/api/v5/bot/status")
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+
+        executeRequest(request, callback)
+    }
+
+    fun setBotMode(mode: String, adminPasscode: String = "", callback: (Result<JSONObject>) -> Unit) {
+        val valRes = validateEndpointUrl(GatewaySession.gatewayUrl)
+        val endpoint = valRes.getOrElse {
+            callback(Result.failure(it))
+            return
+        }
+
+        if (!GatewaySession.isAuthenticated()) {
+            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Enroll device with a pairing code.")))
+            return
+        }
+
+        val token = GatewaySession.apiToken
+        val payload = V4ApiContracts.botModeRequest(mode, adminPasscode)
+        val body = payload.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+
+        val request = Request.Builder()
+            .url("$endpoint/api/v5/bot/mode")
+            .header("Authorization", "Bearer $token")
+            .post(body)
+            .build()
+
+        executeRequest(request, callback)
+    }
+
+    fun triggerBotEmergencyStop(callback: (Result<JSONObject>) -> Unit) {
+        val valRes = validateEndpointUrl(GatewaySession.gatewayUrl)
+        val endpoint = valRes.getOrElse {
+            callback(Result.failure(it))
+            return
+        }
+
+        if (!GatewaySession.isAuthenticated()) {
+            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Enroll device with a pairing code.")))
+            return
+        }
+
+        val token = GatewaySession.apiToken
+        val body = "{}".toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+
+        val request = Request.Builder()
+            .url("$endpoint/api/v5/bot/emergency-stop")
+            .header("Authorization", "Bearer $token")
+            .post(body)
+            .build()
+
+        executeRequest(request, callback)
+    }
+
+    fun runBotBacktest(symbol: String, numBars: Int = 200, callback: (Result<JSONObject>) -> Unit) {
+        val valRes = validateEndpointUrl(GatewaySession.gatewayUrl)
+        val endpoint = valRes.getOrElse {
+            callback(Result.failure(it))
+            return
+        }
+
+        if (!GatewaySession.isAuthenticated()) {
+            callback(Result.failure(IllegalStateException("Gateway is not authenticated. Enroll device with a pairing code.")))
+            return
+        }
+
+        val token = GatewaySession.apiToken
+        val payload = JSONObject().apply {
+            put("symbol", symbol)
+            put("num_bars", numBars)
+        }
+        val body = payload.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+
+        val request = Request.Builder()
+            .url("$endpoint/api/v5/bot/backtest")
+            .header("Authorization", "Bearer $token")
+            .post(body)
+            .build()
+
+        executeRequest(request, callback)
     }
 
     fun queryPipnexCalculator(balance: Double, riskPct: Double, stopLossPips: Double, symbol: String, callback: (Result<JSONObject>) -> Unit) {

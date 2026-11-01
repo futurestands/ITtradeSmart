@@ -38,7 +38,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="PIPNEX Smart Trading &amp; Risk Engine v4"
+                    android:text="Automated Trading &amp; Risk Intelligence v5"
                     android:textSize="11sp"
                     android:textColor="@color/text_muted" />
             </LinearLayout>
@@ -189,7 +189,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Section 2: PIPNEX Smart Lot Size & Pip Calculator -->
+        <!-- Section 2: V5 AUTOMATED TRADING BOT CONTROL CENTRE -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -201,7 +201,88 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="2. PIPNEX SMART LOT &amp; PIP CALCULATOR"
+                android:text="2. V5 TRADING BOT CONTROL CENTRE"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent_blue"
+                android:letterSpacing="0.05"
+                android:paddingBottom="10dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btnBotOff"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="BOT OFF"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/card_stroke"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="4dp" />
+
+                <Button
+                    android:id="@+id/btnBotBacktest"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="BACKTEST LAB"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/accent_blue"
+                    android:textColor="@color/black"
+                    android:layout_marginStart="4dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnBotPaper"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="PAPER TRADING"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/status_green"
+                    android:textColor="@color/black"
+                    android:layout_marginEnd="4dp" />
+
+                <Button
+                    android:id="@+id/btnBotEmergencyStop"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="EMERGENCY STOP"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/status_red"
+                    android:textColor="@color/white"
+                    android:layout_marginStart="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Section 3: PIPNEX Smart Lot Size & Pip Calculator -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="3. PIPNEX SMART LOT &amp; PIP CALCULATOR"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent_blue"
@@ -345,7 +426,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Section 3: PIPNEX Prop Firm Drawdown Shield -->
+        <!-- Section 4: PIPNEX Prop Firm Drawdown Shield -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -357,7 +438,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="3. PIPNEX PROP FIRM DRAWDOWN SHIELD"
+                android:text="4. PIPNEX PROP FIRM DRAWDOWN SHIELD"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent_blue"
@@ -413,7 +494,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Section 4: IT Infrastructure Log Audit -->
+        <!-- Section 5: IT Infrastructure Log Audit -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -425,7 +506,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="4. IT INFRASTRUCTURE LOG AUDIT"
+                android:text="5. IT INFRASTRUCTURE LOG AUDIT"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent_blue"
@@ -457,7 +538,7 @@
                 android:textColor="@color/text_primary" />
         </LinearLayout>
 
-        <!-- Section 5: Alert Center & Incident Research Card -->
+        <!-- Section 6: Alert Center & Incident Research Card -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -469,7 +550,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="5. ALERT CENTER &amp; INCIDENT RESEARCH"
+                android:text="6. ALERT CENTER &amp; INCIDENT RESEARCH"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent_blue"
@@ -519,7 +600,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Section 6: Real-Time Telemetry & Terminal Monitor -->
+        <!-- Section 7: Real-Time Telemetry & Terminal Monitor -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -545,7 +626,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="PIPNEX v4.1"
+                    android:text="SMARTHUB v5.1"
                     android:textSize="10sp"
                     android:textColor="@color/text_muted"
                     android:layout_alignParentEnd="true" />
@@ -555,7 +636,7 @@
                 android:id="@+id/txtAnalysisOutput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="System Ready. Listening for Pipnex market events &amp; telemetry..."
+                android:text="System Ready. Listening for market events &amp; bot telemetry..."
                 android:textSize="12sp"
                 android:typeface="monospace"
                 android:textColor="#38BDF8"

@@ -38,6 +38,12 @@ class MainActivity : AppCompatActivity() {
         val btnEnrollDevice = findViewById<Button>(R.id.btnEnrollDevice)
         val btnLogout = findViewById<Button>(R.id.btnLogout)
 
+        // V5 Bot Control Buttons
+        val btnBotOff = findViewById<Button>(R.id.btnBotOff)
+        val btnBotBacktest = findViewById<Button>(R.id.btnBotBacktest)
+        val btnBotPaper = findViewById<Button>(R.id.btnBotPaper)
+        val btnBotEmergencyStop = findViewById<Button>(R.id.btnBotEmergencyStop)
+
         // Pre-fill stored gateway URL
         edtGatewayIp.setText(GatewaySession.gatewayUrl)
 
@@ -136,7 +142,78 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 2. PIPNEX Smart Lot Size & Pip Value Calculator
+        // 2. V5 AUTOMATED TRADING BOT CONTROLS
+        btnBotOff.setOnClickListener {
+            updateGatewayUrlFromInput(edtGatewayIp)
+            txtAnalysisOutput.text = "Setting bot mode to OFF..."
+            repository.setBotMode("OFF") { result ->
+                runOnUiThread {
+                    result.fold(
+                        onSuccess = { json ->
+                            txtAnalysisOutput.text = V4ApiContracts.botStatusSummary(json)
+                        },
+                        onFailure = { err ->
+                            txtAnalysisOutput.text = "Bot Mode Error: ${err.message}"
+                        }
+                    )
+                }
+            }
+        }
+
+        btnBotBacktest.setOnClickListener {
+            updateGatewayUrlFromInput(edtGatewayIp)
+            val symbol = edtSymbol.text.toString().trim().ifBlank { "BTCUSD" }
+            txtAnalysisOutput.text = "Running V5 Strategy Backtest Lab for $symbol..."
+            repository.runBotBacktest(symbol, 200) { result ->
+                runOnUiThread {
+                    result.fold(
+                        onSuccess = { json ->
+                            txtAnalysisOutput.text = V4ApiContracts.botBacktestSummary(json)
+                        },
+                        onFailure = { err ->
+                            txtAnalysisOutput.text = "Backtest Error: ${err.message}"
+                        }
+                    )
+                }
+            }
+        }
+
+        btnBotPaper.setOnClickListener {
+            updateGatewayUrlFromInput(edtGatewayIp)
+            txtAnalysisOutput.text = "Switching bot mode to PAPER TRADING..."
+            repository.setBotMode("PAPER") { result ->
+                runOnUiThread {
+                    result.fold(
+                        onSuccess = { json ->
+                            txtAnalysisOutput.text = V4ApiContracts.botStatusSummary(json)
+                        },
+                        onFailure = { err ->
+                            txtAnalysisOutput.text = "Bot Paper Mode Error: ${err.message}"
+                        }
+                    )
+                }
+            }
+        }
+
+        btnBotEmergencyStop.setOnClickListener {
+            updateGatewayUrlFromInput(edtGatewayIp)
+            txtAnalysisOutput.text = "🛑 TRIGGERING EMERGENCY BOT STOP..."
+            repository.triggerBotEmergencyStop { result ->
+                runOnUiThread {
+                    result.fold(
+                        onSuccess = { json ->
+                            txtAnalysisOutput.text = "🛑 EMERGENCY STOP ENGAGED!\n\n" + V4ApiContracts.botStatusSummary(json)
+                            Toast.makeText(this, "EMERGENCY STOP ENGAGED!", Toast.LENGTH_LONG).show()
+                        },
+                        onFailure = { err ->
+                            txtAnalysisOutput.text = "Emergency Stop Error: ${err.message}"
+                        }
+                    )
+                }
+            }
+        }
+
+        // 3. PIPNEX Smart Lot Size & Pip Value Calculator
         btnPipnexCalc.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
             val balance = edtAccountBalance.text.toString().toDoubleOrNull() ?: 10000.0
@@ -159,7 +236,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 3. PIPNEX Prop Firm Drawdown Shield
+        // 4. PIPNEX Prop Firm Drawdown Shield
         btnPipnexPropFirm.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
             val equity = edtAccountBalance.text.toString().toDoubleOrNull() ?: 10000.0
@@ -181,7 +258,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 4. Process System Logs & Compute Infrastructure Risk Factor
+        // 5. Process System Logs & Compute Infrastructure Risk Factor
         btnProcess.setOnClickListener {
             val rawLogs = edtLogs.text.toString()
             val report = analyzeSystemLogs(rawLogs)
@@ -217,7 +294,7 @@ class MainActivity : AppCompatActivity() {
                     "Illustrative Spot Units (NOT MT5 lots): ${String.format("%.4f", optimizedPositionSize)}"
         }
 
-        // 5. Sync Read-Only MT5 Diagnostics
+        // 6. Sync Read-Only MT5 Diagnostics
         btnSyncMt5.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
             txtAnalysisOutput.text = "Requesting MT5 diagnostic analysis from gateway..."
@@ -236,7 +313,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 6. V4 Risk Fusion Query
+        // 7. V4 Risk Fusion Query
         btnQueryRiskContext.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
             val baseRisk = edtRiskPercentage.text.toString().toDoubleOrNull() ?: 1.0
@@ -258,7 +335,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 7. V4 Exposure-Aware Alerts Query
+        // 8. V4 Exposure-Aware Alerts Query
         btnQueryAlerts.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
             txtAnalysisOutput.text = "Querying V4 Alert Center..."
@@ -277,7 +354,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 8. V4 Incident-to-Trade Research
+        // 9. V4 Incident-to-Trade Research
         btnQueryResearch.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
             txtAnalysisOutput.text = "Querying V4 Incident Research API..."
