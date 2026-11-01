@@ -1,10 +1,9 @@
-"""Market Data Manager: Real MT5 historical data ingestion, symbol specifications, fail-closed data integrity, and strict separation of production vs test candles."""
+"""Market Data Manager: Authoritative broker symbol specifications, fail-closed historical fetching, and authenticated quote provider."""
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from math import isfinite
 import hashlib
 import os
-import random
 import sqlite3
 
 
@@ -37,22 +36,23 @@ class Candle:
     spread: float = 0.0
 
 
+@dataclass(frozen=True)
+class AuthenticatedQuote:
+    symbol: str
+    bid: float
+    ask: float
+    timestamp_utc: str
+    source: str
+    account_login: int
+
+
 class MarketDataManager:
-    """Manages real MT5 market data ingestion and fail-closed freshness checks. Synthetic data is prohibited in production."""
+    """Manages authoritative broker symbol specs, authenticated quotes, and fail-closed historical data."""
 
-    SPECS = {
-        "EURUSD": SymbolSpec("EURUSD", contract_size=100000.0, pip_size=0.0001, tick_size=0.00001, tick_value=1.0, min_lot=0.01, max_lot=100.0, lot_step=0.01),
-        "GBPUSD": SymbolSpec("GBPUSD", contract_size=100000.0, pip_size=0.0001, tick_size=0.00001, tick_value=1.0, min_lot=0.01, max_lot=100.0, lot_step=0.01),
-        "USDJPY": SymbolSpec("USDJPY", contract_size=100000.0, pip_size=0.01, tick_size=0.001, tick_value=0.91, min_lot=0.01, max_lot=100.0, lot_step=0.01),
-        "XAUUSD": SymbolSpec("XAUUSD", contract_size=100.0, pip_size=0.10, tick_size=0.01, tick_value=1.0, min_lot=0.01, max_lot=100.0, lot_step=0.01),
-        "BTCUSD": SymbolSpec("BTCUSD", contract_size=1.0, pip_size=1.0, tick_size=0.01, tick_value=1.0, min_lot=0.01, max_lot=100.0, lot_step=0.01),
-        "US30": SymbolSpec("US30", contract_size=1.0, pip_size=1.0, tick_size=1.0, tick_value=1.0, min_lot=0.01, max_lot=100.0, lot_step=0.01)
-    }
-
-    def __init__(self, database_path=None):
+    def __init__(self, database_path=None, symbol_specs: dict = None):
         self.database_path = database_path or os.environ.get("SMARTHUB_STATE_DB")
-        self.last_tick_time = {}
-        self.last_price = {}
+        self.injected_specs = symbol_specs or {}
+        self.last_quotes = {}  # symbol -> AuthenticatedQuote
 
         if self.database_path:
             with sqlite3.connect(self.database_path) as db:
@@ -60,49 +60,69 @@ class MarketDataManager:
 
     def get_spec(self, symbol: str) -> SymbolSpec:
         sym = symbol.upper().replace("/", "").replace("_", "")
-        spec = self.SPECS.get(sym)
-        if spec is None:
-            # Query live MT5 symbol info if available
-            try:
-                import MetaTrader5 as mt5
-                if mt5.initialize():
-                    info = mt5.symbol_info(sym)
-                    mt5.shutdown()
-                    if info is not None:
-                        return SymbolSpec(
-                            symbol=sym,
-                            contract_size=float(getattr(info, "trade_contract_size", 100000.0)),
-                            pip_size=float(getattr(info, "point", 0.0001)) * 10.0,
-                            tick_size=float(getattr(info, "trade_tick_size", 0.00001)),
-                            tick_value=float(getattr(info, "trade_tick_value", 1.0)),
-                            min_lot=float(getattr(info, "volume_min", 0.01)),
-                            max_lot=float(getattr(info, "volume_max", 100.0)),
-                            lot_step=float(getattr(info, "volume_step", 0.01)),
-                            currency=str(getattr(info, "currency_profit", "USD"))
-                        )
-            except Exception:
-                pass
-            raise ValueError(f"Unknown or unavailable symbol specification for {sym}")
-        return spec
 
-    def update_price(self, symbol: str, price: float):
-        if price <= 0 or not isfinite(price):
-            raise ValueError("Price must be a positive finite number")
-        sym = symbol.upper().replace("/", "").replace("_", "")
-        self.last_price[sym] = price
-        self.last_tick_time[sym] = datetime.now(timezone.utc)
+        # 1. Check injected test adapter mocks first
+        if sym in self.injected_specs:
+            return self.injected_specs[sym]
 
-    def is_data_fresh(self, symbol: str, max_age_seconds: int = 120) -> bool:
-        """Fail-closed data freshness check."""
+        # 2. Obtain broker-authoritative symbol info from MetaTrader 5
+        try:
+            import MetaTrader5 as mt5
+            if mt5.initialize():
+                info = mt5.symbol_info(sym)
+                mt5.shutdown()
+                if info is not None:
+                    return SymbolSpec(
+                        symbol=sym,
+                        contract_size=float(getattr(info, "trade_contract_size", 100000.0)),
+                        pip_size=float(getattr(info, "point", 0.0001)) * 10.0,
+                        tick_size=float(getattr(info, "trade_tick_size", 0.00001)),
+                        tick_value=float(getattr(info, "trade_tick_value", 1.0)),
+                        min_lot=float(getattr(info, "volume_min", 0.01)),
+                        max_lot=float(getattr(info, "volume_max", 100.0)),
+                        lot_step=float(getattr(info, "volume_step", 0.01)),
+                        currency=str(getattr(info, "currency_profit", "USD"))
+                    )
+        except Exception:
+            pass
+
+        raise RuntimeError(f"BLOCKED_BROKER_SYMBOL_METADATA: Authoritative broker specification for {sym} unavailable. No default tick values substituted.")
+
+    def ingest_authenticated_quote(self, quote: AuthenticatedQuote):
+        """Ingests an authenticated broker quote with strict identity and freshness validation."""
+        if quote.bid <= 0 or quote.ask <= 0 or quote.ask < quote.bid:
+            raise ValueError("Invalid authenticated quote bid/ask pricing")
+        if not quote.source or not quote.account_login:
+            raise ValueError("Quote missing authenticated source or account login")
+
+        # Check freshness (< 10 seconds)
+        try:
+            q_time = datetime.fromisoformat(quote.timestamp_utc.replace('Z', '+00:00'))
+            age = (datetime.now(timezone.utc) - q_time).total_seconds()
+            if abs(age) > 10.0:
+                raise ValueError(f"Quote timestamp is stale (age: {age:.1f}s)")
+        except Exception as e:
+            if "stale" in str(e):
+                raise
+            raise ValueError(f"Invalid quote timestamp format: {quote.timestamp_utc}")
+
+        sym = quote.symbol.upper().replace("/", "").replace("_", "")
+        self.last_quotes[sym] = quote
+
+    def get_authenticated_quote(self, symbol: str) -> AuthenticatedQuote:
         sym = symbol.upper().replace("/", "").replace("_", "")
-        last_t = self.last_tick_time.get(sym)
-        if last_t is None:
-            return False
-        age = (datetime.now(timezone.utc) - last_t).total_seconds()
-        return age <= max_age_seconds
+        quote = self.last_quotes.get(sym)
+        if quote is None:
+            raise RuntimeError(f"No authenticated quote available for {sym}")
+
+        # Re-verify freshness
+        q_time = datetime.fromisoformat(quote.timestamp_utc.replace('Z', '+00:00'))
+        if (datetime.now(timezone.utc) - q_time).total_seconds() > 10.0:
+            raise RuntimeError(f"Authenticated quote for {sym} has expired (>10s)")
+        return quote
 
     def fetch_real_mt5_candles(self, symbol: str, timeframe_str: str = "H1", num_bars: int = 500) -> list:
-        """Fetches real historical candles from MT5 terminal or SQLite cache. PROHIBITS synthetic fallback in production."""
+        """Fetches real historical candles from MT5 or SQLite cache. NO synthetic fallback."""
         sym = symbol.upper().replace("/", "").replace("_", "")
 
         try:
@@ -135,11 +155,7 @@ class MarketDataManager:
                     self.validate_dataset(candles)
                     return candles
 
-        # STRICT FAIL-CLOSED: If test mode is enabled explicitly, allow test candles; otherwise raise RuntimeError.
-        if os.environ.get("SMARTHUB_TEST_MODE") == "1":
-            return self.generate_test_candles(sym, num_bars=num_bars)
-
-        raise RuntimeError(f"FATAL: Real MT5 market data unavailable for symbol {sym}. Fail-closed active. No synthetic data permitted in production.")
+        raise RuntimeError(f"FATAL: Real MT5 market data unavailable for symbol {sym}. Fail-closed active.")
 
     def store_candles_in_db(self, symbol: str, timeframe: str, candles: list):
         if not self.database_path or not candles:
@@ -172,24 +188,3 @@ class MarketDataManager:
             if prev_time and curr_time <= prev_time:
                 raise ValueError(f"Unordered bar timestamps: {c.time_utc} is not greater than {prev_time.isoformat()}")
             prev_time = curr_time
-
-    @staticmethod
-    def generate_test_candles(symbol: str = "EURUSD", num_bars: int = 200, base_price: float = 1.0850) -> list:
-        """EXPLICIT TEST-ONLY HELPER: Generates synthetic candles for unit tests when SMARTHUB_TEST_MODE=1. Prohibited in production."""
-        candles = []
-        now = datetime.now(timezone.utc)
-        curr_price = base_price
-
-        for i in range(num_bars, 0, -1):
-            t_str = (now - timedelta(hours=i)).isoformat()
-            change = random.normalvariate(0, 0.0010)
-            open_p = curr_price
-            close_p = max(0.5000, open_p + change)
-            high_p = max(open_p, close_p) + abs(random.normalvariate(0, 0.0005))
-            low_p = min(open_p, close_p) - abs(random.normalvariate(0, 0.0005))
-            vol = abs(random.normalvariate(500, 50))
-
-            candles.append(Candle(symbol, t_str, round(open_p, 5), round(high_p, 5), round(low_p, 5), round(close_p, 5), round(vol, 1), spread=1.2))
-            curr_price = close_p
-
-        return candles
