@@ -11,6 +11,11 @@ captures/
 .cxx/
 *.apk.stat
 
+# Keystores & Credentials
+*.keystore
+*.jks
+keystore.properties
+
 # Python / Backend
 __pycache__/
 *.py[cod]
