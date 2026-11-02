@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from threading import Lock
 from flask import Flask, request, jsonify
+from werkzeug.exceptions import RequestEntityTooLarge
 from risk_engine import calculate_risk, calculate_pipnex_lot_size, calculate_prop_firm_rules
 from trade_analysis import analyze_deals
 from v4_services import ContextStore, risk_context, research_request
@@ -55,7 +56,9 @@ def bot_status():
 
 @app.post('/api/v5/bot/mode')
 def set_bot_mode():
-    body = request.get_json(silent=True) or {}
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not isinstance(body.get('mode', 'OFF'), str):
+        return jsonify({'error': 'Invalid bot mode request'}), 400
     mode = body.get('mode', 'OFF')
     passcode = body.get('admin_passcode', '')
     try:
@@ -63,6 +66,8 @@ def set_bot_mode():
         return jsonify(status), 200
     except PermissionError as e:
         return jsonify({'error': str(e)}), 403
+    except RuntimeError as e:
+        return jsonify({'error': str(e), 'bot_status': _bot.get_status()}), 503
 
 
 @app.post('/api/v5/bot/emergency-stop')
@@ -251,52 +256,88 @@ def risk():
         return jsonify({'error': 'Invalid risk parameters'}), 400
 
 
+def _read_only_account_error(account, expected_login, expected_server):
+    if account is None:
+        return {'error': 'Account state unavailable'}, 503
+    if (type(getattr(account, 'login', None)) is not int or
+            getattr(account, 'login', None) != expected_login or
+            getattr(account, 'server', None) != expected_server):
+        return {'error': 'Unexpected broker account identity'}, 403
+    if (getattr(account, 'trade_allowed', None) is not False or
+            getattr(account, 'trade_expert', None) is not False):
+        return {'error': 'Gateway requires a read-only investor session'}, 403
+    return None
+
+
 @app.post('/analyze')
 def analyze_psychology():
-    body = request.get_json(silent=True) or {}
-    if any(key in body for k in ('password', 'login', 'server')):
+    try:
+        body = request.get_json(silent=True)
+    except RequestEntityTooLarge:
+        return jsonify({'error': 'Request body too large'}), 413
+    except (ValueError, RecursionError):
+        return jsonify({'error': 'A valid JSON object is required'}), 400
+    if not isinstance(body, dict):
+        return jsonify({'error': 'A valid JSON object is required'}), 400
+    if any(key in body for key in ('password', 'login', 'server')):
         return jsonify({'error': 'Broker credentials must never be submitted to this API'}), 400
+    # Android sync sends {}. No client-supplied broker/account options are used;
+    # this allowlist also rejects nested, aliased and differently cased secrets.
+    if body:
+        return jsonify({'error': 'This endpoint accepts only an empty JSON object'}), 400
 
     try:
         login = int(os.environ['MT5_LOGIN'])
         password = os.environ['MT5_INVESTOR_PASSWORD']
         server = os.environ['MT5_SERVER']
-        if not login or not password or not server:
+        if login <= 0 or not password or not server.strip():
             raise ValueError('MT5 credentials incomplete')
     except (KeyError, ValueError):
         return jsonify({'error': 'MT5 not configured on gateway host'}), 503
 
     try:
         import MetaTrader5 as mt5
-    except ImportError:
+    except Exception:
+        app.logger.warning('MT5 read-only library unavailable')
         return jsonify({'error': 'MT5 library unavailable; Windows host required'}), 503
 
     with _mt5_lock:
         initialized = False
+        payload, status = {'error': 'MT5 terminal connection failed'}, 503
         try:
             initialized = bool(mt5.initialize(login=login, password=password, server=server))
-            if not initialized:
-                return jsonify({'error': 'MT5 terminal connection failed'}), 503
-
-            account = mt5.account_info()
-            if account is None:
-                return jsonify({'error': 'Account state unavailable'}), 503
-
-            if bool(getattr(account, 'trade_allowed', False)) or bool(getattr(account, 'trade_expert', False)):
-                return jsonify({'error': 'Gateway requires a read-only investor session'}), 403
-
-            now = datetime.now(timezone.utc)
-            deals = mt5.history_deals_get(now - timedelta(days=7), now)
-            if deals is None:
-                return jsonify({'error': 'MT5 history retrieval failed'}), 503
-
-            return jsonify(analyze_deals(deals))
+            if initialized:
+                account_error = _read_only_account_error(mt5.account_info(), login, server)
+                if account_error:
+                    payload, status = account_error
+                else:
+                    now = datetime.now(timezone.utc)
+                    deals = mt5.history_deals_get(now - timedelta(days=7), now)
+                    if deals is None:
+                        payload, status = {'error': 'MT5 history retrieval failed'}, 503
+                    else:
+                        # Fail closed if terminal identity or permissions changed
+                        # while retrieving history; never expose the other account.
+                        account_error = _read_only_account_error(mt5.account_info(), login, server)
+                        if account_error:
+                            payload, status = account_error
+                        else:
+                            payload, status = {**analyze_deals(deals), 'analysis_type': 'DEAL_HEURISTICS',
+                                               'timebase_status': 'TIMEBASE_UNVERIFIED',
+                                               'execution_policy': 'RESEARCH_ONLY_LOCKED'}, 200
         except Exception:
-            app.logger.exception('MT5 request failed')
-            return jsonify({'error': 'MT5 operation failed'}), 503
+            # Broker/library exceptions can echo initialization credentials.
+            # Never include exception text, traceback, account details or payload.
+            app.logger.warning('MT5 read-only request failed')
+            payload, status = {'error': 'MT5 operation failed'}, 503
         finally:
             if initialized:
-                mt5.shutdown()
+                try:
+                    mt5.shutdown()
+                except Exception:
+                    app.logger.warning('MT5 read-only cleanup failed')
+                    payload, status = {'error': 'MT5 connection cleanup failed'}, 503
+        return jsonify(payload), status
 
 
 if __name__ == '__main__':

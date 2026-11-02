@@ -1,0 +1,44 @@
+{
+  "baseline_commit": "d9cedaad2ff8608e378e8d03bc1f38e0f0c5360f",
+  "baseline_tests": "99 passed",
+  "evidence_type": "MOCK reproduction; no installed MT5 calls",
+  "last_price": {
+    "type": "AttributeError",
+    "message": "'MarketDataManager' object has no attribute 'last_price'"
+  },
+  "is_data_fresh": {
+    "type": "AttributeError",
+    "message": "'MarketDataManager' object has no attribute 'is_data_fresh'"
+  },
+  "legacy_defaults": {
+    "symbol": "BTCUSD",
+    "paper_balance": 10000.0
+  },
+  "risk_positional_binding": {
+    "verified_account_equity": 10000.0,
+    "verified_free_margin": 10000.0,
+    "daily_starting_equity": 0,
+    "open_positions_count": "SymbolSpec",
+    "symbol_spec": 0,
+    "infrastructure_stress": true
+  },
+  "legacy_pnl": {
+    "price_move": 10,
+    "volume": 0.5,
+    "legacy_pnl": 5.0,
+    "explicit_contract_pnl": 10.0
+  },
+  "closed_position_double_count": {
+    "balance": 10010.0,
+    "equity": 10020.0,
+    "open_positions": 0
+  },
+  "restart_rehydration": {
+    "written_positions": 1,
+    "restored_positions": 0
+  },
+  "analyze": {
+    "type": "NameError",
+    "message": "name 'key' is not defined"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "baseline_commit": "d9cedaad2ff8608e378e8d03bc1f38e0f0c5360f",
+  "branch": "fix/v5-trustworthy-backtest-phase1",
+  "baseline_pytest": "99 passed",
+  "targeted_pytest": "79 passed",
+  "full_pytest": "178 passed",
+  "original_file_hashes_verified": 29,
+  "original_index_csv_git_byte_matches": 6,
+  "protected_source_or_report_changes": [],
+  "python_files_parsed": 31,
+  "order_send_call_sites": [],
+  "nas100_timebase_status": "TIMEBASE_UNVERIFIED",
+  "nas100_research_eligible": false,
+  "paper_state": "BLOCKED_INTEGRATION_UNVERIFIED",
+  "paper_unlock_path": false,
+  "automatic_mt5_execution": "RESEARCH_ONLY_LOCKED",
+  "real_mt5_integration_tests": "NOT RUN; all provider tests use mocks"
+}

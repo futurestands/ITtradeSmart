@@ -2,3 +2,5 @@
 ITTraderSmartHub_v4/backend/evidence/*.csv -text whitespace=cr-at-eol
 # Keep the new clock/raw-time evidence byte-exact across Git checkouts.
 ITTraderSmartHub_v4/backend/evidence/time_integrity/** -text whitespace=cr-at-eol
+# Preserve the backend safety milestone's test and audit evidence bytes.
+ITTraderSmartHub_v4/backend/evidence/api_paper_safety/** -text whitespace=cr-at-eol
