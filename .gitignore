@@ -30,3 +30,6 @@ __pycache__/
 *.iml
 .DS_Store
 Thumbs.db
+
+# Isolated local Android regression cache
+.gradle-research/

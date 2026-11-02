@@ -123,15 +123,18 @@ class MarketDataManager:
 
     def fetch_real_mt5_candles(self, symbol: str, timeframe_str: str = "H1", num_bars: int = 500) -> list:
         """Fetches real historical candles from MT5 or SQLite cache. NO synthetic fallback."""
-        sym = symbol.upper().replace("/", "").replace("_", "")
+        sym = symbol  # preserve case/suffixes of exact broker symbol
+        if timeframe_str not in ("M1", "M5", "M15", "M30", "H1", "H4", "D1"):
+            raise ValueError("Unsupported timeframe")
+        if isinstance(num_bars, bool) or not isinstance(num_bars, int) or num_bars <= 0:
+            raise ValueError("Positive integer bar count required")
 
         try:
             import MetaTrader5 as mt5
-            tf_map = {"M1": mt5.TIMEFRAME_M1, "M5": mt5.TIMEFRAME_M5, "H1": mt5.TIMEFRAME_H1, "D1": mt5.TIMEFRAME_D1}
-            tf = tf_map.get(timeframe_str, mt5.TIMEFRAME_H1)
+            tf = getattr(mt5, "TIMEFRAME_" + timeframe_str)
 
             if mt5.initialize():
-                rates = mt5.copy_rates_from_pos(sym, tf, 0, num_bars)
+                rates = mt5.copy_rates_from_pos(sym, tf, 1, num_bars)
                 mt5.shutdown()
                 if rates is not None and len(rates) > 0:
                     candles = []
@@ -175,6 +178,8 @@ class MarketDataManager:
         prev_time = None
 
         for c in candles:
+            if not all(isfinite(v) for v in (c.open, c.high, c.low, c.close, c.volume, c.spread)) or c.spread < 0 or c.volume < 0:
+                raise ValueError("Nonfinite or negative candle fields")
             if c.open <= 0 or c.high <= 0 or c.low <= 0 or c.close <= 0:
                 raise ValueError(f"Structurally invalid candle with non-positive prices at {c.time_utc}")
             if c.high < c.low or c.high < c.open or c.high < c.close or c.low > c.open or c.low > c.close:
@@ -185,6 +190,8 @@ class MarketDataManager:
             seen_timestamps.add(c.time_utc)
 
             curr_time = datetime.fromisoformat(c.time_utc)
+            if curr_time.utcoffset() is None or curr_time.utcoffset().total_seconds() != 0:
+                raise ValueError("UTC-aware candle timestamp required")
             if prev_time and curr_time <= prev_time:
                 raise ValueError(f"Unordered bar timestamps: {c.time_utc} is not greater than {prev_time.isoformat()}")
             prev_time = curr_time

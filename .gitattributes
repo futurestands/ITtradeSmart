@@ -1,0 +1,2 @@
+# Preserve byte-exact broker captures and their recorded SHA-256 values.
+ITTraderSmartHub_v4/backend/evidence/*.csv -text whitespace=cr-at-eol

@@ -120,6 +120,7 @@ class BotController:
                 "strategy_version": "v5.3",
                 "active_symbol": self.active_symbol,
                 "demo_adapter_enabled": self.demo_adapter.enabled,
+                "execution_policy": "RESEARCH_ONLY_LOCKED",
                 "emergency_stopped": self.demo_adapter.emergency_stopped,
                 "paper_trading": self.paper_engine.get_summary()
             }

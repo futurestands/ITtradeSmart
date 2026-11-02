@@ -1,0 +1,17 @@
+{
+  "isolated_paper_cycle": {
+    "status": "FAILED",
+    "exception_type": "AttributeError",
+    "detail": "'MarketDataManager' object has no attribute 'last_price'"
+  },
+  "isolated_analyze_route": {
+    "status": "FAILED",
+    "exception_type": "NameError",
+    "detail": "name 'key' is not defined"
+  },
+  "python_syntax": {
+    "files": 23,
+    "status": "VERIFIED"
+  },
+  "python_order_send_call_sites": []
+}

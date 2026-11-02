@@ -42,7 +42,8 @@ def test_ordinary_device_forbidden_from_v5_bot(client):
     res_tick = client.post('/api/v5/bot/tick', headers=device_h)
     assert res_tick.status_code == 403
 
-def test_risk_guardian_fails_closed_missing_terminal_calculations():
+def test_risk_guardian_fails_closed_missing_terminal_calculations(monkeypatch):
+    monkeypatch.setitem(sys.modules, "MetaTrader5", None)
     md = MarketDataManager(symbol_specs={"BTCUSD": SymbolSpec("BTCUSD", 1.0, 1.0, 0.01, 1.0)})
     spec = md.get_spec("BTCUSD")
     rg = RiskGuardian()
@@ -78,7 +79,9 @@ def test_authenticated_quote_provider():
     assert retrieved.bid == 64995.0
     assert retrieved.account_login == 123456
 
-def test_fail_closed_market_data():
+def test_fail_closed_market_data(monkeypatch):
+    # Explicit unavailable dependency: never depend on the host lacking MT5.
+    monkeypatch.setitem(sys.modules, "MetaTrader5", None)
     md = MarketDataManager()
     with pytest.raises(RuntimeError, match="FATAL: Real MT5 market data unavailable"):
         md.fetch_real_mt5_candles("EURUSD", "H1", 50)

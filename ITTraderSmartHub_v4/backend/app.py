@@ -85,22 +85,10 @@ def bot_tick():
 
 @app.post('/api/v5/bot/backtest')
 def bot_backtest():
-    body = request.get_json(silent=True) or {}
-    symbol = body.get('symbol', 'BTCUSD')
-    num_bars = int(body.get('num_bars', 200))
-
-    md = MarketDataManager(database_path=os.environ.get("SMARTHUB_STATE_DB"))
-    candles = md.fetch_real_mt5_candles(symbol, timeframe_str="H1", num_bars=num_bars)
-    strat = TrendFollowingMACrossoverStrategy()
-    bt_engine = BacktestEngine(10000.0)
-
-    bt_res = bt_engine.run_backtest(strat, candles, symbol)
-    mc_res = bt_engine.run_monte_carlo(bt_res)
-
     return jsonify({
-        "backtest_result": bt_res.__dict__,
-        "monte_carlo_result": mc_res
-    }), 200
+        "status": "BLOCKED_RESEARCH_ACCOUNTING",
+        "error": "Broker-specific research economics and historical cost configuration required. Use audited offline replay; no performance eligibility established."
+    }), 503
 
 
 # ====================================================================

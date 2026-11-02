@@ -12,6 +12,7 @@ from bot.backtesting import BacktestEngine
 
 
 def main():
+    raise RuntimeError("BLOCKED_LEGACY_REPORT: invalid accounting/readiness claims; see PHASE1_BASELINE_AUDIT.md")
     if not mt5.initialize():
         print("MT5 Initialization failed:", mt5.last_error())
         sys.exit(1)
@@ -93,7 +94,7 @@ def main():
 ## 1. MT5 Terminal & Account Provenance (Redacted)
 
 - **Terminal Executable Path:** `C:\\Program Files\\MetaTrader 5`
-- **Connected Account Login:** `[REDACTED-DEMO-LOGIN]` (5058245261)
+- **Connected Account Login:** `[REDACTED-DEMO-LOGIN]
 - **Broker Server:** `MetaQuotes-Demo`
 - **Account Mode:** `DEMO` (`trade_mode = 0`)
 - **Account Balance / Equity:** `$100,000.00 USD`

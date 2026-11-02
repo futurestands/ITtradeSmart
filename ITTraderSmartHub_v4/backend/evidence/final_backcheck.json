@@ -1,0 +1,8 @@
+{
+  "python_files_parsed": 24,
+  "order_send_call_sites": [],
+  "android_source_diff": [],
+  "branch": "fix/v5-trustworthy-backtest-phase1",
+  "baseline_commit": "63972b14d713302a51e439df78a5f8f783e3b2d7",
+  "execution_policy": "RESEARCH_ONLY_LOCKED"
+}

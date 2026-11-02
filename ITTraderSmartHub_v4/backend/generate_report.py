@@ -10,6 +10,7 @@ from bot.strategies import TrendFollowingMACrossoverStrategy, DonchianBreakoutSt
 from bot.backtesting import BacktestEngine
 
 def main():
+    raise RuntimeError("BLOCKED_LEGACY_REPORT: invalid accounting/readiness claims; see PHASE1_BASELINE_AUDIT.md")
     csv_path = os.path.join(os.path.dirname(__file__), "eurusd_h1_historical.csv")
     if not os.path.exists(csv_path):
         print("CSV dataset not found")
@@ -54,7 +55,7 @@ def main():
 ## 1. MT5 Terminal & Account Provenance (Redacted)
 
 - **Terminal Executable Path:** `C:\\Program Files\\MetaTrader 5`
-- **Connected Account Login:** `[REDACTED-DEMO-LOGIN]` (5058245261)
+- **Connected Account Login:** `[REDACTED-DEMO-LOGIN]
 - **Broker Server:** `MetaQuotes-Demo`
 - **Account Mode:** `DEMO` (`trade_mode = 0`)
 - **Account Balance / Equity:** `$100,000.00 USD`

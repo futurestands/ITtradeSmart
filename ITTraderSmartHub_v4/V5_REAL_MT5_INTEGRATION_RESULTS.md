@@ -1,3 +1,5 @@
+> SUPERSEDED: Financial results and paper-readiness claims below are invalid. See PHASE1_BASELINE_AUDIT.md. Retained as historical evidence only.
+
 # ITTrader SmartHub v5 — Real MT5 Integration & Backtest Results
 
 **Repository:** [https://github.com/futurestands/ITtradeSmart](https://github.com/futurestands/ITtradeSmart)
@@ -9,7 +11,7 @@
 ## 1. MT5 Terminal & Account Provenance (Redacted)
 
 - **Terminal Executable Path:** `C:\Program Files\MetaTrader 5`
-- **Connected Account Login:** `[REDACTED-DEMO-LOGIN]` (5058245261)
+- **Connected Account Login:** [REDACTED]
 - **Broker Server:** `MetaQuotes-Demo`
 - **Account Mode:** `DEMO` (`trade_mode = 0`)
 - **Account Balance / Equity:** `$100,000.00 USD`
