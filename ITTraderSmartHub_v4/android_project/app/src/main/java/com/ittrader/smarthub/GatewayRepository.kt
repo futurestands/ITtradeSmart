@@ -3,6 +3,7 @@ package com.ittrader.smarthub
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -19,13 +20,32 @@ class GatewayRepository {
 
     fun validateEndpointUrl(urlStr: String): Result<String> {
         val trimmed = urlStr.trim().trimEnd('/')
-        if (trimmed.startsWith("http://127.0.0.1") || trimmed.startsWith("http://localhost")) {
-            return Result.success(trimmed)
+        val parsed = trimmed.toHttpUrlOrNull()
+            ?: return Result.failure(IllegalArgumentException("Invalid gateway URL"))
+        if (parsed.username.isNotEmpty() || parsed.password.isNotEmpty() || parsed.query != null || parsed.fragment != null) {
+            return Result.failure(IllegalArgumentException("Gateway URL must not contain credentials, query or fragment"))
         }
-        if (!trimmed.startsWith("https://")) {
+        if (!parsed.isHttps && parsed.host !in setOf("127.0.0.1", "localhost", "::1")) {
             return Result.failure(IllegalArgumentException("Strict TLS Required: Gateway URL must use an encrypted HTTPS endpoint."))
         }
         return Result.success(trimmed)
+    }
+
+    fun queryAIStatus(callback: (Result<JSONObject>) -> Unit) {
+        val endpoint = validateEndpointUrl(GatewaySession.gatewayUrl).getOrElse {
+            callback(Result.failure(it))
+            return
+        }
+        if (!GatewaySession.isAuthenticated()) {
+            callback(Result.failure(IllegalStateException("Enroll device with the gateway first.")))
+            return
+        }
+        // The phone contacts only the authenticated Gateway, never the Lab port/token.
+        val request = Request.Builder()
+            .url("$endpoint/api/v5/ai/status")
+            .header("Authorization", "Bearer ${GatewaySession.apiToken}")
+            .get().build()
+        executeRequest(request, callback)
     }
 
     fun queryBotStatus(callback: (Result<JSONObject>) -> Unit) {

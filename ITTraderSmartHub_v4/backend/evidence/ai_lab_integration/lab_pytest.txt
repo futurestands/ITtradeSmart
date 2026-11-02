@@ -1,0 +1,18 @@
+........................................................................ [ 43%]
+........................................................................ [ 87%]
+.....................                                                    [100%]
+============================== warnings summary ===============================
+tests/test_cli.py: 1 warning
+tests/test_loader.py: 2 warnings
+tests/test_validation.py: 11 warnings
+  C:\Users\MJ\Documents\NAS100-AI-Lab-Phase1B\src\nas100lab\validation.py:456: Pandas4Warning: Series.dt.dayofweek is deprecated and will be removed in a future version. Use Series.dt.day_of_week instead.
+    starts.dt.dayofweek.isin([4, 5, 6])
+
+tests/test_cli.py: 1 warning
+tests/test_loader.py: 2 warnings
+tests/test_validation.py: 11 warnings
+  C:\Users\MJ\Documents\NAS100-AI-Lab-Phase1B\src\nas100lab\validation.py:457: Pandas4Warning: Series.dt.dayofweek is deprecated and will be removed in a future version. Use Series.dt.day_of_week instead.
+    & ends.dt.dayofweek.isin([6, 0])
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+165 passed, 28 warnings in 6.37s

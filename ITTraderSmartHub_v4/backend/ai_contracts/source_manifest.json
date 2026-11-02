@@ -1,0 +1,7 @@
+{
+  "source": "Existing NAS100 AI Research Lab Phase1B v1 contracts; byte-exact snapshots",
+  "schemas": {
+    "prediction_request.v1.schema.json": "1ae4db24d2d801430620d89d36c92df79f1e65e4fbd5ea6e1a5d31d64a3e97ab",
+    "prediction_response.v1.schema.json": "95d7defd237219a8da3554236b8572908bcc6c444926517dcd7ff545942004eb"
+  }
+}

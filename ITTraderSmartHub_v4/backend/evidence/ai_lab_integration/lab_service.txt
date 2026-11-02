@@ -1,0 +1,1 @@
+AI Lab companion listening on 127.0.0.1:51939; MODEL_NOT_READY

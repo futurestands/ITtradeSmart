@@ -1,0 +1,1 @@
+VERIFIED local connection; MODEL_NOT_READY; probability=null; no trading or training.

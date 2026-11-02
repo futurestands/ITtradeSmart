@@ -1,0 +1,71 @@
+{
+  "evidence": "VERIFIED real HTTP Gateway-to-existing-Lab companion, two separate interpreters",
+  "gateway_python": "3.14.6",
+  "lab_python": "3.12.10",
+  "lab_health": {
+    "schema_version": "1.0",
+    "service": "nas100-ai-lab",
+    "lab_version": "0.1.1",
+    "status": "UNAVAILABLE",
+    "advisory_only": true,
+    "model_ready": false,
+    "model": null,
+    "probability": null,
+    "reason_code": "MODEL_NOT_READY",
+    "contract_hashes": {
+      "prediction_request.v1.schema.json": "1ae4db24d2d801430620d89d36c92df79f1e65e4fbd5ea6e1a5d31d64a3e97ab",
+      "prediction_response.v1.schema.json": "95d7defd237219a8da3554236b8572908bcc6c444926517dcd7ff545942004eb"
+    }
+  },
+  "gateway_ai_status": {
+    "advisory_only": true,
+    "connection_status": "CONNECTED",
+    "execution_policy": "RESEARCH_ONLY_LOCKED",
+    "explanation": "Model not trained. No predictions or trade approvals are available.",
+    "model": null,
+    "model_status": "MODEL_NOT_READY",
+    "model_trained": false,
+    "probability": null,
+    "reason_code": "MODEL_NOT_READY",
+    "schema_version": "1.0",
+    "timebase_status": "TIMEBASE_UNVERIFIED"
+  },
+  "advisory": {
+    "advisory_only": true,
+    "calibration_status": "not_applicable",
+    "input_freshness": {
+      "max_bar_age_seconds": null
+    },
+    "model": null,
+    "prediction_timestamp_utc": "2026-11-02T13:19:36Z",
+    "probability": null,
+    "reasons": [
+      {
+        "code": "MODEL_NOT_READY",
+        "message": "Model not trained. No verified model or registered target is available."
+      }
+    ],
+    "request_id": "CONNECTION_PROBE_NOT_A_TRADE",
+    "schema_version": "1.0",
+    "status": "UNAVAILABLE",
+    "target_definition_id": "UNAVAILABLE_NO_REGISTERED_TARGET",
+    "validation": {
+      "checks": [
+        {
+          "name": "model_readiness",
+          "status": "FAIL"
+        }
+      ],
+      "status": "FAIL"
+    }
+  },
+  "service_stopped_refusal": "SERVICE_TIMEOUT",
+  "unauthorized_http": 401,
+  "malicious_request_http": 400,
+  "bot_state_unchanged": true,
+  "model_trained": false,
+  "probability": null,
+  "market_data_used": false,
+  "training_run": false,
+  "owned_processes_stopped": true
+}

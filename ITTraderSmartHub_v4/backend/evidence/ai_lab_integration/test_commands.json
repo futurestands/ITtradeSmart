@@ -1,0 +1,25 @@
+[
+  {
+    "command": [
+      "C:\\Users\\MJ\\Downloads\\ITTraderSmartHub_v4_reviewed_patch\\ITTraderSmartHub_v4\\backend\\.venv-gateway\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "-v",
+      "-p",
+      "no:cacheprovider",
+      "tests"
+    ],
+    "return_code": 0,
+    "output": "gateway_pytest.txt"
+  },
+  {
+    "command": [
+      "C:\\Users\\MJ\\Downloads\\ITTraderSmartHub_v4_reviewed_patch\\ITTraderSmartHub_v4\\backend\\.venv-gateway\\Scripts\\python.exe",
+      "verify_ai_connection.py",
+      "--lab-root",
+      "C:/Users/MJ/Documents/NAS100-AI-Lab-Phase1B"
+    ],
+    "return_code": 0,
+    "output": "connection_verification.txt"
+  }
+]

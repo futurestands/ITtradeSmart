@@ -1,0 +1,23 @@
+{
+  "starting_commit": "539b5482507072580c0110c92b776be9005b13e0",
+  "old_smarthub_evidence_unchanged": 35,
+  "lab_original_files_unchanged": 41,
+  "lab_file_set_unchanged": true,
+  "protected_backend_modules_unchanged": [
+    "bot/accounting.py",
+    "bot/backtesting.py",
+    "bot/time_integrity.py",
+    "bot/risk_guardian.py",
+    "bot/paper_trading.py",
+    "bot/demo_execution.py",
+    "bot/bot_controller.py"
+  ],
+  "order_send_call_sites": [],
+  "nas100_timebase": "TIMEBASE_UNVERIFIED; no dataset or certification changes",
+  "android_tests": 14,
+  "gateway_tests": 219,
+  "lab_tests": 165,
+  "model_trained": false,
+  "automatic_mt5_execution": "UNCONDITIONALLY_DISABLED",
+  "real_connection": "VERIFIED; see real_connection.json; owned processes stopped"
+}

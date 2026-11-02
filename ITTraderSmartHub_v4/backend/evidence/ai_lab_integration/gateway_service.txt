@@ -1,0 +1,15 @@
+ * Serving Flask app 'app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:51940
+Press CTRL+C to quit
+127.0.0.1 - - [02/Nov/2026 16:19:36] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [02/Nov/2026 16:19:36] "GET /api/v5/ai/status HTTP/1.1" 401 -
+127.0.0.1 - - [02/Nov/2026 16:19:36] "POST /api/v4/admin/pairing-code HTTP/1.1" 200 -
+127.0.0.1 - - [02/Nov/2026 16:19:36] "POST /api/v4/device/enroll HTTP/1.1" 200 -
+127.0.0.1 - - [02/Nov/2026 16:19:36] "GET /api/v5/bot/status HTTP/1.1" 200 -
+127.0.0.1 - - [02/Nov/2026 16:19:36] "GET /api/v5/ai/status HTTP/1.1" 200 -
+127.0.0.1 - - [02/Nov/2026 16:19:36] "POST /api/v5/ai/advisory HTTP/1.1" 200 -
+127.0.0.1 - - [02/Nov/2026 16:19:36] "POST /api/v5/ai/advisory HTTP/1.1" 400 -
+127.0.0.1 - - [02/Nov/2026 16:19:36] "GET /api/v5/bot/status HTTP/1.1" 200 -
+127.0.0.1 - - [02/Nov/2026 16:19:39] "POST /api/v5/ai/advisory HTTP/1.1" 200 -

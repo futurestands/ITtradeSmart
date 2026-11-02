@@ -9,12 +9,15 @@ from risk_engine import calculate_risk, calculate_pipnex_lot_size, calculate_pro
 from trade_analysis import analyze_deals
 from v4_services import ContextStore, risk_context, research_request
 from bot import BotController, BacktestEngine, MarketDataManager, TrendFollowingMACrossoverStrategy
+from ai_lab_adapter import AILabAdapter
+from ai_contract import ContractError, strict_json
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024
 _mt5_lock = Lock()
 _v4_store = ContextStore()
 _bot = BotController(database_path=os.environ.get("SMARTHUB_STATE_DB"))
+_ai_lab = AILabAdapter()
 
 
 def check_auth(req, required_role="device"):
@@ -48,6 +51,24 @@ def require_authentication():
 # ====================================================================
 # V5 AUTOMATED TRADING BOT ENDPOINTS (Strict Admin Authorization)
 # ====================================================================
+
+# Monitoring-device authorization applies; these queries have no execution route.
+@app.get('/api/v5/ai/status')
+def ai_status():
+    return jsonify(_ai_lab.status()), 200
+
+
+@app.post('/api/v5/ai/advisory')
+def ai_advisory():
+    try:
+        if not request.is_json:
+            raise ContractError('INVALID_REQUEST')
+        payload = strict_json(request.get_data(cache=False))
+        return jsonify(_ai_lab.advisory(payload)), 200
+    except RequestEntityTooLarge:
+        return jsonify({'error': 'Request body too large'}), 413
+    except ContractError:
+        return jsonify({'error': 'Invalid advisory v1 request'}), 400
 
 @app.get('/api/v5/bot/status')
 def bot_status():

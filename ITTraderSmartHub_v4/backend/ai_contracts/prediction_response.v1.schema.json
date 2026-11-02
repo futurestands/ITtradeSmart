@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nas100-ai-lab.local/contracts/prediction_response.v1.schema.json",
+  "title": "NAS100 AI Lab prediction response (v1) - CONTRACT ONLY, NOT IMPLEMENTED",
+  "description": "Advisory output. It never contains orders, position sizes or risk-limit overrides; the host application's safety engine remains authoritative.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "model",
+    "prediction_timestamp_utc",
+    "status",
+    "advisory_only",
+    "target_definition_id",
+    "probability",
+    "calibration_status",
+    "input_freshness",
+    "validation",
+    "reasons"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "request_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "model": {
+      "description": "null when no model could be loaded.",
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["model_id", "version"],
+      "properties": {
+        "model_id": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "feature_set_version": { "type": "string" }
+      }
+    },
+    "prediction_timestamp_utc": { "$ref": "#/$defs/utc_timestamp" },
+    "status": { "enum": ["OK", "UNAVAILABLE"] },
+    "advisory_only": {
+      "const": true,
+      "description": "Always true. The model cannot place orders or override risk limits."
+    },
+    "target_definition_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the exact, pre-registered target the probability refers to (side, stop, target, horizon, cost model). Defined in Phase 4."
+    },
+    "probability": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Estimated probability of the target outcome. null when status is UNAVAILABLE. Not a verified performance figure."
+    },
+    "calibration_status": { "enum": ["calibrated", "uncalibrated", "not_applicable"] },
+    "input_freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_bar_age_seconds"],
+      "properties": {
+        "max_bar_age_seconds": { "type": ["number", "null"], "minimum": 0 },
+        "per_timeframe_age_seconds": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/timeframe" },
+          "additionalProperties": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "checks"],
+      "properties": {
+        "status": { "enum": ["PASS", "WARN", "FAIL"] },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "status"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "status": { "enum": ["PASS", "WARN", "FAIL"] },
+              "detail": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "reasons": {
+      "type": "array",
+      "description": "Reasons a prediction cannot be provided. Empty when status is OK.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  },
+  "if": {
+    "properties": { "status": { "const": "OK" } },
+    "required": ["status"]
+  },
+  "then": {
+    "properties": {
+      "probability": { "type": "number" },
+      "validation": { "properties": { "status": { "enum": ["PASS", "WARN"] } } },
+      "reasons": { "maxItems": 0 }
+    }
+  },
+  "else": {
+    "properties": {
+      "probability": { "type": "null" },
+      "reasons": { "minItems": 1 }
+    }
+  },
+  "$defs": {
+    "timeframe": { "enum": ["M5", "M15", "M30", "H1", "H4", "D1"] },
+    "utc_timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+    }
+  }
+}

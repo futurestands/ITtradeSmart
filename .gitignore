@@ -33,3 +33,7 @@ Thumbs.db
 
 # Isolated local Android regression cache
 .gradle-research/
+
+# Isolated Gateway integration environment and local-only runtime state
+.venv-gateway/
+.integration-tmp/

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_intelligence_heading">AI INTELLIGENCE — ADVISORY ONLY</string>
+    <string name="ai_intelligence_initial">Connection: Not checked\nModel: Model not trained\nPrediction: Unavailable\nAI cannot authorize trades or override RiskGuardian.</string>
+    <string name="ai_intelligence_refresh">Check AI Lab connection</string>
+</resources>

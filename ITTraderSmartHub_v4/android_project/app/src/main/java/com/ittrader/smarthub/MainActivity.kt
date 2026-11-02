@@ -44,6 +44,23 @@ class MainActivity : AppCompatActivity() {
         val btnBotPaper = findViewById<Button>(R.id.btnBotPaper)
         val btnBotEmergencyStop = findViewById<Button>(R.id.btnBotEmergencyStop)
 
+        // Advisory-only AI status; no candidate, order, size or bot mode is sent.
+        val txtAIIntelligence = findViewById<TextView>(R.id.txtAIIntelligence)
+        val btnRefreshAI = findViewById<Button>(R.id.btnRefreshAI)
+        btnRefreshAI.setOnClickListener {
+            updateGatewayUrlFromInput(edtGatewayIp)
+            btnRefreshAI.isEnabled = false
+            repository.queryAIStatus { result ->
+                runOnUiThread {
+                    btnRefreshAI.isEnabled = true
+                    txtAIIntelligence.text = result.fold(
+                        onSuccess = { AIIntelligencePresenter.summary(it) },
+                        onFailure = { AIIntelligencePresenter.unavailable() }
+                    )
+                }
+            }
+        }
+
         // Pre-fill stored gateway URL
         edtGatewayIp.setText(GatewaySession.gatewayUrl)
 

@@ -1,0 +1,28 @@
+{
+  "status": "VERIFIED JVM tests and debug APK build; physical device UI/network NOT RUN",
+  "junit_suites": [
+    {
+      "name": "com.ittrader.smarthub.AIIntelligenceTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.ittrader.smarthub.V4ContractsTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "tests": 14,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "apk_sha256": "006146ab9e609359a94a5f25938db705c79a7d44d8c85ca0ee2cf80b0c603f92",
+  "apk_bytes": 7436227,
+  "apk_contains_ai_layout": true,
+  "original_main_layout_ids_preserved": 28,
+  "physical_device_test": "NOT RUN"
+}

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nas100-ai-lab.local/contracts/prediction_request.v1.schema.json",
+  "title": "NAS100 AI Lab prediction request (v1) - CONTRACT ONLY, NOT IMPLEMENTED",
+  "description": "Input a future host application (e.g. SmartHub) would send to ask for an ADVISORY probability about one candidate trade. It contains no order, size or risk fields by design.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "instrument",
+    "prediction_timestamp_utc",
+    "candidate",
+    "timeframe_context",
+    "feature_set_version"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "request_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["symbol", "provider"],
+      "properties": {
+        "symbol": { "type": "string", "minLength": 1 },
+        "provider": { "type": "string", "minLength": 1 },
+        "contract_notes": { "type": "string" }
+      }
+    },
+    "prediction_timestamp_utc": { "$ref": "#/$defs/utc_timestamp" },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["side", "setup_id", "entry_timeframe"],
+      "properties": {
+        "side": { "enum": ["BUY", "SELL"] },
+        "setup_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier of the explicit, reproducible setup rule that produced the candidate."
+        },
+        "entry_timeframe": { "$ref": "#/$defs/timeframe" },
+        "reference_price": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "timeframe_context": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/timeframe" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["last_closed_bar_time_utc", "features"],
+        "properties": {
+          "last_closed_bar_time_utc": { "$ref": "#/$defs/utc_timestamp" },
+          "features": {
+            "type": "object",
+            "additionalProperties": { "type": "number" }
+          }
+        }
+      }
+    },
+    "feature_set_version": { "type": "string", "minLength": 1 },
+    "requested_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_id", "version"],
+      "properties": {
+        "model_id": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "timeframe": { "enum": ["M5", "M15", "M30", "H1", "H4", "D1"] },
+    "utc_timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+    }
+  }
+}

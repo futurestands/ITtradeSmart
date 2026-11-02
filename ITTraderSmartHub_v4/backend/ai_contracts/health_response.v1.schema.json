@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smarthub.local/ai-contracts/health_response.v1.schema.json",
+  "title": "Phase 1 loopback Lab companion health (additive transport contract)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "service", "lab_version", "status", "advisory_only", "model_ready", "model", "probability", "reason_code", "contract_hashes"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "service": {"const": "nas100-ai-lab"},
+    "lab_version": {"const": "0.1.1"},
+    "status": {"const": "UNAVAILABLE"},
+    "advisory_only": {"const": true},
+    "model_ready": {"const": false},
+    "model": {"type": "null"},
+    "probability": {"type": "null"},
+    "reason_code": {"const": "MODEL_NOT_READY"},
+    "contract_hashes": {
+      "type": "object", "additionalProperties": false,
+      "required": ["prediction_request.v1.schema.json", "prediction_response.v1.schema.json"],
+      "properties": {
+        "prediction_request.v1.schema.json": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "prediction_response.v1.schema.json": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

@@ -4,3 +4,7 @@ ITTraderSmartHub_v4/backend/evidence/*.csv -text whitespace=cr-at-eol
 ITTraderSmartHub_v4/backend/evidence/time_integrity/** -text whitespace=cr-at-eol
 # Preserve the backend safety milestone's test and audit evidence bytes.
 ITTraderSmartHub_v4/backend/evidence/api_paper_safety/** -text whitespace=cr-at-eol
+# Versioned Lab schema snapshots must retain their source SHA-256 bytes.
+ITTraderSmartHub_v4/backend/ai_contracts/** -text whitespace=cr-at-eol
+# Preserve this milestone's captured verification outputs.
+ITTraderSmartHub_v4/backend/evidence/ai_lab_integration/** -text whitespace=cr-at-eol
