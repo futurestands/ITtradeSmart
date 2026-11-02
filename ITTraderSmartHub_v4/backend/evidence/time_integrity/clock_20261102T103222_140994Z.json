@@ -1,0 +1,58 @@
+{
+  "observed_utc": "2026-11-02T10:32:14.775408+00:00",
+  "sources": [
+    {
+      "protocol": "NTPv4_unauthenticated",
+      "host": "time.cloudflare.com",
+      "status": "OBSERVED",
+      "request_transmit_hex": "ee92e52ee2fa1800",
+      "response_hex": "240300e700002004000000290a3d0804ee92e518da233f1bee92e52ee2fa1800ee92e52fa1ac080bee92e52fa1b359be",
+      "local_sent_utc": "2026-11-02T10:32:14.886629+00:00",
+      "local_received_utc": "2026-11-02T10:32:14.911402+00:00",
+      "server_received_utc": "2026-11-02T10:32:15.631531+00:00",
+      "server_transmitted_utc": "2026-11-02T10:32:15.631643+00:00",
+      "stratum": 3,
+      "leap_indicator": 0,
+      "offset_server_minus_windows_seconds": 0.7325714826583862,
+      "round_trip_seconds": 0.024662256240844727,
+      "monotonic_elapsed_seconds": 0.024753899953793734
+    },
+    {
+      "protocol": "NTPv4_unauthenticated",
+      "host": "time.google.com",
+      "status": "OBSERVED",
+      "request_transmit_hex": "ee92e52ee3166800",
+      "response_hex": "240100ec0000000000000006474f4f47ee92e52fb1ce53c5ee92e52ee3166800ee92e52fb1ce53c6ee92e52fb1ce53c8",
+      "local_sent_utc": "2026-11-02T10:32:14.887061+00:00",
+      "local_received_utc": "2026-11-02T10:32:15.035154+00:00",
+      "server_received_utc": "2026-11-02T10:32:15.694555+00:00",
+      "server_transmitted_utc": "2026-11-02T10:32:15.694555+00:00",
+      "stratum": 1,
+      "leap_indicator": 0,
+      "offset_server_minus_windows_seconds": 0.7334474325180054,
+      "round_trip_seconds": 0.14809298515319824,
+      "monotonic_elapsed_seconds": 0.14807629998540506
+    },
+    {
+      "protocol": "HTTPS_Date_corroboration_only",
+      "url": "https://www.cloudflare.com/cdn-cgi/trace",
+      "status": "FAILED",
+      "error_type": "URLError",
+      "error": "<urlopen error _ssl.c:1064: The handshake operation timed out>"
+    },
+    {
+      "protocol": "HTTPS_Date_corroboration_only",
+      "url": "https://www.google.com/generate_204",
+      "status": "OBSERVED",
+      "local_sent_utc": "2026-11-02T10:32:14.775035+00:00",
+      "local_received_utc": "2026-11-02T10:32:15.121328+00:00",
+      "server_date": "Mon, 02 Nov 2026 10:32:15 GMT",
+      "age_header": null,
+      "http_status": 204,
+      "offset_from_local_midpoint_seconds": 0.05181884765625,
+      "round_trip_seconds": 0.34637599997222424,
+      "limitations": "HTTP date has one-second resolution, path delay and possible intermediary clocks; not NTP"
+    }
+  ],
+  "limitations": "UDP NTP is not authenticated/NTS; independent providers and HTTPS corroborate seconds-scale clock accuracy, not historical broker DST"
+}

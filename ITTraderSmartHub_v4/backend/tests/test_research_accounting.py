@@ -14,6 +14,7 @@ from bot.market_data import Candle, MarketDataManager
 from bot.strategies import Signal
 from bot.demo_execution import DemoMT5ExecutionAdapter
 from bot.bot_controller import BotController
+from bot.time_integrity import TimebaseEvidence
 
 
 def index_spec():
@@ -44,7 +45,9 @@ class OneSignal:
 
 
 def engine(financing=0):
-    return BacktestEngine(instrument=index_spec(), costs=ResearchCosts(.25, 2, financing), volume=.5)
+    return BacktestEngine(instrument=index_spec(), costs=ResearchCosts(.25, 2, financing), volume=.5,
+                          timebase=TimebaseEvidence("VERIFIED_UTC", "MOCK financial fixture only",
+                              "2025-01-03T00:00:00+00:00", "H1", 0, 0))
 
 
 @pytest.mark.parametrize("direction,exit_price,expected", [
@@ -180,7 +183,8 @@ def test_closed_bar_fetch_keeps_exact_symbol_and_timeframe(monkeypatch):
         copy_rates_from_pos=lambda *args: calls.append(args) or [dict(time=1735689600,
             open=20000, high=20001, low=19999, close=20000, tick_volume=1, spread=4)])
     monkeypatch.setitem(sys.modules, "MetaTrader5", fake)
-    assert MarketDataManager().fetch_real_mt5_candles("NAS100.fixture", "H4", 1)
+    timebase = TimebaseEvidence("VERIFIED_UTC", "MOCK fetch fixture only", "2025-01-02T00:00:00Z", "H4", 0, 0)
+    assert MarketDataManager(timebase=timebase).fetch_real_mt5_candles("NAS100.fixture", "H4", 1)
     assert calls == [("NAS100.fixture", 123, 1, 1)]
     with pytest.raises(ValueError, match="Unsupported timeframe"):
         MarketDataManager().fetch_real_mt5_candles("NAS100.fixture", "H2", 1)

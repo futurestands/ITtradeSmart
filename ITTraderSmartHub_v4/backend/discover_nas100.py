@@ -11,6 +11,7 @@ from pathlib import Path
 def discover(mt5, checkpoint=lambda report: None, data_directory=None):
     report = {"observed_at_utc": datetime.now(timezone.utc).isoformat(),
               "status": "BLOCKED_MT5_CONNECTION", "candidates": [],
+              "timebase_status": "TIMEBASE_UNVERIFIED", "research_eligible": False,
               "sessions": "NOT AVAILABLE through MT5 Python API; needs broker specification",
               "costs": "Historical commissions/financing not supplied by rates API"}
     report["stage"] = "initialize"
@@ -68,7 +69,9 @@ def discover(mt5, checkpoint=lambda report: None, data_directory=None):
                 continue
             name = row["name"]
             info = mt5.symbol_info(name)
+            row["quote_observed_before_utc"] = datetime.now(timezone.utc).isoformat()
             tick = mt5.symbol_info_tick(name)
+            row["quote_observed_after_utc"] = datetime.now(timezone.utc).isoformat()
             row["quote"] = ({"bid": tick.bid, "ask": tick.ask, "time": tick.time}
                             if tick else None)
             if tick is None or tick.ask <= 0 or tick.bid <= 0:
@@ -93,13 +96,16 @@ def discover(mt5, checkpoint=lambda report: None, data_directory=None):
                 report["stage"] = "history:" + name + ":" + label
                 checkpoint(report)
                 assert_identity()
+                before = datetime.now(timezone.utc).isoformat()
                 rates = mt5.copy_rates_from_pos(name, getattr(mt5, "TIMEFRAME_" + label), 1, 5000)
-                summary = {"requested_closed_bars": 5000, "count": 0}
+                summary = {"requested_closed_bars": 5000, "count": 0, "timebase_status": "TIMEBASE_UNVERIFIED",
+                           "observed_before_utc": before, "observed_after_utc": datetime.now(timezone.utc).isoformat()}
                 if rates is not None and len(rates):
                     times = [int(r["time"]) for r in rates]
                     summary.update(count=len(rates),
-                                   first_utc=datetime.fromtimestamp(times[0], timezone.utc).isoformat(),
-                                   last_utc=datetime.fromtimestamp(times[-1], timezone.utc).isoformat(),
+                                   first_raw_epoch=times[0], last_raw_epoch=times[-1],
+                                   first_raw_epoch_iso_UNVERIFIED=datetime.fromtimestamp(times[0], timezone.utc).isoformat(),
+                                   last_raw_epoch_iso_UNVERIFIED=datetime.fromtimestamp(times[-1], timezone.utc).isoformat(),
                                    strictly_ordered=all(a < b for a, b in zip(times, times[1:])),
                                    invalid_ohlc=sum(not (all(isfinite(float(r[k])) for k in ("open", "high", "low", "close")) and
                                                        0 < r["low"] <= min(r["open"], r["close"])
@@ -111,9 +117,9 @@ def discover(mt5, checkpoint=lambda report: None, data_directory=None):
                         temporary_csv = destination.with_suffix(".csv.tmp")
                         with temporary_csv.open("w", newline="", encoding="utf-8") as handle:
                             writer = csv.writer(handle)
-                            writer.writerow(["time_utc", "open", "high", "low", "close", "tick_volume", "spread_points", "real_volume"])
+                            writer.writerow(["raw_time_epoch", "raw_epoch_iso_UNVERIFIED", "open", "high", "low", "close", "tick_volume", "spread_points", "real_volume"])
                             for rate in rates:
-                                writer.writerow([datetime.fromtimestamp(int(rate["time"]), timezone.utc).isoformat()] +
+                                writer.writerow([int(rate["time"]), datetime.fromtimestamp(int(rate["time"]), timezone.utc).isoformat()] +
                                                 [rate[k] for k in ("open", "high", "low", "close", "tick_volume", "spread", "real_volume")])
                         temporary_csv.replace(destination)
                         summary["csv_file"] = destination.name
@@ -136,14 +142,18 @@ if __name__ == "__main__":
     import subprocess
     import sys
     import MetaTrader5 as mt5
-    target = Path(__file__).parent / "evidence" / "nas100_discovery.json"
-    target.parent.mkdir(exist_ok=True)
+    if "--worker" in sys.argv:
+        target = Path(sys.argv[2])
+    else:
+        directory = Path(__file__).parent / "evidence" / datetime.now(timezone.utc).strftime("raw_discovery_%Y%m%dT%H%M%S_%fZ")
+        directory.mkdir(parents=True, exist_ok=False)
+        target = directory / "nas100_discovery.json"
 
     if "--worker" not in sys.argv:
         # A parent process can enforce a timeout even if a native MT5 call holds
         # the worker GIL. A Python timer thread cannot guarantee that bound.
         try:
-            completed = subprocess.run([sys.executable, "-u", __file__, "--worker"], timeout=90)
+            completed = subprocess.run([sys.executable, "-u", __file__, "--worker", str(target)], timeout=90)
             sys.exit(completed.returncode)
         except subprocess.TimeoutExpired:
             partial = json.loads(target.read_text(encoding="utf-8"))

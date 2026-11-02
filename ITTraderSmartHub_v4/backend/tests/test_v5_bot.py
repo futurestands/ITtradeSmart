@@ -82,6 +82,8 @@ def test_authenticated_quote_provider():
 def test_fail_closed_market_data(monkeypatch):
     # Explicit unavailable dependency: never depend on the host lacking MT5.
     monkeypatch.setitem(sys.modules, "MetaTrader5", None)
-    md = MarketDataManager()
+    from bot.time_integrity import TimebaseEvidence
+    md = MarketDataManager(timebase=TimebaseEvidence("VERIFIED_UTC", "MOCK unavailable dependency",
+                                                   "2025-01-01T00:00:00Z", "H1", 0, 0))
     with pytest.raises(RuntimeError, match="FATAL: Real MT5 market data unavailable"):
         md.fetch_real_mt5_candles("EURUSD", "H1", 50)

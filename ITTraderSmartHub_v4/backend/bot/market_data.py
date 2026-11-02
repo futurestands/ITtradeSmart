@@ -49,10 +49,11 @@ class AuthenticatedQuote:
 class MarketDataManager:
     """Manages authoritative broker symbol specs, authenticated quotes, and fail-closed historical data."""
 
-    def __init__(self, database_path=None, symbol_specs: dict = None):
+    def __init__(self, database_path=None, symbol_specs: dict = None, *, timebase=None):
         self.database_path = database_path or os.environ.get("SMARTHUB_STATE_DB")
         self.injected_specs = symbol_specs or {}
         self.last_quotes = {}  # symbol -> AuthenticatedQuote
+        self.timebase = timebase
 
         if self.database_path:
             with sqlite3.connect(self.database_path) as db:
@@ -117,8 +118,8 @@ class MarketDataManager:
 
         # Re-verify freshness
         q_time = datetime.fromisoformat(quote.timestamp_utc.replace('Z', '+00:00'))
-        if (datetime.now(timezone.utc) - q_time).total_seconds() > 10.0:
-            raise RuntimeError(f"Authenticated quote for {sym} has expired (>10s)")
+        if abs((datetime.now(timezone.utc) - q_time).total_seconds()) > 10.0:
+            raise RuntimeError(f"Authenticated quote for {sym} is stale or future-dated (>10s)")
         return quote
 
     def fetch_real_mt5_candles(self, symbol: str, timeframe_str: str = "H1", num_bars: int = 500) -> list:
@@ -128,6 +129,10 @@ class MarketDataManager:
             raise ValueError("Unsupported timeframe")
         if isinstance(num_bars, bool) or not isinstance(num_bars, int) or num_bars <= 0:
             raise ValueError("Positive integer bar count required")
+        from .time_integrity import require_verified_timebase, validate_bar_times, TimeIntegrityError
+        require_verified_timebase(self.timebase)
+        if self.timebase.timeframe != timeframe_str:
+            raise TimeIntegrityError("TIMEFRAME_EVIDENCE_MISMATCH")
 
         try:
             import MetaTrader5 as mt5
@@ -144,8 +149,11 @@ class MarketDataManager:
                         candles.append(c)
 
                     self.validate_dataset(candles)
+                    validate_bar_times(candles, self.timebase)
                     self.store_candles_in_db(sym, timeframe_str, candles)
                     return candles
+        except TimeIntegrityError:
+            raise  # never mask a time rejection by returning older cached bars
         except Exception:
             pass
 
@@ -156,6 +164,7 @@ class MarketDataManager:
                 if rows:
                     candles = [Candle(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7]) for r in rows]
                     self.validate_dataset(candles)
+                    validate_bar_times(candles, self.timebase)
                     return candles
 
         raise RuntimeError(f"FATAL: Real MT5 market data unavailable for symbol {sym}. Fail-closed active.")

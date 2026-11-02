@@ -1,0 +1,64 @@
+{
+  "observed_utc": "2026-11-02T10:16:58.478383+00:00",
+  "sources": [
+    {
+      "protocol": "NTPv4_unauthenticated",
+      "host": "time.cloudflare.com",
+      "status": "OBSERVED",
+      "request_transmit_hex": "ee92e19a87ded800",
+      "response_hex": "240300e7000020900000001c0a3d0804ee92e18d4446cb89ee92e19a87ded800ee92e19b42bff7a9ee92e19b42c3d4ee",
+      "local_sent_utc": "2026-11-02T10:16:58.530744+00:00",
+      "local_received_utc": "2026-11-02T10:16:58.555874+00:00",
+      "server_received_utc": "2026-11-02T10:16:59.260742+00:00",
+      "server_transmitted_utc": "2026-11-02T10:16:59.260801+00:00",
+      "stratum": 3,
+      "leap_indicator": 0,
+      "offset_server_minus_windows_seconds": 0.7174619436264038,
+      "round_trip_seconds": 0.025071382522583008,
+      "monotonic_elapsed_seconds": 0.025117099983617663
+    },
+    {
+      "protocol": "NTPv4_unauthenticated",
+      "host": "time.google.com",
+      "status": "OBSERVED",
+      "request_transmit_hex": "ee92e19a87c44000",
+      "response_hex": "240100ec0000000000000007474f4f47ee92e19b52c64396ee92e19a87c44000ee92e19b52c64397ee92e19b52c64399",
+      "local_sent_utc": "2026-11-02T10:16:58.530338+00:00",
+      "local_received_utc": "2026-11-02T10:16:58.677360+00:00",
+      "server_received_utc": "2026-11-02T10:16:59.323338+00:00",
+      "server_transmitted_utc": "2026-11-02T10:16:59.323338+00:00",
+      "stratum": 1,
+      "leap_indicator": 0,
+      "offset_server_minus_windows_seconds": 0.7194887399673462,
+      "round_trip_seconds": 0.14702200889587402,
+      "monotonic_elapsed_seconds": 0.14699470001505688
+    },
+    {
+      "protocol": "HTTPS_Date_corroboration_only",
+      "url": "https://www.cloudflare.com/cdn-cgi/trace",
+      "status": "OBSERVED",
+      "local_sent_utc": "2026-11-02T10:16:58.476897+00:00",
+      "local_received_utc": "2026-11-02T10:17:00.523713+00:00",
+      "server_date": "Mon, 02 Nov 2026 10:16:59 GMT",
+      "age_header": null,
+      "http_status": 200,
+      "offset_from_local_midpoint_seconds": -0.5003046989440918,
+      "round_trip_seconds": 2.0468886999879032,
+      "limitations": "HTTP date has one-second resolution, path delay and possible intermediary clocks; not NTP"
+    },
+    {
+      "protocol": "HTTPS_Date_corroboration_only",
+      "url": "https://www.google.com/generate_204",
+      "status": "OBSERVED",
+      "local_sent_utc": "2026-11-02T10:16:58.478191+00:00",
+      "local_received_utc": "2026-11-02T10:16:58.799030+00:00",
+      "server_date": "Mon, 02 Nov 2026 10:16:59 GMT",
+      "age_header": null,
+      "http_status": 204,
+      "offset_from_local_midpoint_seconds": 0.3613896369934082,
+      "round_trip_seconds": 0.32092450000345707,
+      "limitations": "HTTP date has one-second resolution, path delay and possible intermediary clocks; not NTP"
+    }
+  ],
+  "limitations": "UDP NTP is not authenticated/NTS; independent providers and HTTPS corroborate seconds-scale clock accuracy, not historical broker DST"
+}

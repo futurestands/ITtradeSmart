@@ -8,6 +8,7 @@ import json
 import os
 from .market_data import MarketDataManager
 from .accounting import ResearchInstrument, ResearchCosts
+from .time_integrity import validate_bar_times
 
 
 @dataclass
@@ -41,7 +42,7 @@ class BacktestEngine:
     """
     def __init__(self, initial_balance=10000.0, spread_pips=None, slippage_pips=None,
                  database_path=None, *, instrument: ResearchInstrument = None,
-                 costs: ResearchCosts = None, volume=None):
+                 costs: ResearchCosts = None, volume=None, timebase=None):
         if not isfinite(initial_balance) or initial_balance <= 0:
             raise ValueError("Initial balance must be finite and positive")
         if spread_pips is not None or slippage_pips is not None:
@@ -50,6 +51,7 @@ class BacktestEngine:
         self.instrument = instrument
         self.costs = costs
         self.volume = volume
+        self.timebase = timebase
         self.database_path = database_path or os.environ.get("SMARTHUB_STATE_DB")
 
     def run_backtest(self, strategy, candles: list, symbol: str = None) -> BacktestResult:
@@ -61,6 +63,7 @@ class BacktestEngine:
             raise ValueError("Exact broker symbol mismatch")
         spec.validate_volume(self.volume)
         MarketDataManager.validate_dataset(candles)
+        validate_bar_times(candles, self.timebase)
         for c in candles:
             stamp = datetime.fromisoformat(c.time_utc)
             if stamp.utcoffset() is None or stamp.utcoffset().total_seconds() != 0:
@@ -162,7 +165,7 @@ class BacktestEngine:
             net/total if total else 0.0, None, max_streak,
             sum(wins)/len(wins) if wins else 0.0,
             sum(losses)/len(losses) if losses else 0.0,
-            {"instrument": asdict(spec), "costs": asdict(costs),
+            {"instrument": asdict(spec), "costs": asdict(costs), "timebase": asdict(self.timebase),
              "spread": "bar spread in broker points; constant within each bar",
              "price_basis": "BID OHLC REQUIRED", "holding_bars": 5,
              "positions": "one at a time", "drawdown": "closed-trade balance only",

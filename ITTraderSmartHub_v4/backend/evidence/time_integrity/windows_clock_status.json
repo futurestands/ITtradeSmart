@@ -1,0 +1,8 @@
+{
+  "status_query": "The service has not been started. (0x80070426)",
+  "source_query": "The service has not been started. (0x80070426)",
+  "timezone_id": "E. Africa Standard Time",
+  "base_utc_offset_seconds": 10800,
+  "last_observed_utc": "2026-11-02T10:40:49.6816123+00:00",
+  "clock_or_service_modified": false
+}

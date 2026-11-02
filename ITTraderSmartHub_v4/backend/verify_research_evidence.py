@@ -29,12 +29,15 @@ def verify():
         MarketDataManager.validate_dataset(candles)
         (excluded if "PARTIAL" in record.get("capture_status", "") else checked).append(name)
     return {"status": "VERIFIED_FILE_HASHES_AND_STRUCTURAL_CHECKS_ONLY",
+            "timebase_status": "TIMEBASE_UNVERIFIED", "research_eligible": False,
             "checked": checked, "excluded_partial_captures": excluded,
             "limitations": "No proof of completeness, economic comparability or strategy performance"}
 
 
 if __name__ == "__main__":
     result = verify()
-    (Path(__file__).parent / "evidence/evidence_verification.json").write_text(
+    output = Path(__file__).parent / "evidence/time_integrity"
+    output.mkdir(parents=True, exist_ok=True)
+    (output / "evidence_verification.json").write_text(
         json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result, indent=2))

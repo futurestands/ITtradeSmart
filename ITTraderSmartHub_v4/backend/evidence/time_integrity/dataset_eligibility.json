@@ -1,0 +1,43 @@
+{
+  "status": "TIMEBASE_UNVERIFIED",
+  "research_eligible": false,
+  "reason": "Absolute UTC mapping, historical broker DST and missing session intervals not independently established",
+  "datasets": [
+    {
+      "file": "USTECH100M_D1.csv",
+      "sha256": "ec7779dff140e80f5699e44c33b91c439057c35c36a4a691101d82c668ba364a",
+      "status": "TIMEBASE_UNVERIFIED",
+      "eligible_for_training_or_performance": false
+    },
+    {
+      "file": "USTECH100M_H1.csv",
+      "sha256": "35007b45ad6e62dfde7ae8b5e91cee7351cdfb93225de64e0bb42fd876b3b71d",
+      "status": "TIMEBASE_UNVERIFIED",
+      "eligible_for_training_or_performance": false
+    },
+    {
+      "file": "USTECH100M_H4.csv",
+      "sha256": "bbc529d55a395124b850c954020fdafea3191d0000665ba48c195e80efe9032b",
+      "status": "TIMEBASE_UNVERIFIED",
+      "eligible_for_training_or_performance": false
+    },
+    {
+      "file": "USTECH100M_M15.csv",
+      "sha256": "8bbaf1751398c19658736dd24f752bd3adb63745ac12950e7eff840275f72d27",
+      "status": "TIMEBASE_UNVERIFIED",
+      "eligible_for_training_or_performance": false
+    },
+    {
+      "file": "USTECH100M_M30.csv",
+      "sha256": "22358133132d75e644145bb5f9021edaf264d36f55ff769bbb1e100c94fc399a",
+      "status": "TIMEBASE_UNVERIFIED",
+      "eligible_for_training_or_performance": false
+    },
+    {
+      "file": "USTECH100M_M5.partial.csv",
+      "sha256": "3fb324b79795fa420669eb446a3fdd53958870a52e73551d133e2a565b0efdbe",
+      "status": "TIMEBASE_UNVERIFIED",
+      "eligible_for_training_or_performance": false
+    }
+  ]
+}

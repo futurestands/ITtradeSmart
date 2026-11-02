@@ -1,0 +1,18 @@
+{
+  "observed_utc": "2026-11-02T10:32:13.386452+00:00",
+  "paper_controller": {
+    "status": "FAILED",
+    "exception_type": "AttributeError",
+    "detail": "'MarketDataManager' object has no attribute 'last_price'"
+  },
+  "analyze_route": {
+    "status": "FAILED",
+    "exception_type": "NameError",
+    "detail": "name 'key' is not defined"
+  },
+  "risk_guardian_signature": "(self, signal: bot.strategies.Signal, verified_account_equity: float, verified_free_margin: float, daily_starting_equity: float, open_positions_count: int, symbol_spec: bot.market_data.SymbolSpec, infrastructure_stress: int = None, data_fresh: bool = True, mt5_gateway_client=None) -> bot.risk_guardian.RiskValidationResult",
+  "android_source_diff": [],
+  "execution_adapter_diff": [],
+  "original_evidence_files_preserved": 16,
+  "python_order_send_call_sites": []
+}

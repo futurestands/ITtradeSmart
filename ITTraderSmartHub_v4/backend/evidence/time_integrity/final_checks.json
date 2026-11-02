@@ -1,0 +1,112 @@
+{
+  "starting_commit": "2b9823ed3832e475ae76a49d81b893421beb4116",
+  "branch": "fix/v5-trustworthy-backtest-phase1",
+  "baseline_pytest": "71 passed",
+  "final_pytest": "99 passed",
+  "python_files_parsed": 29,
+  "order_send_call_sites": [],
+  "original_evidence_files_preserved_locally": 16,
+  "original_index_csv_git_bytes_verified": 6,
+  "original_evidence_comparisons": {
+    "android_phase1.txt": {
+      "working_sha256": "9b05f55b68bcbb56f0edd03f3f04061101b0c07619348190c4f5a8c63fef8ddf",
+      "starting_commit_blob_sha256": "9b05f55b68bcbb56f0edd03f3f04061101b0c07619348190c4f5a8c63fef8ddf",
+      "byte_equal_to_git_blob": true,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "android_test_summary.json": {
+      "working_sha256": "2f69c8106b5d739e2c60f17b3ce5d0bb3268e95ca2aa3e3ac0c4beaa5849a03a",
+      "starting_commit_blob_sha256": "51ab9b07756ed178b43518498ba950e489b55cc6fd6843577c2e4538ef6f152d",
+      "byte_equal_to_git_blob": false,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "baseline_diagnostics.json": {
+      "working_sha256": "01049f1bc0f744c41c564bb85edf2194beb344103f654def5c1aeaf69149e92c",
+      "starting_commit_blob_sha256": "0f8fc252d5adfc52cba9672b26e9e415dfadb8b6f5483dd49f4105423b1e99c3",
+      "byte_equal_to_git_blob": false,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "data_quality.json": {
+      "working_sha256": "af8f0ad0f2e44304a0358f612eb4a8ef1c94e6c79b3dbd30b6fde9e862a58275",
+      "starting_commit_blob_sha256": "d3cf015d30568475d28301257d27c55c66d28c593071b68cda344740c6937ca5",
+      "byte_equal_to_git_blob": false,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "evidence_verification.json": {
+      "working_sha256": "d8cd041b5cce7a553eb4277f92977b7d0dd0a51d3990d602f7ce18860c6f0224",
+      "starting_commit_blob_sha256": "00820291254e71734ad7f1375d5c523121cd8182841e25e7a31c68822022f1d2",
+      "byte_equal_to_git_blob": false,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "final_backcheck.json": {
+      "working_sha256": "2712906f71b6887c10c30f46c20d30c0d46eee52806ad83ccb22fca00ca5baeb",
+      "starting_commit_blob_sha256": "9cad5cbdb1152182a95324f70eb9b0772ff041973fb8a3125e9ed769abf9e076",
+      "byte_equal_to_git_blob": false,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "nas100_discovery.json": {
+      "working_sha256": "7315c68ba028ca996416b20b93192b606f758d37977ab961c814ece398514f12",
+      "starting_commit_blob_sha256": "5bf75b7b6f1b859ca49ad2496db6ae08b7b907dfcd041b148d63a8b76183ed53",
+      "byte_equal_to_git_blob": false,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "nas100_discovery_timeout.json": {
+      "working_sha256": "8bf92a6781fc6c1d996d5b1ee57478594cf051147bf59f3e8ae125efb6fafa6d",
+      "starting_commit_blob_sha256": "7042cf1b8b862c1df5d2c126a84bd84058ae0a1f639188a1c197f54739c5840c",
+      "byte_equal_to_git_blob": false,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "pytest_phase1.txt": {
+      "working_sha256": "1bd2a372ab922256ae4d96400b4cfc1b629a0532d8afaf690097d40d2ba8d484",
+      "starting_commit_blob_sha256": "1bd2a372ab922256ae4d96400b4cfc1b629a0532d8afaf690097d40d2ba8d484",
+      "byte_equal_to_git_blob": true,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "rea_capability_summary.json": {
+      "working_sha256": "d994730f054b9b00db5670c8da19f93363fcfd03920861bed384b4f9a50f3a34",
+      "starting_commit_blob_sha256": "3d9e82d163198e17a10ca13811543333127870c85aa66c4c9b48c6edd95b9905",
+      "byte_equal_to_git_blob": false,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "USTECH100M_D1.csv": {
+      "working_sha256": "ec7779dff140e80f5699e44c33b91c439057c35c36a4a691101d82c668ba364a",
+      "starting_commit_blob_sha256": "ec7779dff140e80f5699e44c33b91c439057c35c36a4a691101d82c668ba364a",
+      "byte_equal_to_git_blob": true,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "USTECH100M_H1.csv": {
+      "working_sha256": "35007b45ad6e62dfde7ae8b5e91cee7351cdfb93225de64e0bb42fd876b3b71d",
+      "starting_commit_blob_sha256": "35007b45ad6e62dfde7ae8b5e91cee7351cdfb93225de64e0bb42fd876b3b71d",
+      "byte_equal_to_git_blob": true,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "USTECH100M_H4.csv": {
+      "working_sha256": "bbc529d55a395124b850c954020fdafea3191d0000665ba48c195e80efe9032b",
+      "starting_commit_blob_sha256": "bbc529d55a395124b850c954020fdafea3191d0000665ba48c195e80efe9032b",
+      "byte_equal_to_git_blob": true,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "USTECH100M_M15.csv": {
+      "working_sha256": "8bbaf1751398c19658736dd24f752bd3adb63745ac12950e7eff840275f72d27",
+      "starting_commit_blob_sha256": "8bbaf1751398c19658736dd24f752bd3adb63745ac12950e7eff840275f72d27",
+      "byte_equal_to_git_blob": true,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "USTECH100M_M30.csv": {
+      "working_sha256": "22358133132d75e644145bb5f9021edaf264d36f55ff769bbb1e100c94fc399a",
+      "starting_commit_blob_sha256": "22358133132d75e644145bb5f9021edaf264d36f55ff769bbb1e100c94fc399a",
+      "byte_equal_to_git_blob": true,
+      "canonical_lf_equal_to_git_blob": true
+    },
+    "USTECH100M_M5.partial.csv": {
+      "working_sha256": "3fb324b79795fa420669eb446a3fdd53958870a52e73551d133e2a565b0efdbe",
+      "starting_commit_blob_sha256": "3fb324b79795fa420669eb446a3fdd53958870a52e73551d133e2a565b0efdbe",
+      "byte_equal_to_git_blob": true,
+      "canonical_lf_equal_to_git_blob": true
+    }
+  },
+  "android_changes": [],
+  "execution_adapter_changes": [],
+  "research_eligible": false,
+  "timebase_status": "TIMEBASE_UNVERIFIED"
+}
