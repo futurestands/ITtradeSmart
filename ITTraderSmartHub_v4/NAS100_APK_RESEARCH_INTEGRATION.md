@@ -52,3 +52,37 @@ Phone connectivity requires the existing authenticated TLS Gateway reachable ove
 
 No real USTECH100M predictions; no real broker clock/DST or costs have been independently approved. No model artifacts, authentic CSV, account information, broker secrets or Lab tokens are made available to Android.
 All previous v1 Lab companion contracts are preserved. This feature never makes an inference request or places any live, paper or demo orders.
+
+## Android installation signature mismatch — isolated research debug build
+
+On the user's device, \`adb install -r app-debug.apk\` failed with:
+
+\`INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package com.ittrader.smarthub signatures do not match newer version\`.
+
+This is not an APK compilation error. Android will not update an existing package using a mismatched signing certificate. **Do not uninstall the existing SmartHub package**, which may contain locally secured credentials and app settings.
+
+The Android Gradle **debug** build now uses \`applicationIdSuffix '.research'\`, resulting in \`com.ittrader.smarthub.research\`. A debug-only manifest overlay displays the launcher label **ITTrader NAS100 Research**. The release application ID, original Kotlin/Java namespace \`com.ittrader.smarthub\`, existing signed installed package and its data are unchanged.
+
+To use on a paired Redmi / Android device:
+
+~~~powershell
+Set-Location "C:\Users\MJ\Documents\ITtradeSmart-NAS100-Integration\ITTraderSmartHub_v4\android_project"
+git pull --ff-only
+.\gradlew.bat --no-daemon testDebugUnitTest assembleDebug
+if ($LASTEXITCODE -ne 0) { throw "APK build failed" }
+
+$adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
+$apk = Join-Path (Get-Location) "app\build\outputs\apk\debug\app-debug.apk"
+& $adb devices -l
+# Choose the current connected device serial from the output; wireless ports rotate.
+$device = "REPLACE_WITH_CURRENT_ADB_SERIAL"
+& $adb -s $device install -r $apk
+if ($LASTEXITCODE -ne 0) { throw "Research APK install failed; preserve existing SmartHub app" }
+& $adb -s $device shell monkey -p com.ittrader.smarthub.research -c android.intent.category.LAUNCHER 1
+~~~
+
+The research build is a separate app, **so it has its own Android Keystore and enrollment state**. It will not inherit the existing application's login/session/device ID. Any future secure Gateway pairing must use a new authorized monitoring-device enrollment and an approved HTTPS/private-network path. Do not transfer secrets by copying the original app's storage.
+
+Do not execute words such as \`Performing Streamed Install\` or \`Success\` as PowerShell commands; those are *sample output*, not instructions.
+
+**Status:** debug-side-by-side code committed; the user must still verify the new Gradle build, actual device installation and launch. No install success has been claimed.
