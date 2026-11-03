@@ -67,6 +67,24 @@ class GatewayRepository {
         executeRequest(request, callback)
     }
 
+    fun queryMT5Accounts(callback: (Result<JSONObject>) -> Unit) {
+        // Authenticated, read-only aliases. No account credentials or orders.
+        val endpoint = validateEndpointUrl(GatewaySession.gatewayUrl).getOrElse {
+            callback(Result.failure(it))
+            return
+        }
+        if (!GatewaySession.isAuthenticated()) {
+            callback(Result.failure(IllegalStateException("Pair this device with the Gateway first.")))
+            return
+        }
+        val request = Request.Builder()
+            .url("$endpoint/api/v5/mt5/accounts")
+            .header("Authorization", "Bearer ${GatewaySession.apiToken}")
+            .get()
+            .build()
+        executeRequest(request, callback)
+    }
+
     fun queryBotStatus(callback: (Result<JSONObject>) -> Unit) {
         val valRes = validateEndpointUrl(GatewaySession.gatewayUrl)
         val endpoint = valRes.getOrElse {
