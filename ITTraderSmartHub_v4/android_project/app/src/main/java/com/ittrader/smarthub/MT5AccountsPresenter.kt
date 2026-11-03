@@ -11,7 +11,7 @@ object MT5AccountsPresenter {
     private val accountFields = setOf("id", "label", "provider", "account_kind", "symbol",
         "connection_status", "read_only", "execution_authorized", "ea_execution_permitted")
     private val kinds = setOf("FREE_TRIAL", "DEMO", "EVALUATION", "FUNDED", "LIVE")
-    private val providers = setOf("FTMO", "FUNDEDNEXT", "OTHER")
+    private val brokerPattern = Regex("^[A-Z][A-Z0-9 ._-]{1,39}$")
     private val safeId = Regex("^[a-z][a-z0-9_-]{2,31}$")
     private val safeSymbol = Regex("^[A-Za-z0-9._-]{2,32}$")
 
@@ -59,7 +59,7 @@ object MT5AccountsPresenter {
             val symbol = item.optString("symbol")
             if (!safeId.matches(id) || !seen.add(id) ||
                 label.length !in 1..40 || label.any { it.code < 32 || it.code > 126 } ||
-                provider !in providers || kind !in kinds ||
+                !brokerPattern.matches(provider) || kind !in kinds ||
                 !safeSymbol.matches(symbol) ||
                 item.optString("connection_status") != "NOT_CONNECTED" ||
                 item.opt("read_only") != true ||
