@@ -35,6 +35,15 @@ android {
     }
 
     buildTypes {
+        // Use an isolated app ID for local NAS100 research validation. The
+        // production SmartHub APK may be signed by a different certificate;
+        // never uninstall it or overwrite its Keystore-backed credentials.
+        // Java/Kotlin package and release applicationId stay unchanged.
+        debug {
+            applicationIdSuffix '.research'
+            versionNameSuffix '-nas100-research'
+        }
+
         release {
             minifyEnabled false
             shrinkResources false
