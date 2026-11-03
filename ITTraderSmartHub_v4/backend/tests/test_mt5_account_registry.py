@@ -217,3 +217,38 @@ def test_admin_opt_in_still_restricts_to_loopback(monkeypatch, tmp_path):
         headers={"Authorization": "Bearer " + token}, json=account(),
         environ_overrides={"REMOTE_ADDR": "192.0.2.8"})
     assert res.status_code == 403
+
+
+
+def test_profile_changes_round_trip_through_authenticated_gateway(monkeypatch, tmp_path):
+    monkeypatch.setenv("SMARTHUB_ACCOUNT_PROFILE_EDITING", "1")
+    monkeypatch.setenv("SMARTHUB_MT5_ACCOUNTS_FILE", str(tmp_path / "mt5_accounts.local.json"))
+    import app as gateway
+    from v4_services import ContextStore
+    monkeypatch.setattr(gateway, "_v4_store", ContextStore())
+    gateway.app.config["TESTING"] = True
+    client = gateway.app.test_client()
+    code = gateway._v4_store.generate_pairing_code()["pairing_code"]
+    token = gateway._v4_store.enroll_device(
+        "broker-editor-device-001", "TEST", code)["device_token"]
+    headers = {"Authorization": "Bearer " + token}
+    first = client.post("/api/v5/mt5/accounts", json=account("ftmo-trial"), headers=headers)
+    assert first.status_code == 200
+    assert first.json["account_count"] == 1
+
+    changed = {**account("ftmo-trial"), "symbol": "US100"}
+    edited = client.post("/api/v5/mt5/accounts", json=changed, headers=headers)
+    assert edited.status_code == 200
+    assert edited.json["account_count"] == 1
+    assert edited.json["accounts"][0]["symbol"] == "US100"
+
+    invalid = client.post("/api/v5/mt5/accounts", json={**changed, "trade_enabled": True}, headers=headers)
+    assert invalid.status_code == 400
+    assert client.get("/api/v5/mt5/accounts", headers=headers).json["accounts"][0]["symbol"] == "US100"
+
+    assert client.delete("/api/v5/mt5/accounts/ftmo-trial").status_code == 401
+    removed = client.delete("/api/v5/mt5/accounts/ftmo-trial", headers=headers)
+    assert removed.status_code == 200
+    assert removed.json["account_count"] == 0
+    assert read_mt5_accounts(tmp_path / "mt5_accounts.local.json")["account_count"] == 0
+    assert client.delete("/api/v5/mt5/accounts/ftmo-trial", headers=headers).status_code == 400
