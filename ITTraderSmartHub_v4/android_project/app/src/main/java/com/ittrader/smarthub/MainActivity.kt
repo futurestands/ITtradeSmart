@@ -1,6 +1,7 @@
 package com.ittrader.smarthub
 
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -65,15 +66,43 @@ class MainActivity : AppCompatActivity() {
         // No model inference, trade candidate submission, or bot controls.
         val txtNAS100Research = findViewById<TextView>(R.id.txtNAS100Research)
         val btnRefreshNAS100Research = findViewById<Button>(R.id.btnRefreshNAS100Research)
+        val btnNAS100ResearchDetails = findViewById<Button>(R.id.btnNAS100ResearchDetails)
+        var latestNAS100Response: org.json.JSONObject? = null
+        var showNAS100Details = false
+        btnNAS100ResearchDetails.visibility = View.GONE
+
+        btnNAS100ResearchDetails.setOnClickListener {
+            val snapshot = latestNAS100Response ?: return@setOnClickListener
+            showNAS100Details = !showNAS100Details
+            txtNAS100Research.text = if (showNAS100Details) {
+                NAS100ResearchPresenter.summary(snapshot)
+            } else {
+                NAS100ResearchPresenter.overview(snapshot)
+            }
+            btnNAS100ResearchDetails.setText(
+                if (showNAS100Details) R.string.nas100_research_details_hide
+                else R.string.nas100_research_details_show
+            )
+        }
         btnRefreshNAS100Research.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
             btnRefreshNAS100Research.isEnabled = false
-            txtNAS100Research.text = "Loading NAS100 synthetic research status..."
+            btnNAS100ResearchDetails.visibility = View.GONE
+            latestNAS100Response = null
+            showNAS100Details = false
+            btnNAS100ResearchDetails.setText(R.string.nas100_research_details_show)
+            txtNAS100Research.text = "Checking local NAS100 research report..."
             repository.queryNAS100ResearchProgress { result ->
                 runOnUiThread {
                     btnRefreshNAS100Research.isEnabled = true
                     txtNAS100Research.text = result.fold(
-                        onSuccess = { NAS100ResearchPresenter.summary(it) },
+                        onSuccess = { response ->
+                            if (NAS100ResearchPresenter.hasVerifiedSyntheticReport(response)) {
+                                latestNAS100Response = response
+                                btnNAS100ResearchDetails.visibility = View.VISIBLE
+                            }
+                            NAS100ResearchPresenter.overview(response)
+                        },
                         onFailure = { NAS100ResearchPresenter.unavailable() }
                     )
                 }
