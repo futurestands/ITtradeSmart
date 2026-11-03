@@ -64,7 +64,7 @@ def test_three_independent_account_aliases_without_connection_or_credentials(tmp
     [{**account(), "terminal": r"C:\terminal64.exe"}],
     [{**account(), "label": "Sensitive\nLog"}],
     [{**account(), "id": "../escape"}],
-    [{**account(), "provider": "UNKNOWN"}],
+    [{**account(), "provider": "*INVALID BROKER"}],
     [{**account(), "account_kind": "UNKNOWN"}],
     [{**account(), "symbol": "../../private"}],
 ])
@@ -173,6 +173,10 @@ def test_profile_add_edit_delete_atomic_and_persistent(monkeypatch, tmp_path):
     reread = read_mt5_accounts(path)
     assert reread["accounts"][0]["symbol"] == "US100"
     assert reread["accounts"][0]["read_only"] is True
+    extra = account("fourth-broker", "IC MARKETS", "DEMO")
+    assert upsert_mt5_profile(extra)["account_count"] == 4
+    assert read_mt5_accounts(path)["accounts"][3]["provider"] == "IC MARKETS"
+    assert delete_mt5_profile("fourth-broker")["account_count"] == 3
     assert delete_mt5_profile("third-demo")["account_count"] == 2
     assert read_mt5_accounts(path)["account_count"] == 2
     assert not list(tmp_path.glob(".mt5-accounts-*.tmp"))
