@@ -109,6 +109,25 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Multiple accounts are *registered aliases* until separate MT5
+        // terminal sessions are independently verified on Windows.
+        val txtMT5Accounts = findViewById<TextView>(R.id.txtMT5Accounts)
+        val btnRefreshMT5Accounts = findViewById<Button>(R.id.btnRefreshMT5Accounts)
+        btnRefreshMT5Accounts.setOnClickListener {
+            updateGatewayUrlFromInput(edtGatewayIp)
+            btnRefreshMT5Accounts.isEnabled = false
+            txtMT5Accounts.text = "Reading Windows broker account registry..."
+            repository.queryMT5Accounts { result ->
+                runOnUiThread {
+                    btnRefreshMT5Accounts.isEnabled = true
+                    txtMT5Accounts.text = result.fold(
+                        onSuccess = { MT5AccountsPresenter.summary(it) },
+                        onFailure = { MT5AccountsPresenter.unavailable() }
+                    )
+                }
+            }
+        }
+
         // Pre-fill stored gateway URL
         edtGatewayIp.setText(GatewaySession.gatewayUrl)
 
