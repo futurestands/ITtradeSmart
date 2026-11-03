@@ -61,6 +61,25 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // NAS100 research: read-only status from the authenticated Gateway.
+        // No model inference, trade candidate submission, or bot controls.
+        val txtNAS100Research = findViewById<TextView>(R.id.txtNAS100Research)
+        val btnRefreshNAS100Research = findViewById<Button>(R.id.btnRefreshNAS100Research)
+        btnRefreshNAS100Research.setOnClickListener {
+            updateGatewayUrlFromInput(edtGatewayIp)
+            btnRefreshNAS100Research.isEnabled = false
+            txtNAS100Research.text = "Loading NAS100 synthetic research status..."
+            repository.queryNAS100ResearchProgress { result ->
+                runOnUiThread {
+                    btnRefreshNAS100Research.isEnabled = true
+                    txtNAS100Research.text = result.fold(
+                        onSuccess = { NAS100ResearchPresenter.summary(it) },
+                        onFailure = { NAS100ResearchPresenter.unavailable() }
+                    )
+                }
+            }
+        }
+
         // Pre-fill stored gateway URL
         edtGatewayIp.setText(GatewaySession.gatewayUrl)
 
