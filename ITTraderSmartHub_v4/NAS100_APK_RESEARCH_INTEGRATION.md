@@ -133,3 +133,31 @@ After a local session, \`adb -s $device reverse --remove tcp:5000\` removes this
 ### Security limitation
 
 This debug-only path provides a temporary development transport via ADB, not a production deployment. Other locally running apps on the same debugging device could potentially attempt to reach local forwarded ports, so endpoint authentication remains mandatory and master tokens must stay in the Windows host environment. Revoke temporary device enrollment after testing or let its 24-hour expiry lapse. If the debugging connection is interrupted, the forward may disappear. Do not port-forward the raw Flask development server to a LAN or the internet.
+
+
+## Next UX milestone: explain NAS100 research in plain language (pending Android build)
+
+After successful physical device connection, the user confirmed the original research card displayed eight technical Brier comparisons but was difficult to understand. The research UI has been revised **only on this draft development branch** to:
+
+- Default to a short **Research connection: working** status once the existing strict synthetic-report validator accepts the payload.
+- Explain the 6 experiments as 3 **artificial** price paths crossed with 2 **hypothetical** cost settings. These are *not six trades or six backtests against genuine broker data*.
+- Describe trend-vs-breakout frequency of improvement only if both setups have **matching evaluated synthetic denominators**. Never equate those counts to profits, win rates or real-world model accuracy.
+- Always show **AI Model NOT READY; live predictions DISABLED; trade execution DISABLED**.
+- Hide the old eight-row technical readout by default behind a new **View technical results / Hide technical results** button. The underlying strict JSON schema and fail-closed trading locks remain unchanged.
+- Preserve the existing APK installation identity, Gateway authentication, real-time BTC feed and unrelated controls.
+
+Added presenter unit tests verify readable summary, matched-denominator caveat, rejected fabricated trade permissions, and still retain existing strict report tests. **This new UI code has been pushed but has not been rebuilt, tested or installed on the user's Windows/phone yet.**
+
+Verification:
+~~~powershell
+Set-Location 'C:\Users\MJ\Documents\ITtradeSmart-NAS100-Integration\ITTraderSmartHub_v4\android_project'
+git pull --ff-only
+.\gradlew.bat --no-daemon testDebugUnitTest assembleDebug
+if ($LASTEXITCODE -ne 0) { throw 'Android build failed; do not install' }
+$adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
+& $adb devices -l
+$device = 'REPLACE_WITH_CURRENT_CONNECTED_SERIAL'
+& $adb -s $device install -r '.\app\build\outputs\apk\debug\app-debug.apk'
+~~~
+
+Separately track the **real broker-data prerequisite** in NAS100 Lab issue https://github.com/futurestands/NAS100-AI-Lab/issues/2. Existing \`USTECH100M_M5_raw.csv\` remains \`TIMEBASE_UNVERIFIED\`, is quarantined and is not a permissible real model-training source until timebase/session/contract evidence is independently confirmed.
