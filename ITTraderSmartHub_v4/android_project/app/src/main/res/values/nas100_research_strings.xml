@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="nas100_research_heading">NAS100 RESEARCH PROGRESS — SYNTHETIC ONLY</string>
-    <string name="nas100_research_initial">Research report: Not checked\nAI Model: NOT READY\nGenuine NAS100 signals and trade execution: DISABLED.</string>
-    <string name="nas100_research_refresh">Refresh NAS100 Research Progress</string>
+    <string name="nas100_research_heading">NAS100 AI RESEARCH — EXPERIMENTAL</string>
+    <string name="nas100_research_initial">Research connection: Not checked\nAI model: NOT READY\nReal NAS100 predictions and trade execution: DISABLED.</string>
+    <string name="nas100_research_refresh">Refresh research status</string>
+    <string name="nas100_research_details_show">View technical results</string>
+    <string name="nas100_research_details_hide">Hide technical results</string>
 </resources>
