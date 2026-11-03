@@ -605,6 +605,9 @@
         <!-- Read-only NAS100 synthetic research progress; no trading controls. -->
         <include layout="@layout/section_nas100_research" />
 
+        <!-- Local read-only registered MT5 accounts, never live broker sessions. -->
+        <include layout="@layout/section_mt5_accounts" />
+
         <!-- Section 7: Real-Time Telemetry & Terminal Monitor -->
         <LinearLayout
             android:layout_width="match_parent"
