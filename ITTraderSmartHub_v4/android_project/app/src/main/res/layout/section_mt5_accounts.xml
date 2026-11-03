@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_marginBottom="16dp"
+    android:background="@drawable/bg_card">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/mt5_accounts_heading"
+        android:textStyle="bold"
+        android:textColor="@color/accent_blue"
+        android:textSize="14sp"/>
+
+    <TextView
+        android:id="@+id/txtMT5Accounts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/mt5_accounts_initial"
+        android:textColor="@color/text_primary"
+        android:textSize="13sp"
+        android:lineSpacingExtra="4dp"
+        android:accessibilityLiveRegion="polite"/>
+
+    <Button
+        android:id="@+id/btnRefreshMT5Accounts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:layout_marginTop="12dp"
+        android:text="@string/mt5_accounts_refresh"
+        app:backgroundTint="@color/card_stroke"
+        android:textColor="@color/text_primary"/>
+</LinearLayout>
