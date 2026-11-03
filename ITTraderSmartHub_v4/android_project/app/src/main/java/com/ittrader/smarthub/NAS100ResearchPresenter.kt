@@ -52,6 +52,72 @@ object NAS100ResearchPresenter {
         return value
     }
 
+    // Compact, plain-language research status for the main phone screen.
+    // Reuse the FULL strict validator in summary() before accessing any values.
+    // We do not transform synthetic results into live signals or win rates.
+    private const val AVAILABLE_HEADER =
+        "NAS100 RESEARCH DASHBOARD\nLocal synthetic report: Available (unverified)\n"
+
+    fun hasVerifiedSyntheticReport(response: JSONObject): Boolean =
+        summary(response).startsWith(AVAILABLE_HEADER)
+
+    fun overview(response: JSONObject): String {
+        val fullyValidated = summary(response)
+        if (!fullyValidated.startsWith(AVAILABLE_HEADER)) return fullyValidated
+
+        val paths = response.getInt("synthetic_paths")
+        val cases = response.getInt("hypothetical_cost_scenarios")
+        val experiments = response.getInt("run_count")
+        val rows = response.getJSONArray("comparisons")
+        var trendImproved = 0
+        var trendEvaluated = 0
+        var breakoutImproved = 0
+        var breakoutEvaluated = 0
+        for (i in 0 until rows.length()) {
+            val row = rows.getJSONObject(i)
+            val improved = row.getInt("improved_synthetic_paths")
+            val evaluated = row.getInt("evaluated_synthetic_paths")
+            when (row.getString("setup_id")) {
+                "TREND_CONTINUATION_V1" -> {
+                    trendImproved += improved
+                    trendEvaluated += evaluated
+                }
+                "BREAKOUT_RETEST_V1" -> {
+                    breakoutImproved += improved
+                    breakoutEvaluated += evaluated
+                }
+            }
+        }
+
+        val interpretation = if (trendEvaluated > 0 &&
+            breakoutEvaluated > 0 && trendEvaluated == breakoutEvaluated
+        ) {
+            when {
+                trendImproved > breakoutImproved ->
+                    "Trend continuation showed more frequent forecast-score improvements than breakout/retest in these artificial tests."
+                breakoutImproved > trendImproved ->
+                    "Breakout/retest showed more frequent forecast-score improvements than trend continuation in these artificial tests."
+                else -> "Both setups showed the same number of forecast-score improvements in these artificial tests."
+            }
+        } else {
+            "Two trading setups are being compared using artificial price histories."
+        }
+
+        return buildString {
+            append("RESEARCH CONNECTION: WORKING\n")
+            append("The phone received the research report from your computer.\n\n")
+            append("TESTS COMPLETED: ").append(experiments).append("\n")
+            append(paths).append(" artificial price paths x ")
+                .append(cases).append(" hypothetical trading-cost settings.\n\n")
+            append("WHAT WE LEARNED\n")
+            append(interpretation).append("\n")
+            append("These are NOT winning trades, accuracy percentages, or proof of profit.\n\n")
+            append("REAL NAS100 AI MODEL: NOT READY\n")
+            append("Live predictions: DISABLED\n")
+            append("Trade execution: DISABLED")
+        }
+    }
+
     fun summary(response: JSONObject): String {
         if (!hasExactFields(response, fields) ||
             response.opt("schema_version") != 1 ||
