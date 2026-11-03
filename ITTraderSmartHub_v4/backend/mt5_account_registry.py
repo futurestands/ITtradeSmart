@@ -18,7 +18,7 @@ MAX_CONFIG_BYTES = 64 * 1024
 MAX_ACCOUNTS = 20
 _ID = re.compile(r"^[a-z][a-z0-9_-]{2,31}$")
 _SYMBOL = re.compile(r"^[A-Za-z0-9._-]{2,32}$")
-_PROVIDERS = {"FTMO", "FUNDEDNEXT", "OTHER"}
+_BROKER = re.compile(r"^[A-Z][A-Z0-9 ._-]{1,39}$")
 _KINDS = {"FREE_TRIAL", "DEMO", "EVALUATION", "FUNDED", "LIVE"}
 _ENTRY_KEYS = {"id", "label", "provider", "account_kind", "symbol"}
 _WRITE_LOCK = RLock()
@@ -106,7 +106,7 @@ def read_mt5_accounts(config_path=None):
                 type(alias) is not str or _ID.fullmatch(alias) is None or alias in ids
                 or type(label) is not str or not 1 <= len(label) <= 40
                 or any(ord(c) < 32 or ord(c) > 126 for c in label)
-                or type(provider) is not str or provider not in _PROVIDERS
+                or type(provider) is not str or _BROKER.fullmatch(provider) is None
                 or type(kind) is not str or kind not in _KINDS
                 or type(symbol) is not str or _SYMBOL.fullmatch(symbol) is None
             ):
@@ -151,6 +151,8 @@ def _validate_profile(profile):
         raise ProfileConfigError("Only alias, label, provider, account type and symbol are allowed")
     alias, label, provider, kind, symbol = (profile[k] for k in
         ("id", "label", "provider", "account_kind", "symbol"))
+    if type(provider) is str:
+        provider = provider.upper()
     if (
         type(alias) is not str or _ID.fullmatch(alias) is None
         or type(label) is not str or not 1 <= len(label) <= 40
@@ -160,7 +162,9 @@ def _validate_profile(profile):
         or type(symbol) is not str or _SYMBOL.fullmatch(symbol) is None
     ):
         raise ProfileConfigError("Invalid broker profile format")
-    return {key: profile[key] for key in ("id", "label", "provider", "account_kind", "symbol")}
+    clean = {key: profile[key] for key in ("id", "label", "provider", "account_kind", "symbol")}
+    clean["provider"] = clean["provider"].upper()
+    return clean
 
 
 def _read_entries_for_mutation(path):
