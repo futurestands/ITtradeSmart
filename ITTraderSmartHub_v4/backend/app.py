@@ -11,6 +11,7 @@ from v4_services import ContextStore, risk_context, research_request
 from bot import BotController, BacktestEngine, MarketDataManager, TrendFollowingMACrossoverStrategy
 from ai_lab_adapter import AILabAdapter
 from nas100_research_status import read_progress_snapshot
+from mt5_account_registry import read_mt5_accounts
 from ai_contract import ContractError, strict_json
 
 app = Flask(__name__)
@@ -63,6 +64,15 @@ def ai_status():
 def ai_research_progress():
     """Device-authenticated, read-only synthetic report summary; no model execution."""
     response = jsonify(read_progress_snapshot())
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response, 200
+
+
+@app.get('/api/v5/mt5/accounts')
+def mt5_registered_accounts():
+    """Device-authenticated read-only MT5 aliases. NOT broker connections."""
+    response = jsonify(read_mt5_accounts())
     response.headers['Cache-Control'] = 'no-store'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response, 200
