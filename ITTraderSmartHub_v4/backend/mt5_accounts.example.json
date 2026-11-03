@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "accounts": [
+    {
+      "id": "ftmo-trial",
+      "label": "FTMO Trial",
+      "provider": "FTMO",
+      "account_kind": "FREE_TRIAL",
+      "symbol": "VERIFY_IN_MT5"
+    },
+    {
+      "id": "fundednext-trial",
+      "label": "FundedNext Trial",
+      "provider": "FUNDEDNEXT",
+      "account_kind": "FREE_TRIAL",
+      "symbol": "VERIFY_IN_MT5"
+    }
+  ]
+}
