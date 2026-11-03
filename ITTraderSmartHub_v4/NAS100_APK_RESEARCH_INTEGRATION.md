@@ -86,3 +86,50 @@ The research build is a separate app, **so it has its own Android Keystore and e
 Do not execute words such as \`Performing Streamed Install\` or \`Success\` as PowerShell commands; those are *sample output*, not instructions.
 
 **Status:** debug-side-by-side code committed; the user must still verify the new Gradle build, actual device installation and launch. No install success has been claimed.
+
+
+## Physical APK launch verified; local ADB-reverse test mode
+
+The user verified **after** installation that:
+
+- The debug research package installed successfully via wireless ADB.
+- \`am start -W -n com.ittrader.smarthub.research/com.ittrader.smarthub.MainActivity\` returned \`Status: ok\` and \`LaunchState: WARM\`.
+- \`pidof com.ittrader.smarthub.research\` returned a running PID (4978).
+- A recent filtered log excerpt did not show an \`AndroidRuntime FATAL EXCEPTION\`. Older \`monkey\` output mentioned tombstones, but did not identify the SmartHub process as the faulting process.
+
+**Do not claim the NAS100 card's actual rendering has been visually confirmed until the phone is inspected.**
+
+### ADB-only temporary local research Gateway route
+
+For a phone already paired with wireless ADB, use \`adb reverse tcp:5000 tcp:5000\` to map the phone's \`127.0.0.1:5000\` to the Windows host's \`127.0.0.1:5000\`. This does **not** require making Flask accessible via the Wi-Fi LAN, VPN, public port-forwarding or reverse proxy.
+
+**Important:** Android target SDK 34 defaults to disallow cleartext. The separate **debug-only** APK now declares \`@xml/nas100_debug_network_security\` which allows cleartext only to the literal \`127.0.0.1\`; its base policy rejects cleartext to all other destinations. Release app manifests and release network policy were not modified. This exception is exclusively for local developer verification over the authorized ADB debugging transport, **not** a production network architecture. Android's HTTPS TLS validation remains enabled for all HTTPS targets.
+
+Required Windows process environment for the Gateway:
+
+~~~powershell
+$env:SMARTHUB_NAS100_LAB_ROOT = 'C:\Users\MJ\Documents\NAS100-AI-Lab-Phase1B'
+# Only on your host, not in the Android UI or GitHub:
+$env:SMARTHUB_API_TOKEN = & .\.venv-gateway\Scripts\python.exe -c 'import secrets; print(secrets.token_urlsafe(48))'
+~~~
+
+From the SmartHub backend folder, launch the existing Gateway \`app.py\`, which binds to Windows \`127.0.0.1:5000\`. Do not bind to \`0.0.0.0\`. A local API admin can create a one-time pairing code with \`POST /api/v4/admin/pairing-code\`, authenticated with the host-only master token. The code is short-lived; display it only to the person holding the phone, never save it in source code or send master token to Android.
+
+With the phone connected, run:
+
+~~~powershell
+$adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
+$device = 'REPLACE_WITH_CURRENT_CONNECTED_SERIAL'
+& $adb -s $device reverse tcp:5000 tcp:5000
+& $adb -s $device reverse --list
+~~~
+
+Rebuild \`testDebugUnitTest assembleDebug\` **after** updating this debug-only network policy and reinstall only the \`com.ittrader.smarthub.research\` APK. In the app's Gateway URL input use \`http://127.0.0.1:5000\`, then pair the app as a **new** device using the one-time code; do not enter the server's master token. Press **Refresh NAS100 Research Progress**. Its local synthetic report should show 3 price paths × 2 hypothetical cost scenarios = 6 studies.
+
+The separate **Check AI Lab connection** card is expected to show unavailable unless the independent loopback companion is separately configured. That does not prevent the new research-progress endpoint from working.
+
+After a local session, \`adb -s $device reverse --remove tcp:5000\` removes this tunnel. Android's wireless ADB connection may rotate ports between sessions. Never direct this setup at real orders.
+
+### Security limitation
+
+This debug-only path provides a temporary development transport via ADB, not a production deployment. Other locally running apps on the same debugging device could potentially attempt to reach local forwarded ports, so endpoint authentication remains mandatory and master tokens must stay in the Windows host environment. Revoke temporary device enrollment after testing or let its 24-hour expiry lapse. If the debugging connection is interrupted, the forward may disappear. Do not port-forward the raw Flask development server to a LAN or the internet.
