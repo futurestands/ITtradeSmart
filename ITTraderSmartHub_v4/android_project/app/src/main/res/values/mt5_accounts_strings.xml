@@ -8,6 +8,7 @@
     <string name="mt5_accounts_alias_hint">Profile ID (e.g. ftmo-trial)</string>
     <string name="mt5_accounts_label_hint">Display name</string>
     <string name="mt5_accounts_broker_label">Broker</string>
+    <string name="mt5_accounts_broker_hint">Type broker name (e.g. FTMO)</string>
     <string name="mt5_accounts_type_label">Account type</string>
     <string name="mt5_accounts_symbol_hint">MT5 symbol (e.g. US100)</string>
     <string name="mt5_accounts_editor_note">Profile settings only. No trading access.</string>
