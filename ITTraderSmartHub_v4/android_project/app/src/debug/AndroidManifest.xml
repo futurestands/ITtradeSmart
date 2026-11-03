@@ -5,5 +5,6 @@
          No broad permissions or exported components are added here. -->
     <application
         android:label="ITTrader NAS100 Research"
+        android:networkSecurityConfig="@xml/nas100_debug_network_security"
         tools:replace="android:label" />
 </manifest>
