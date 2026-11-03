@@ -52,7 +52,18 @@ def read_mt5_accounts(config_path=None):
     Configuration path is controlled by Windows Gateway operator only.
     All entries must validate atomically; never echo invalid content to device.
     """
-    raw_path = config_path if config_path is not None else os.environ.get("SMARTHUB_MT5_ACCOUNTS_FILE", "")
+    # Default is an ignored file next to this module. The Gateway can see a
+    # newly created roster on the next GET, without restarting and losing its
+    # already paired in-memory device session.
+    if config_path is not None:
+        raw_path = config_path
+    else:
+        raw_path = os.environ.get("SMARTHUB_MT5_ACCOUNTS_FILE", "").strip()
+        if not raw_path:
+            local = Path(__file__).with_name("mt5_accounts.local.json")
+            if not local.exists() and not local.is_symlink():
+                return _empty("NOT_CONFIGURED")
+            raw_path = local
     if not isinstance(raw_path, (str, os.PathLike)) or not str(raw_path).strip():
         return _empty("NOT_CONFIGURED")
     try:
