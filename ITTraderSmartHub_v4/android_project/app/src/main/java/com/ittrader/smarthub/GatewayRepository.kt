@@ -48,6 +48,25 @@ class GatewayRepository {
         executeRequest(request, callback)
     }
 
+    fun queryNAS100ResearchProgress(callback: (Result<JSONObject>) -> Unit) {
+        // Read-only synthetic research summary. Never sends a candidate,
+        // Lab token, order request, account data, or privileged bot command.
+        val endpoint = validateEndpointUrl(GatewaySession.gatewayUrl).getOrElse {
+            callback(Result.failure(it))
+            return
+        }
+        if (!GatewaySession.isAuthenticated()) {
+            callback(Result.failure(IllegalStateException("Pair this device with the gateway first.")))
+            return
+        }
+        val request = Request.Builder()
+            .url("$endpoint/api/v5/ai/research-progress")
+            .header("Authorization", "Bearer ${GatewaySession.apiToken}")
+            .get()
+            .build()
+        executeRequest(request, callback)
+    }
+
     fun queryBotStatus(callback: (Result<JSONObject>) -> Unit) {
         val valRes = validateEndpointUrl(GatewaySession.gatewayUrl)
         val endpoint = valRes.getOrElse {
