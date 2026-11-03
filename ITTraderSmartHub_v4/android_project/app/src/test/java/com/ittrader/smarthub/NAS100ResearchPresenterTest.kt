@@ -48,6 +48,41 @@ class NAS100ResearchPresenterTest {
         assertFalse(formatted.contains("BUY"))
     }
 
+    @Test fun overviewExplainsResearchWithoutConfusingModelScoresWithWinRates() {
+        val text = NAS100ResearchPresenter.overview(valid())
+        assertTrue(text.contains("RESEARCH CONNECTION: WORKING"))
+        assertTrue(text.contains("6"))
+        assertTrue(text.contains("3 artificial price paths"))
+        assertTrue(text.contains("2 hypothetical trading-cost settings"))
+        assertTrue(text.contains("NOT winning trades"))
+        assertTrue(text.contains("NOT READY"))
+        assertTrue(text.contains("Trade execution: DISABLED"))
+        assertFalse(text.contains("3/3 synthetic paths"))
+        assertTrue(NAS100ResearchPresenter.hasVerifiedSyntheticReport(valid()))
+    }
+
+    @Test fun overviewOnlyComparesSameDenominatorSyntheticFindings() {
+        val data = valid()
+        val comparisons = JSONArray()
+            .put(row("TREND_CONTINUATION_V1", "logistic_calibrated", "baseline_synthetic_cost", 3))
+            .put(row("TREND_CONTINUATION_V1", "gradient_boosting_calibrated", "double_friction_stress", 2))
+            .put(row("BREAKOUT_RETEST_V1", "logistic_calibrated", "baseline_synthetic_cost", 0))
+            .put(row("BREAKOUT_RETEST_V1", "gradient_boosting_calibrated", "double_friction_stress", 1))
+        data.put("comparisons", comparisons)
+        val text = NAS100ResearchPresenter.overview(data)
+        assertTrue(text.contains("Trend continuation showed more frequent forecast-score improvements"))
+        assertTrue(text.contains("artificial tests"))
+        assertFalse(text.contains("live signal"))
+    }
+
+    @Test fun overviewFailsClosedOnFakeMarketReadinessAndInvalidReports() {
+        val forged = valid().put("trade_execution_authorized", true)
+        assertFalse(NAS100ResearchPresenter.hasVerifiedSyntheticReport(forged))
+        val text = NAS100ResearchPresenter.overview(forged)
+        assertTrue(text.contains("Report rejected"))
+        assertFalse(text.contains("RESEARCH CONNECTION: WORKING"))
+    }
+
     @Test fun unavailableReportsDoNotFabricateResults() {
         val data = valid()
         data.put("status", "NO_VALID_REPORT")
