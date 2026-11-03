@@ -85,6 +85,50 @@ class GatewayRepository {
         executeRequest(request, callback)
     }
 
+    fun saveMT5Profile(profile: JSONObject, callback: (Result<JSONObject>) -> Unit) {
+        // Only five non-sensitive profile fields are allowed; never broker credentials.
+        val safeFields = setOf("id", "label", "provider", "account_kind", "symbol")
+        if (profile.keys().asSequence().toSet() != safeFields) {
+            callback(Result.failure(IllegalArgumentException("Invalid broker profile fields")))
+            return
+        }
+        val endpoint = validateEndpointUrl(GatewaySession.gatewayUrl).getOrElse {
+            callback(Result.failure(it))
+            return
+        }
+        if (!GatewaySession.isAuthenticated()) {
+            callback(Result.failure(IllegalStateException("Pair device with Gateway first.")))
+            return
+        }
+        val request = Request.Builder()
+            .url("$endpoint/api/v5/mt5/accounts")
+            .header("Authorization", "Bearer ${GatewaySession.apiToken}")
+            .post(profile.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull()))
+            .build()
+        executeRequest(request, callback)
+    }
+
+    fun removeMT5Profile(alias: String, callback: (Result<JSONObject>) -> Unit) {
+        if (!Regex("^[a-z][a-z0-9_-]{2,31}$").matches(alias)) {
+            callback(Result.failure(IllegalArgumentException("Invalid account profile ID")))
+            return
+        }
+        val endpoint = validateEndpointUrl(GatewaySession.gatewayUrl).getOrElse {
+            callback(Result.failure(it))
+            return
+        }
+        if (!GatewaySession.isAuthenticated()) {
+            callback(Result.failure(IllegalStateException("Pair device with Gateway first.")))
+            return
+        }
+        val request = Request.Builder()
+            .url("$endpoint/api/v5/mt5/accounts/$alias")
+            .header("Authorization", "Bearer ${GatewaySession.apiToken}")
+            .delete()
+            .build()
+        executeRequest(request, callback)
+    }
+
     fun queryBotStatus(callback: (Result<JSONObject>) -> Unit) {
         val valRes = validateEndpointUrl(GatewaySession.gatewayUrl)
         val endpoint = valRes.getOrElse {
