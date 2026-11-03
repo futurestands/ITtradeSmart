@@ -32,15 +32,13 @@ class MT5ProfilesEditor(
     private val alias = activity.findViewById<EditText>(R.id.edtMT5AccountAlias)
     private val label = activity.findViewById<EditText>(R.id.edtMT5AccountLabel)
     private val symbol = activity.findViewById<EditText>(R.id.edtMT5AccountSymbol)
-    private val provider = activity.findViewById<Spinner>(R.id.spnMT5Provider)
+    private val broker = activity.findViewById<EditText>(R.id.edtMT5BrokerName)
     private val kind = activity.findViewById<Spinner>(R.id.spnMT5AccountKind)
 
-    private val providers = listOf("FTMO", "FUNDEDNEXT", "OTHER")
     private val kinds = listOf("FREE_TRIAL", "DEMO", "EVALUATION", "FUNDED", "LIVE")
     private var known = listOf<JSONObject>()
 
     init {
-        prepareSelector(provider, providers)
         prepareSelector(kind, kinds)
         selector.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -53,7 +51,7 @@ class MT5ProfilesEditor(
                     alias.isEnabled = false // immutable stable profile ID
                     label.setText(item.optString("label"))
                     symbol.setText(item.optString("symbol"))
-                    provider.setSelection(providers.indexOf(item.optString("provider")).coerceAtLeast(0))
+                    broker.setText(item.optString("provider"))
                     kind.setSelection(kinds.indexOf(item.optString("account_kind")).coerceAtLeast(0))
                     removeButton.isEnabled = true
                 }
@@ -95,7 +93,7 @@ class MT5ProfilesEditor(
         alias.setText("")
         label.setText("")
         symbol.setText("")
-        provider.setSelection(0)
+        broker.setText("")
         kind.setSelection(0)
         removeButton.isEnabled = false
     }
@@ -142,20 +140,22 @@ class MT5ProfilesEditor(
         val id = alias.text.toString().trim().lowercase(Locale.ROOT)
         val name = label.text.toString().trim()
         val ticker = symbol.text.toString().trim()
+        val brokerName = broker.text.toString().trim().uppercase(Locale.ROOT)
         if (!Regex("^[a-z][a-z0-9_-]{2,31}$").matches(id) ||
             name.isEmpty() || name.length > 40 ||
             name.any { it.code < 32 || it.code > 126 } ||
+            !Regex("^[A-Z][A-Z0-9 ._-]{1,39}$").matches(brokerName) ||
             !Regex("^[A-Za-z0-9._-]{2,32}$").matches(ticker) ||
             ticker == "VERIFY_IN_MT5"
         ) {
-            feedback.text = "Enter a unique lowercase alias, short display name, and confirmed MT5 symbol (such as US100)."
+            feedback.text = "Enter a unique lowercase alias, broker name, display name and confirmed MT5 symbol (such as US100)."
             return
         }
         beforeRequest()
         val payload = JSONObject().apply {
             put("id", id)
             put("label", name)
-            put("provider", providers[provider.selectedItemPosition])
+            put("provider", brokerName)
             put("account_kind", kinds[kind.selectedItemPosition])
             put("symbol", ticker)
         }
