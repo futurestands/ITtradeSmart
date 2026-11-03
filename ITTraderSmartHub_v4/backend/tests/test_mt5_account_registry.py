@@ -125,3 +125,95 @@ def test_device_authenticated_route_does_not_enable_bots(monkeypatch, tmp_path):
     assert "no-store" in result.headers["Cache-Control"]
     assert gateway._bot.get_status() == state_before
     assert client.post("/api/v5/bot/mode", headers=headers, json={"mode": "DEMO"}).status_code == 403
+
+
+
+def test_gateway_write_requires_opt_in_and_enrolled_device(monkeypatch, tmp_path):
+    monkeypatch.setenv("SMARTHUB_MT5_ACCOUNTS_FILE", str(tmp_path / "mt5_accounts.local.json"))
+    monkeypatch.delenv("SMARTHUB_ACCOUNT_PROFILE_EDITING", raising=False)
+    monkeypatch.delenv("SMARTHUB_STATE_DB", raising=False)
+    import app as gateway
+    from v4_services import ContextStore
+    from bot import BotController
+    monkeypatch.setattr(gateway, "_v4_store", ContextStore())
+    monkeypatch.setattr(gateway, "_bot", BotController())
+    gateway.app.config["TESTING"] = True
+    client = gateway.app.test_client()
+    body = account()
+    assert client.post("/api/v5/mt5/accounts", json=body).status_code == 401
+    code = gateway._v4_store.generate_pairing_code()["pairing_code"]
+    token = gateway._v4_store.enroll_device("broker-profile-test-device", "TEST", code)["device_token"]
+    headers = {"Authorization": "Bearer " + token}
+    assert client.post("/api/v5/mt5/accounts", json=body, headers=headers).status_code == 403
+    assert not (tmp_path / "mt5_accounts.local.json").exists()
+    monkeypatch.setenv("SMARTHUB_ACCOUNT_PROFILE_EDITING", "1")
+    assert client.post("/api/v5/mt5/accounts", json=body).status_code == 401
+
+    state_before = gateway._bot.get_status()
+    result = client.post("/api/v5/mt5/accounts", json=body, headers=headers)
+    assert result.status_code == 200
+    assert result.json["account_count"] == 1
+    assert result.json["accounts"][0]["connection_status"] == "NOT_CONNECTED"
+    assert result.json["accounts"][0]["execution_authorized"] is False
+    assert "no-store" in result.headers["Cache-Control"]
+    assert gateway._bot.get_status() == state_before
+    assert client.post("/api/v5/bot/mode", headers=headers, json={"mode": "PAPER"}).status_code == 403
+
+
+def test_profile_add_edit_delete_atomic_and_persistent(monkeypatch, tmp_path):
+    from mt5_account_registry import upsert_mt5_profile, delete_mt5_profile
+    path = tmp_path / "mt5_accounts.local.json"
+    monkeypatch.setenv("SMARTHUB_MT5_ACCOUNTS_FILE", str(path))
+    assert upsert_mt5_profile(account("ftmo-trial"))["account_count"] == 1
+    assert upsert_mt5_profile(account("fundednext-trial", "FUNDEDNEXT"))["account_count"] == 2
+    assert upsert_mt5_profile(account("third-demo", "OTHER", "DEMO"))["account_count"] == 3
+    changed = account("ftmo-trial")
+    changed["symbol"] = "US100"
+    assert upsert_mt5_profile(changed)["account_count"] == 3
+    reread = read_mt5_accounts(path)
+    assert reread["accounts"][0]["symbol"] == "US100"
+    assert reread["accounts"][0]["read_only"] is True
+    assert delete_mt5_profile("third-demo")["account_count"] == 2
+    assert read_mt5_accounts(path)["account_count"] == 2
+    assert not list(tmp_path.glob(".mt5-accounts-*.tmp"))
+
+
+@pytest.mark.parametrize("extra", [
+    {"login": 12345678}, {"password": "demo-secret"},
+    {"terminal_path": r"C:\MT5\terminal64.exe"},
+    {"allow_trades": True}, {"stop_loss": 100.0},
+    {"server": "broker-live"}, {"api_token": "in-app-secret"},
+])
+def test_in_app_profile_rejects_operational_and_credential_fields(tmp_path, monkeypatch, extra):
+    from mt5_account_registry import upsert_mt5_profile, ProfileConfigError
+    path = tmp_path / "mt5_accounts.local.json"
+    monkeypatch.setenv("SMARTHUB_MT5_ACCOUNTS_FILE", str(path))
+    with pytest.raises(ProfileConfigError):
+        upsert_mt5_profile({**account(), **extra})
+    assert not path.exists()
+
+
+def test_corrupt_file_cannot_be_overwritten_by_apk(monkeypatch, tmp_path):
+    from mt5_account_registry import upsert_mt5_profile, ProfileConfigError
+    path = tmp_path / "mt5_accounts.local.json"
+    path.write_text('{"schema_version":1,"accounts":[],"accounts":[]}', encoding="utf-8")
+    monkeypatch.setenv("SMARTHUB_MT5_ACCOUNTS_FILE", str(path))
+    with pytest.raises(ProfileConfigError):
+        upsert_mt5_profile(account())
+    assert "accounts\":[]" in path.read_text(encoding="utf-8")
+
+
+def test_admin_opt_in_still_restricts_to_loopback(monkeypatch, tmp_path):
+    monkeypatch.setenv("SMARTHUB_MT5_ACCOUNTS_FILE", str(tmp_path / "mt5_accounts.local.json"))
+    monkeypatch.setenv("SMARTHUB_ACCOUNT_PROFILE_EDITING", "1")
+    import app as gateway
+    from v4_services import ContextStore
+    monkeypatch.setattr(gateway, "_v4_store", ContextStore())
+    gateway.app.config["TESTING"] = True
+    client = gateway.app.test_client()
+    code = gateway._v4_store.generate_pairing_code()["pairing_code"]
+    token = gateway._v4_store.enroll_device("profile-nonloopback-device", "TEST", code)["device_token"]
+    res = client.post("/api/v5/mt5/accounts",
+        headers={"Authorization": "Bearer " + token}, json=account(),
+        environ_overrides={"REMOTE_ADDR": "192.0.2.8"})
+    assert res.status_code == 403
