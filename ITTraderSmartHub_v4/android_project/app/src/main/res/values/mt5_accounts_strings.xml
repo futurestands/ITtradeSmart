@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mt5_accounts_heading">META TRADER 5 — MULTI-ACCOUNT MONITOR</string>
+    <string name="mt5_accounts_initial">Account registry: Not checked\nNo broker account has been connected or approved for execution.</string>
+    <string name="mt5_accounts_refresh">Refresh broker accounts</string>
+</resources>
