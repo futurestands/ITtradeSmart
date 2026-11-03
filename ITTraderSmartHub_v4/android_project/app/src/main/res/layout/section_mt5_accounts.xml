@@ -80,11 +80,15 @@
         android:text="@string/mt5_accounts_broker_label"
         android:textColor="@color/text_secondary" />
 
-    <Spinner
-        android:id="@+id/spnMT5Provider"
+    <EditText
+        android:id="@+id/edtMT5BrokerName"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:contentDescription="@string/mt5_accounts_broker_label" />
+        android:layout_height="wrap_content"
+        android:hint="@string/mt5_accounts_broker_hint"
+        android:inputType="textCapWords"
+        android:maxLength="40"
+        android:singleLine="true"
+        android:textColor="@color/text_primary" />
 
     <TextView
         android:layout_width="match_parent"
