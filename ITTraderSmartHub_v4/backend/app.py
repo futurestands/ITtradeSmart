@@ -10,6 +10,7 @@ from trade_analysis import analyze_deals
 from v4_services import ContextStore, risk_context, research_request
 from bot import BotController, BacktestEngine, MarketDataManager, TrendFollowingMACrossoverStrategy
 from ai_lab_adapter import AILabAdapter
+from nas100_research_status import read_progress_snapshot
 from ai_contract import ContractError, strict_json
 
 app = Flask(__name__)
@@ -56,6 +57,15 @@ def require_authentication():
 @app.get('/api/v5/ai/status')
 def ai_status():
     return jsonify(_ai_lab.status()), 200
+
+
+@app.get('/api/v5/ai/research-progress')
+def ai_research_progress():
+    """Device-authenticated, read-only synthetic report summary; no model execution."""
+    response = jsonify(read_progress_snapshot())
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response, 200
 
 
 @app.post('/api/v5/ai/advisory')
