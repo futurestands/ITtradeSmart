@@ -6,7 +6,7 @@ The account roster is now **editable through the phone UI**. Users do **not** ne
 
 The APK's **MetaTrader 5 — Multi-account Monitor** now includes:
 - A broker profile chooser: **Add new broker profile** or select an existing entry to edit.
-- Profile ID (unique, fixed for existing profiles), display label, provider (FTMO, FUNDEDNEXT, OTHER), account kind and exact MT5 symbol (e.g. the user's confirmed FTMO trial symbol \`US100\`).
+- Profile ID (unique, fixed for existing profiles), display label, broker name (such as FTMO, FundedNext or any other firm), account kind and exact MT5 symbol (e.g. the user's confirmed FTMO trial symbol \`US100\`).
 - **Save profile** and **Remove profile**, with confirmation before removal.
 - **Refresh broker accounts** reloads the server-side saved roster; no broker secret is ever entered on the phone.
 
@@ -60,7 +60,7 @@ Copy-Item '.\mt5_accounts.example.json' '.\mt5_accounts.local.json' -ErrorAction
 notepad '.\mt5_accounts.local.json'
 ~~~
 
-The example lists **FTMO Trial** and **FundedNext Trial** with placeholder \`VERIFY_IN_MT5\` symbols. After viewing **Market Watch -> Specification** on each broker's own terminal, edit the \`symbol\` fields to their actual broker symbol names. To add a third or fourth account, add another JSON object with a unique \`id\` (lowercase letters, digits, hyphen/underscore), short \`label\`, \`provider\` (\`FTMO\`, \`FUNDEDNEXT\`, \`OTHER\`), \`account_kind\` (\`FREE_TRIAL\`, \`DEMO\`, \`EVALUATION\`, \`FUNDED\`, \`LIVE\`), \`symbol\`. Do not enter account numbers, credentials or login server addresses.
+The example lists **FTMO Trial** and **FundedNext Trial** with placeholder \`VERIFY_IN_MT5\` symbols. After viewing **Market Watch -> Specification** on each broker's own terminal, edit the \`symbol\` fields to their actual broker symbol names. To add a third or fourth account, add another JSON object with a unique \`id\` (lowercase letters, digits, hyphen/underscore), short \`label\`, \`provider\` (type broker name, for example \`FTMO\`, \`FUNDEDNEXT\` or \`IC MARKETS\`), \`account_kind\` (\`FREE_TRIAL\`, \`DEMO\`, \`EVALUATION\`, \`FUNDED\`, \`LIVE\`), \`symbol\`. Do not enter account numbers, credentials or login server addresses.
 
 **Do not restart your currently paired Gateway** merely to load the file. Each GET re-reads the ignored file. Just refresh **MT5 Multi-account Monitor** on Android. If the Gateway was started before pulling the new code, however, the running process still uses the old Python module and must be restarted **once after the new code is installed**. Unless persisted state is configured, a Gateway restart can invalidate current pairing tokens. Re-pair using a newly generated one-time code from the Gateway administrator if necessary; never reveal master token.
 
