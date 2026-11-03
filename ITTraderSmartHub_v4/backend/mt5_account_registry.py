@@ -157,7 +157,7 @@ def _validate_profile(profile):
         type(alias) is not str or _ID.fullmatch(alias) is None
         or type(label) is not str or not 1 <= len(label) <= 40
         or any(ord(c) < 32 or ord(c) > 126 for c in label)
-        or type(provider) is not str or provider not in _PROVIDERS
+        or type(provider) is not str or _BROKER.fullmatch(provider) is None
         or type(kind) is not str or kind not in _KINDS
         or type(symbol) is not str or _SYMBOL.fullmatch(symbol) is None
     ):
