@@ -58,7 +58,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/mt5_accounts_alias_hint"
-        android:inputType="textVisiblePassword"
+        android:inputType="textNoSuggestions"
         android:maxLength="32"
         android:singleLine="true"
         android:textColor="@color/text_primary" />
@@ -104,7 +104,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/mt5_accounts_symbol_hint"
-        android:inputType="textVisiblePassword"
+        android:inputType="textNoSuggestions"
         android:maxLength="32"
         android:singleLine="true"
         android:textColor="@color/text_primary" />
