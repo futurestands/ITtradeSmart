@@ -1,5 +1,42 @@
 # ITTrader SmartHub — multi-account MT5 roster (Phase A)
 
+## Update: broker profile editing directly in the Android APK (pending Windows validation)
+
+The account roster is now **editable through the phone UI**. Users do **not** need to edit JSON whenever a broker or trading symbol changes. The existing example JSON remains an optional first import for older installations, not the normal workflow.
+
+The APK's **MetaTrader 5 — Multi-account Monitor** now includes:
+- A broker profile chooser: **Add new broker profile** or select an existing entry to edit.
+- Profile ID (unique, fixed for existing profiles), display label, provider (FTMO, FUNDEDNEXT, OTHER), account kind and exact MT5 symbol (e.g. the user's confirmed FTMO trial symbol \`US100\`).
+- **Save profile** and **Remove profile**, with confirmation before removal.
+- **Refresh broker accounts** reloads the server-side saved roster; no broker secret is ever entered on the phone.
+
+New authenticated Gateway routes:
+- \`POST /api/v5/mt5/accounts\` — insert or update only the five allowed non-sensitive fields.
+- \`DELETE /api/v5/mt5/accounts/<alias>\` — remove a display-only profile.
+- \`GET /api/v5/mt5/accounts\` — existing read-only summary.
+
+### Important one-time Windows approval
+
+Only while editing the locally tested research app over the **ADB reverse localhost connection**, the operator must explicitly launch the Windows Gateway with:
+
+~~~powershell
+$env:SMARTHUB_ACCOUNT_PROFILE_EDITING = '1'
+~~~
+
+Without this flag, GET remains available, but Save/Remove return 403. Save/Remove additionally require an already enrolled device Bearer token, a **loopback request source**, valid profile schema, atomic file storage and hard cap of 20. The switch does not enable MT5 connections, expert advisors, trade copying or orders. For a future remote/production installation, a separate per-user scoped broker-profile authorization design is required; the local editing flag must stay off.
+
+The Gateway must be **restarted after pulling the code** so Python loads the new routes. A restart can invalidate in-memory device tokens; create a fresh one-time pairing code if needed. Use the same server-side master token for the restarted process or securely rotate it, never place it in the app.
+
+The default destination is the Git-ignored \`backend/mt5_accounts.local.json\`, created automatically by the first profile save, and saved back to Windows by subsequent edits. An existing ignored file will be updated in place. A malformed or symlinked file will **not** be overwritten. The environment override \`SMARTHUB_MT5_ACCOUNTS_FILE\` is for an administrator-chosen local path only.
+
+**Important limitation:** profiles remain \`NOT_CONNECTED\`. Real multi-MT5 connectivity will require separate broker terminal processes, verified account identity and broker contract details; adding, editing or deleting a profile does not open, close or trade any real account.
+
+**Verification state:** this phone-based editing implementation and new Python tests have been committed to the development branch, but the latest code has not yet passed the user's Windows pytest/Gradle/device-install checks. Do not treat it as delivered APK functionality before those steps pass.
+
+---
+
+
+
 This milestone is **a credential-free account roster**, not an active broker connection or trade copier. User requested more than two accounts after opening an FTMO Free Trial. The Gateway can list up to **20 account aliases** for phone monitoring, including FTMO Trial, FundedNext Trial and additional brokers. The endpoint does not access MT5, fetch real quotes or place orders.
 
 ## Where data lives and what is exposed
