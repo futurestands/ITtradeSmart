@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Debug research app installs alongside the existing signed SmartHub.
+         No broad permissions or exported components are added here. -->
+    <application
+        android:label="ITTrader NAS100 Research"
+        tools:replace="android:label" />
+</manifest>
