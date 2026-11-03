@@ -11,7 +11,7 @@ from v4_services import ContextStore, risk_context, research_request
 from bot import BotController, BacktestEngine, MarketDataManager, TrendFollowingMACrossoverStrategy
 from ai_lab_adapter import AILabAdapter
 from nas100_research_status import read_progress_snapshot
-from mt5_account_registry import read_mt5_accounts
+from mt5_account_registry import (read_mt5_accounts, upsert_mt5_profile, delete_mt5_profile, ProfileConfigError)
 from ai_contract import ContractError, strict_json
 
 app = Flask(__name__)
@@ -75,6 +75,46 @@ def mt5_registered_accounts():
     response = jsonify(read_mt5_accounts())
     response.headers['Cache-Control'] = 'no-store'
     response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response, 200
+
+
+def _account_profile_write_allowed():
+    """Explicit server-side opt-in + enrolled device + local loopback only.
+
+    No trade, account-identity, server, or credentials can be written here.
+    """
+    return (os.environ.get("SMARTHUB_ACCOUNT_PROFILE_EDITING") == "1"
+            and request.remote_addr in ("127.0.0.1", "::1"))
+
+
+@app.post('/api/v5/mt5/accounts')
+def save_mt5_account_profile():
+    if not _account_profile_write_allowed():
+        return jsonify({"error": "Broker profile editing not enabled on Windows Gateway"}), 403
+    if not request.is_json:
+        return jsonify({"error": "Expected JSON broker profile"}), 400
+    try:
+        profile = strict_json(request.get_data(cache=False))
+        result = upsert_mt5_profile(profile)
+    except RequestEntityTooLarge:
+        return jsonify({"error": "Request too large"}), 413
+    except (ContractError, ProfileConfigError, OSError):
+        return jsonify({"error": "Broker profile could not be saved; check safe fields and local configuration"}), 400
+    response = jsonify(result)
+    response.headers["Cache-Control"] = "no-store"
+    return response, 200
+
+
+@app.delete('/api/v5/mt5/accounts/<account_id>')
+def remove_mt5_account_profile(account_id):
+    if not _account_profile_write_allowed():
+        return jsonify({"error": "Broker profile editing not enabled on Windows Gateway"}), 403
+    try:
+        result = delete_mt5_profile(account_id)
+    except (ProfileConfigError, OSError):
+        return jsonify({"error": "Broker profile could not be removed"}), 400
+    response = jsonify(result)
+    response.headers["Cache-Control"] = "no-store"
     return response, 200
 
 
