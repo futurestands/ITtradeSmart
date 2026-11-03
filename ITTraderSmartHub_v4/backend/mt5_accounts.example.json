@@ -6,7 +6,7 @@
       "label": "FTMO Trial",
       "provider": "FTMO",
       "account_kind": "FREE_TRIAL",
-      "symbol": "VERIFY_IN_MT5"
+      "symbol": "US100"
     },
     {
       "id": "fundednext-trial",
