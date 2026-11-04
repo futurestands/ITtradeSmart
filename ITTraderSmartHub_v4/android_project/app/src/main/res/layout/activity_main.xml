@@ -1,64 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bg_dark"
-    android:fillViewport="true"
-    android:padding="16dp">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+ xmlns:app="http://schemas.android.com/apk/res-auto"
+ android:layout_width="match_parent" android:layout_height="match_parent"
+ android:background="@color/bg_dark" android:orientation="vertical">
+    <!-- Persistent, truthful research-mode header -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingLeft="16dp" android:paddingRight="16dp" android:paddingTop="12dp"
+        android:paddingBottom="10dp" android:orientation="vertical" android:background="@color/card_bg">
+        <TextView android:id="@+id/txtHeaderTitle" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="@string/nav_app_title"
+            android:textSize="12sp" android:letterSpacing="0.09"
+            android:textStyle="bold" android:textColor="@color/accent_blue"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="2dp" android:text="@string/nav_research_disclaimer"
+            android:textSize="10sp" android:textColor="@color/status_amber"/>
+        <TextView android:id="@+id/txtPageHeading" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="10dp"
+            android:text="@string/nav_home_title" android:textSize="22sp"
+            android:textStyle="bold" android:textColor="@color/text_primary"/>
+        <TextView android:id="@+id/txtPageSubtitle" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="2dp"
+            android:text="@string/nav_home_subtitle" android:textSize="12sp"
+            android:textColor="@color/text_secondary"/>
+    </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <!-- Header Dashboard Bar -->
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingBottom="12dp">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true">
-
-                <TextView
-                    android:id="@+id/txtHeaderTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="ITTRADER SMARTHUB"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary"
-                    android:letterSpacing="0.05" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Automated Trading &amp; Risk Intelligence v5"
-                    android:textSize="11sp"
-                    android:textColor="@color/text_muted" />
-            </LinearLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="● ACTIVE"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:textColor="@color/status_green"
-                android:background="@drawable/bg_pill_green"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="4dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true" />
-        </RelativeLayout>
-
-        <!-- Live Ticker Card -->
-        <LinearLayout
+    <!-- All existing feature views stay mounted; only one page is visible. -->
+    <FrameLayout android:id="@+id/dashboardPages"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+<ScrollView android:id="@+id/pageHome" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:clipToPadding="false" android:scrollbars="none" android:paddingLeft="16dp" android:paddingRight="16dp" android:paddingTop="12dp" android:paddingBottom="16dp" android:visibility="gone">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:text="TODAY'S OVERVIEW" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/text_primary"/>
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" android:text="Live streaming feed and Gateway activity. Broker orders remain disabled." android:textSize="12sp" android:textColor="@color/text_secondary"/>
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_card" android:padding="12dp" android:layout_marginBottom="16dp">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="QUICK ACCESS" android:textColor="@color/accent_blue" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="8dp"/>
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+<Button android:id="@+id/btnOpenAccounts" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="Accounts" android:textAllCaps="false" android:textSize="12sp" android:textColor="@color/black" app:backgroundTint="@color/accent_blue"/>
+<Button android:id="@+id/btnOpenResearch" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:layout_marginStart="6dp" android:text="AI Lab" android:textAllCaps="false" android:textSize="12sp" android:textColor="@color/text_primary" app:backgroundTint="@color/card_stroke"/>
+<Button android:id="@+id/btnOpenRisk" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:layout_marginStart="6dp" android:text="Risk" android:textAllCaps="false" android:textSize="12sp" android:textColor="@color/text_primary" app:backgroundTint="@color/card_stroke"/>
+</LinearLayout></LinearLayout>
+<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card"
@@ -100,8 +80,68 @@
                 android:paddingTop="6dp" />
         </LinearLayout>
 
-        <!-- Section 1: Device Pairing Card -->
-        <LinearLayout
+<LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_terminal"
+            android:orientation="vertical"
+            android:padding="14dp"
+            android:layout_marginBottom="16dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="TELEMETRY &amp; ANALYSIS CONSOLE"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/accent_blue"
+                    android:letterSpacing="0.08" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SMARTHUB v5.1"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_muted"
+                    android:layout_alignParentEnd="true" />
+            </RelativeLayout>
+
+            <TextView
+                android:id="@+id/txtAnalysisOutput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="System Ready. Listening for market events &amp; bot telemetry..."
+                android:textSize="12sp"
+                android:typeface="monospace"
+                android:textColor="#38BDF8"
+                android:minLines="7"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
+</LinearLayout></ScrollView>
+
+<ScrollView android:id="@+id/pageAccounts" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:clipToPadding="false" android:scrollbars="none" android:paddingLeft="16dp" android:paddingRight="16dp" android:paddingTop="12dp" android:paddingBottom="16dp" android:visibility="gone">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:text="BROKER PROFILES" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/text_primary"/>
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" android:text="Choose FTMO or another broker, update its symbol, and save settings to your local Gateway." android:textSize="12sp" android:textColor="@color/text_secondary"/>
+
+<include layout="@layout/section_mt5_accounts" />
+</LinearLayout></ScrollView>
+
+<ScrollView android:id="@+id/pageResearch" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:clipToPadding="false" android:scrollbars="none" android:paddingLeft="16dp" android:paddingRight="16dp" android:paddingTop="12dp" android:paddingBottom="16dp" android:visibility="gone">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:text="NAS100 RESEARCH LAB" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/text_primary"/>
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" android:text="Experimental read-only findings. Synthetic results are not verified market predictions." android:textSize="12sp" android:textColor="@color/text_secondary"/>
+
+<include layout="@layout/section_ai_intelligence" />
+
+<include layout="@layout/section_nas100_research" />
+
+<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card"
@@ -112,51 +152,24 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="1. SECURE DEVICE PAIRING &amp; GATEWAY"
+                android:text="6. ALERT CENTER &amp; INCIDENT RESEARCH"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent_blue"
                 android:letterSpacing="0.05"
                 android:paddingBottom="10dp" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            <!-- Disabled Legacy MT5 Inputs (Preserved for compatibility) -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:hintTextColor="@color/text_secondary"
-                app:boxStrokeColor="@color/card_stroke"
-                android:textColorHint="@color/text_muted"
-                android:layout_marginBottom="8dp">
-
-                <EditText
-                    android:id="@+id/edtGatewayIp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="HTTPS Gateway URL"
-                    android:inputType="textUri"
-                    android:text="https://127.0.0.1:5000"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:hintTextColor="@color/text_secondary"
-                app:boxStrokeColor="@color/card_stroke"
-                android:textColorHint="@color/text_muted"
-                android:layout_marginBottom="12dp">
-
-                <EditText
-                    android:id="@+id/edtPairingCode"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="One-Time Pairing Code (e.g. PAIR-123456)"
-                    android:inputType="textCapCharacters"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-            </com.google.android.material.textfield.TextInputLayout>
+                android:layout_height="0dp"
+                android:layout_weight="0"
+                android:visibility="gone"
+                android:orientation="vertical">
+                <EditText android:id="@+id/edtMt5Login" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <EditText android:id="@+id/edtMt5Password" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                <EditText android:id="@+id/edtMt5Server" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -164,33 +177,38 @@
                 android:orientation="horizontal">
 
                 <Button
-                    android:id="@+id/btnEnrollDevice"
+                    android:id="@+id/btnQueryAlerts"
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:layout_weight="1"
-                    android:text="Pair Device"
+                    android:text="Fetch Alerts"
                     android:textSize="12sp"
                     android:textStyle="bold"
-                    app:backgroundTint="@color/accent_blue"
-                    android:textColor="@color/black"
-                    android:layout_marginEnd="6dp" />
+                    app:backgroundTint="@color/card_stroke"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="4dp" />
 
                 <Button
-                    android:id="@+id/btnLogout"
+                    android:id="@+id/btnQueryResearch"
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:layout_weight="1"
-                    android:text="Revoke Session"
+                    android:text="Incident Impact"
                     android:textSize="12sp"
                     android:textStyle="bold"
-                    app:backgroundTint="@color/status_red"
-                    android:textColor="@color/white"
-                    android:layout_marginStart="6dp" />
+                    app:backgroundTint="@color/card_stroke"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginStart="4dp" />
             </LinearLayout>
         </LinearLayout>
+</LinearLayout></ScrollView>
 
-        <!-- Section 2: V5 AUTOMATED TRADING BOT CONTROL CENTRE -->
-        <LinearLayout
+<ScrollView android:id="@+id/pageRisk" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:clipToPadding="false" android:scrollbars="none" android:paddingLeft="16dp" android:paddingRight="16dp" android:paddingTop="12dp" android:paddingBottom="16dp" android:visibility="gone">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:text="RISK MANAGEMENT" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/text_primary"/>
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" android:text="Review calculators and safety tools. Trading modes are research-locked." android:textSize="12sp" android:textColor="@color/text_secondary"/>
+
+<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card"
@@ -270,8 +288,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Section 3: PIPNEX Smart Lot Size & Pip Calculator -->
-        <LinearLayout
+<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card"
@@ -426,8 +443,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Section 4: PIPNEX Prop Firm Drawdown Shield -->
-        <LinearLayout
+<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card"
@@ -493,9 +509,102 @@
                     android:layout_marginStart="4dp" />
             </LinearLayout>
         </LinearLayout>
+</LinearLayout></ScrollView>
 
-        <!-- Section 5: IT Infrastructure Log Audit -->
-        <LinearLayout
+<ScrollView android:id="@+id/pageSettings" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:clipToPadding="false" android:scrollbars="none" android:paddingLeft="16dp" android:paddingRight="16dp" android:paddingTop="12dp" android:paddingBottom="16dp" android:visibility="gone">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:text="CONNECTION AND DIAGNOSTICS" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/text_primary"/>
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" android:text="Manage local Gateway pairing and IT system diagnostics. Keep secrets off the phone." android:textSize="12sp" android:textColor="@color/text_secondary"/>
+
+<LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1. SECURE DEVICE PAIRING &amp; GATEWAY"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent_blue"
+                android:letterSpacing="0.05"
+                android:paddingBottom="10dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/card_stroke"
+                android:textColorHint="@color/text_muted"
+                android:layout_marginBottom="8dp">
+
+                <EditText
+                    android:id="@+id/edtGatewayIp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="HTTPS Gateway URL"
+                    android:inputType="textUri"
+                    android:text="https://127.0.0.1:5000"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/card_stroke"
+                android:textColorHint="@color/text_muted"
+                android:layout_marginBottom="12dp">
+
+                <EditText
+                    android:id="@+id/edtPairingCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="One-Time Pairing Code (e.g. PAIR-123456)"
+                    android:inputType="textCapCharacters"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnEnrollDevice"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Pair Device"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/accent_blue"
+                    android:textColor="@color/black"
+                    android:layout_marginEnd="6dp" />
+
+                <Button
+                    android:id="@+id/btnLogout"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Revoke Session"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/status_red"
+                    android:textColor="@color/white"
+                    android:layout_marginStart="6dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card"
@@ -537,120 +646,26 @@
                 app:backgroundTint="@color/card_stroke"
                 android:textColor="@color/text_primary" />
         </LinearLayout>
+</LinearLayout></ScrollView>
+    </FrameLayout>
 
-        <!-- Section 6: Alert Center & Incident Research Card -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
+    <!-- Persistent short feedback; tap to inspect full console on Home. -->
+    <TextView android:id="@+id/txtGlobalFeedback"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:minHeight="36dp" android:paddingLeft="16dp" android:paddingRight="16dp"
+        android:paddingTop="7dp" android:paddingBottom="7dp"
+        android:background="@color/terminal_bg" android:text="@string/nav_status_default"
+        android:textColor="@color/text_secondary" android:textSize="11sp"
+        android:maxLines="2" android:ellipsize="end"
+        android:clickable="true" android:focusable="true"
+        android:contentDescription="@string/nav_status_content_description"
+        android:foreground="?attr/selectableItemBackground"/>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="6. ALERT CENTER &amp; INCIDENT RESEARCH"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="@color/accent_blue"
-                android:letterSpacing="0.05"
-                android:paddingBottom="10dp" />
-
-            <!-- Disabled Legacy MT5 Inputs (Preserved for compatibility) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="0"
-                android:visibility="gone"
-                android:orientation="vertical">
-                <EditText android:id="@+id/edtMt5Login" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <EditText android:id="@+id/edtMt5Password" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <EditText android:id="@+id/edtMt5Server" android:layout_width="match_parent" android:layout_height="wrap_content" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnQueryAlerts"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:text="Fetch Alerts"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    app:backgroundTint="@color/card_stroke"
-                    android:textColor="@color/text_primary"
-                    android:layout_marginEnd="4dp" />
-
-                <Button
-                    android:id="@+id/btnQueryResearch"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:text="Incident Impact"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    app:backgroundTint="@color/card_stroke"
-                    android:textColor="@color/text_primary"
-                    android:layout_marginStart="4dp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <include layout="@layout/section_ai_intelligence" />
-
-        <!-- Read-only NAS100 synthetic research progress; no trading controls. -->
-        <include layout="@layout/section_nas100_research" />
-
-        <!-- Local read-only registered MT5 accounts, never live broker sessions. -->
-        <include layout="@layout/section_mt5_accounts" />
-
-        <!-- Section 7: Real-Time Telemetry & Terminal Monitor -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_terminal"
-            android:orientation="vertical"
-            android:padding="14dp"
-            android:layout_marginBottom="16dp">
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingBottom="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="TELEMETRY &amp; ANALYSIS CONSOLE"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/accent_blue"
-                    android:letterSpacing="0.08" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="SMARTHUB v5.1"
-                    android:textSize="10sp"
-                    android:textColor="@color/text_muted"
-                    android:layout_alignParentEnd="true" />
-            </RelativeLayout>
-
-            <TextView
-                android:id="@+id/txtAnalysisOutput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="System Ready. Listening for market events &amp; bot telemetry..."
-                android:textSize="12sp"
-                android:typeface="monospace"
-                android:textColor="#38BDF8"
-                android:minLines="7"
-                android:lineSpacingExtra="3dp" />
-        </LinearLayout>
-
-    </LinearLayout>
-</ScrollView>
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/card_bg" app:menu="@menu/menu_main_navigation"
+        app:labelVisibilityMode="labeled" app:itemHorizontalTranslationEnabled="false"
+        app:itemIconTint="@color/nav_item_tint" app:itemTextColor="@color/nav_item_tint"
+        app:itemRippleColor="@color/card_stroke"/>
+</LinearLayout>
