@@ -96,6 +96,7 @@ def test_invalid_stop_distance_or_budget_is_rejected(verified_us100_spec, invali
 
 def test_http_calculator_rejects_client_supplied_broker_spec(monkeypatch):
     # A phone must never be able to forge tick value/min volume through JSON.
+    monkeypatch.delenv("SMARTHUB_STATE_DB", raising=False)
     monkeypatch.setenv("SMARTHUB_API_TOKEN", "s" * 48)
     from app import app
     client = app.test_client()
@@ -122,6 +123,7 @@ def test_http_calculator_rejects_client_supplied_broker_spec(monkeypatch):
 def test_unverified_calc_is_never_formatted_as_tradable_size(monkeypatch):
     # Legacy UI displays a 0.01-lot default for successful responses; error
     # responses must never contain 'recommended_lots'.
+    monkeypatch.delenv("SMARTHUB_STATE_DB", raising=False)
     monkeypatch.setenv("SMARTHUB_API_TOKEN", "q" * 48)
     from app import app
     response = app.test_client().post(
