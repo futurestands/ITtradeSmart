@@ -20,7 +20,10 @@ def calculate_risk(balance: float, baseline_percent: float, stress_index: int) -
     if not isinstance(stress_index, int) or not 0 <= stress_index <= 100:
         raise ValueError('Stress index must be an integer from 0 to 100')
     effective = baseline_percent * (1 - 0.5 * stress_index / 100)
-    return RiskDecision(stress_index, baseline_perce@dataclass(frozen=True)
+    return RiskDecision(stress_index, baseline_percent, effective, balance * effective / 100)
+
+
+@dataclass(frozen=True)
 class BrokerContractSpec:
     """Trusted *server-side* symbol_info snapshot used for sizing only.
 
@@ -152,9 +155,6 @@ def calculate_pipnex_lot_size(
         "contract_size": spec.contract_size,
         "broker_spec_source": spec.source,
         "risk_estimate_note": "Nominal stop loss only; excludes spreads, slippage and gaps",
-    }
-
-      "contract_size": contract_size
     }
 
 
