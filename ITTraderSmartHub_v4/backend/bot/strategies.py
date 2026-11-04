@@ -110,7 +110,15 @@ class DonchianBreakoutStrategy(BaseStrategy):
         lower_channel = min(lows[-self.channel_period:])
 
         # Calculate ATR
-        tr_list = [max(c.high - c.low, abs(c.high - candles[i-1].close), abs(c.low - candles[i-1].close)) for i, c in enumerate(candles[1:])]
+        # i must start at 1 because candles[1:] is offset by one bar.
+        # Starting at zero accidentally reads candles[-1] (future candle) first
+        # and compares subsequent bars against two bars earlier.
+        tr_list = [
+            max(c.high - c.low,
+                abs(c.high - candles[i - 1].close),
+                abs(c.low - candles[i - 1].close))
+            for i, c in enumerate(candles[1:], start=1)
+        ]
         atr_val = sum(tr_list[-self.atr_period:]) / self.atr_period if len(tr_list) >= self.atr_period else 0.0010
 
         sl_dist = atr_val * self.atr_multiplier
