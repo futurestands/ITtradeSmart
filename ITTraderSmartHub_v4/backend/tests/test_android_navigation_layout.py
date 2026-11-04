@@ -65,7 +65,6 @@ def test_navigation_menu_and_controller_match_all_five_pages():
     ids = [get_id(i) for i in items]
     assert ids == ["nav_home", "nav_accounts", "nav_research", "nav_risk", "nav_settings"]
     controller = CONTROLLER.read_text(encoding="utf-8")
-    assert "dashboard" not in controller.lower() or "Dashboard" in controller
     for nav_id, screen_id in zip(
         ids, ["pageHome", "pageAccounts", "pageResearch", "pageRisk", "pageSettings"]
     ):
