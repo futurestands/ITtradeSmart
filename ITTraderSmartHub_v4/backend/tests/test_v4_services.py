@@ -4,6 +4,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from v4_services import ContextStore, risk_context, research_request
 import pytest
 
+
+@pytest.fixture(autouse=True)
+def isolate_context_store_from_gateway_runtime(monkeypatch):
+    """Prevent ContextStore() tests from reading/writing the live Gateway DB.
+
+    ContextStore() intentionally honors SMARTHUB_STATE_DB in production.
+    Earlier tests assumed an empty volatile store, but inherited the operator's
+    persistent sqlite state if that variable was set in PowerShell. Explicit
+    persistence coverage below continues using its own tmp_path database.
+    """
+    monkeypatch.delenv("SMARTHUB_STATE_DB", raising=False)
+
 def test_missing_telemetry_fails_closed():
     r = risk_context({'schema_version': 1, 'baseline_risk_pct': 1, 'symbol': 'EURUSD'}, ContextStore())
     assert r['effective_risk_pct'] is None and r['status'] == 'UNAVAILABLE'

@@ -1,6 +1,8 @@
-"""Pipnex-style smart risk engine with exact broker lot sizing, pip value calculation, and prop firm drawdown rules."""
+"""Research-only risk engine; broker lot sizing fails closed without trusted symbol specifications."""
 from dataclasses import dataclass
-from math import isfinite, floor
+from math import isfinite
+from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
+import re
 
 @dataclass(frozen=True)
 class RiskDecision:
@@ -21,60 +23,138 @@ def calculate_risk(balance: float, baseline_percent: float, stress_index: int) -
     return RiskDecision(stress_index, baseline_percent, effective, balance * effective / 100)
 
 
-def calculate_pipnex_lot_size(balance: float, risk_pct: float, stop_loss_pips: float, symbol: str = "EURUSD", leverage: float = 100.0) -> dict:
+@dataclass(frozen=True)
+class BrokerContractSpec:
+    """Trusted *server-side* symbol_info snapshot used for sizing only.
+
+    No values in this class should be read from Android/client JSON. The
+    loss-side tick value must already be in USD (the account currency); an MT5
+    integration must establish that by reading the actual terminal/symbol.
+    The pip_size convention must also be verified for that exact symbol.
+    Unit tests use synthetic fixture values, not real broker specifications.
     """
-    Pipnex Smart Lot Size & Pip Value Calculator.
-    Computes exact broker lot sizes (0.01 steps), cash at risk, pip value, and margin requirement.
-    Supports Forex (EURUSD, GBPUSD, USDJPY), Metals (XAUUSD), Crypto (BTCUSD), Indices (US30, NAS100).
+    symbol: str
+    tick_size: float
+    tick_value_loss_usd: float
+    pip_size: float
+    volume_min: float
+    volume_max: float
+    volume_step: float
+    contract_size: float
+    account_currency: str
+    source: str
+
+
+def _valid_broker_spec(symbol: str, spec: BrokerContractSpec | None) -> BrokerContractSpec:
+    if not isinstance(spec, BrokerContractSpec) or spec.source != "TRUSTED_SERVER_SIDE_MT5":
+        raise ValueError(
+            "BROKER_SPEC_UNVERIFIED: A read-only, server-verified MT5 symbol "
+            "specification is required; no lot size is available"
+        )
+    if (
+        not isinstance(spec.symbol, str) or spec.symbol.upper() != symbol
+        or spec.account_currency != "USD"
+    ):
+        raise ValueError("BROKER_SPEC_UNVERIFIED: Instrument or account currency does not match")
+    numbers = (
+        spec.tick_size, spec.tick_value_loss_usd, spec.pip_size,
+        spec.volume_min, spec.volume_max, spec.volume_step, spec.contract_size,
+    )
+    if (
+        any(type(v) not in (int, float) or not isfinite(v) or v <= 0 for v in numbers)
+        or spec.volume_min > spec.volume_max
+    ):
+        raise ValueError("INVALID_BROKER_SPEC: Tick and lot limits must be finite and positive")
+    return spec
+
+
+def calculate_pipnex_lot_size(
+    balance: float,
+    risk_pct: float,
+    stop_loss_pips: float,
+    symbol: str = "EURUSD",
+    leverage: float = 100.0,
+    *,
+    broker_spec: BrokerContractSpec | None = None,
+) -> dict:
+    """Size conservatively using *verified broker* contract values only.
+
+    `stop_loss_pips` is the distance in the broker-verified `pip_size` unit.
+    This function NEVER guesses an instrument class from its alias and NEVER
+    rounds up to the broker minimum if doing so would exceed the cash budget.
+
+    `leverage` is retained for legacy call compatibility, but margin is not
+    calculated and no leverage-based trading permission is implied. This is
+    nominal stop risk (not guaranteed maximum loss under slippage/gaps).
     """
-    if not all(isfinite(v) for v in (balance, risk_pct, stop_loss_pips)) or balance <= 0 or risk_pct <= 0 or stop_loss_pips <= 0:
-        raise ValueError("Balance, risk percentage, and stop loss pips must be positive finite numbers")
+    for field in (balance, risk_pct, stop_loss_pips):
+        if type(field) not in (int, float) or not isfinite(field) or field <= 0:
+            raise ValueError("Balance, risk percentage, and stop loss must be positive finite numbers")
+    if risk_pct > 100:
+        raise ValueError("Risk percentage must be at most 100")
+    if not isinstance(symbol, str):
+        raise ValueError("Invalid symbol")
+    normalized = symbol.strip().upper()
+    if not re.fullmatch(r"[A-Z0-9._-]{2,32}", normalized):
+        raise ValueError("Invalid symbol")
 
-    sym_upper = symbol.upper().replace("/", "").replace("_", "")
+    spec = _valid_broker_spec(normalized, broker_spec)
 
-    # Contract specifications
-    if "XAU" in sym_upper or "GOLD" in sym_upper:
-        contract_size = 100.0       # 100 oz per lot
-        pip_size = 0.10             # $0.10 per pip per lot
-        pip_value_per_lot = 10.0    # $10 per pip for 1.00 lot
-    elif "BTC" in sym_upper:
-        contract_size = 1.0         # 1 BTC per lot
-        pip_size = 1.0              # $1.00 per point
-        pip_value_per_lot = 1.0     # $1.00 per point per lot
-    elif "US30" in sym_upper or "NAS100" in sym_upper or "GER30" in sym_upper or "SPX500" in sym_upper:
-        contract_size = 1.0
-        pip_size = 1.0
-        pip_value_per_lot = 1.0
-    elif "JPY" in sym_upper:
-        contract_size = 100000.0
-        pip_size = 0.01
-        pip_value_per_lot = 9.10    # ~ $9.10 per pip for 1 lot USDJPY
-    else:
-        # Standard Forex (EURUSD, GBPUSD, AUDUSD)
-        contract_size = 100000.0
-        pip_size = 0.0001
-        pip_value_per_lot = 10.0    # $10 per pip for 1.00 lot
+    # Decimal avoids floating-point volume-step drift (e.g. 0.1 + 3*0.2).
+    dec = lambda x: Decimal(str(x))
+    budget = dec(balance) * dec(risk_pct) / Decimal("100")
+    pip_value_per_lot = (
+        dec(spec.pip_size) / dec(spec.tick_size) * dec(spec.tick_value_loss_usd)
+    )
+    # Stops must be placed on tradable tick increments. Round the requested
+    # price distance UP to the next tick so nominal exposure is never understated.
+    stop_ticks = (
+        dec(stop_loss_pips) * dec(spec.pip_size) / dec(spec.tick_size)
+    ).to_integral_value(rounding=ROUND_CEILING)
+    stop_cash_per_lot = stop_ticks * dec(spec.tick_value_loss_usd)
+    if stop_cash_per_lot <= 0:
+        raise ValueError("INVALID_BROKER_SPEC: Nonpositive stop-loss cash value")
 
-    cash_at_risk = balance * (risk_pct / 100.0)
-    raw_lots = cash_at_risk / (stop_loss_pips * pip_value_per_lot)
+    minimum = dec(spec.volume_min)
+    maximum = dec(spec.volume_max)
+    step = dec(spec.volume_step)
+    raw_max_lots = budget / stop_cash_per_lot
 
-    # Step rounding to 0.01 lot minimum, max 100 lots
-    stepped_lots = floor(raw_lots * 100.0) / 100.0
-    recommended_lots = max(0.01, min(100.0, stepped_lots))
+    # Deliberately refuse rather than enforcing the minimum lot.
+    if raw_max_lots < minimum:
+        raise ValueError(
+            "MIN_LOT_EXCEEDS_RISK_LIMIT: Even the broker's minimum volume "
+            "would exceed the selected risk budget"
+        )
 
-    actual_cash_at_risk = recommended_lots * stop_loss_pips * pip_value_per_lot
-    pip_value = recommended_lots * pip_value_per_lot
+    capped_lots = min(raw_max_lots, maximum)
+    steps = ((capped_lots - minimum) / step).to_integral_value(rounding=ROUND_FLOOR)
+    lots = minimum + steps * step
+    actual_cash = lots * stop_cash_per_lot
+
+    if lots < minimum or lots > maximum or actual_cash > budget:
+        raise ValueError("INVALID_BROKER_SPEC: Risk-safe volume could not be established")
+    if not all(isfinite(float(value)) for value in (budget, lots, actual_cash, lots * pip_value_per_lot)):
+        raise ValueError("INVALID_BROKER_SPEC: Result exceeds supported numeric range")
 
     return {
-        "symbol": sym_upper,
+        "symbol": normalized,
+        "status": "SIZED_FROM_VERIFIED_SPEC",
+        "execution_authorized": False,
         "balance": balance,
         "risk_percentage": risk_pct,
-        "cash_at_risk": round(actual_cash_at_risk, 2),
+        "risk_budget_usd": round(float(budget), 2),
+        "cash_at_risk": round(float(actual_cash), 2),
         "stop_loss_pips": stop_loss_pips,
-        "recommended_lots": recommended_lots,
-        "pip_value_usd": round(pip_value, 2),
-        "min_lot_step": 0.01,
-        "contract_size": contract_size
+        "effective_stop_loss_ticks": int(stop_ticks),
+        "recommended_lots": float(lots),
+        "pip_value_usd": round(float(lots * pip_value_per_lot), 2),
+        "min_lot_step": spec.volume_step,
+        "volume_min": spec.volume_min,
+        "volume_max": spec.volume_max,
+        "contract_size": spec.contract_size,
+        "broker_spec_source": spec.source,
+        "risk_estimate_note": "Nominal stop loss only; excludes spreads, slippage and gaps",
     }
 
 

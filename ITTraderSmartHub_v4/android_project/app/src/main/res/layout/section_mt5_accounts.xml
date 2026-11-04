@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_marginBottom="16dp"
+    android:background="@drawable/bg_card">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/mt5_accounts_heading"
+        android:textStyle="bold"
+        android:textColor="@color/accent_blue"
+        android:textSize="14sp"/>
+
+    <TextView
+        android:id="@+id/txtMT5Accounts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/mt5_accounts_initial"
+        android:textColor="@color/text_primary"
+        android:textSize="13sp"
+        android:lineSpacingExtra="4dp"
+        android:accessibilityLiveRegion="polite"/>
+
+    <Button
+        android:id="@+id/btnRefreshMT5Accounts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:layout_marginTop="12dp"
+        android:text="@string/mt5_accounts_refresh"
+        app:backgroundTint="@color/card_stroke"
+        android:textColor="@color/text_primary"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="@string/mt5_accounts_editor_heading"
+        android:textStyle="bold"
+        android:textColor="@color/accent_blue"
+        android:textSize="14sp" />
+
+    <Spinner
+        android:id="@+id/spnMT5SelectAccount"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:contentDescription="@string/mt5_accounts_select"
+        android:layout_marginTop="8dp" />
+
+    <EditText
+        android:id="@+id/edtMT5AccountAlias"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/mt5_accounts_alias_hint"
+        android:inputType="textNoSuggestions"
+        android:maxLength="32"
+        android:singleLine="true"
+        android:textColor="@color/text_primary" />
+
+    <EditText
+        android:id="@+id/edtMT5AccountLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/mt5_accounts_label_hint"
+        android:inputType="textCapWords"
+        android:maxLength="40"
+        android:singleLine="true"
+        android:textColor="@color/text_primary" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/mt5_accounts_broker_label"
+        android:textColor="@color/text_secondary" />
+
+    <EditText
+        android:id="@+id/edtMT5BrokerName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/mt5_accounts_broker_hint"
+        android:inputType="textCapWords"
+        android:maxLength="40"
+        android:singleLine="true"
+        android:textColor="@color/text_primary" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/mt5_accounts_type_label"
+        android:textColor="@color/text_secondary" />
+
+    <Spinner
+        android:id="@+id/spnMT5AccountKind"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:contentDescription="@string/mt5_accounts_type_label" />
+
+    <EditText
+        android:id="@+id/edtMT5AccountSymbol"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/mt5_accounts_symbol_hint"
+        android:inputType="textNoSuggestions"
+        android:maxLength="32"
+        android:singleLine="true"
+        android:textColor="@color/text_primary" />
+
+    <TextView
+        android:id="@+id/txtMT5ProfileFeedback"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/mt5_accounts_editor_note"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp" />
+
+    <Button
+        android:id="@+id/btnSaveMT5Account"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/mt5_accounts_save"
+        app:backgroundTint="@color/accent_blue"
+        android:textColor="@color/black" />
+
+    <Button
+        android:id="@+id/btnRemoveMT5Account"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="6dp"
+        android:text="@string/mt5_accounts_remove"
+        app:backgroundTint="@color/card_stroke"
+        android:textColor="@color/text_primary" />
+</LinearLayout>

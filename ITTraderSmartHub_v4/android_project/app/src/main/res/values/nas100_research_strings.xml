@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nas100_research_heading">NAS100 AI RESEARCH — EXPERIMENTAL</string>
+    <string name="nas100_research_initial">Research connection: Not checked\nAI model: NOT READY\nReal NAS100 predictions and trade execution: DISABLED.</string>
+    <string name="nas100_research_refresh">Refresh research status</string>
+    <string name="nas100_research_details_show">View technical results</string>
+    <string name="nas100_research_details_hide">Hide technical results</string>
+</resources>

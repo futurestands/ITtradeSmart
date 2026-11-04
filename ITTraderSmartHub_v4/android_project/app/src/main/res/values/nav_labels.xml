@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_home">Home</string>
+    <string name="nav_accounts">Accounts</string>
+    <string name="nav_research">AI Lab</string>
+    <string name="nav_risk">Risk</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_app_title">ITTRADER SMART HUB</string>
+    <string name="nav_research_disclaimer">RESEARCH ONLY · ORDERS DISABLED</string>
+    <string name="nav_status_default">System ready · Research mode</string>
+    <string name="nav_status_content_description">Latest activity. Tap to open the full system console.</string>
+    <string name="nav_home_title">Overview</string>
+    <string name="nav_accounts_title">Broker accounts</string>
+    <string name="nav_research_title">AI research</string>
+    <string name="nav_risk_title">Risk and controls</string>
+    <string name="nav_settings_title">Connection and settings</string>
+    <string name="nav_home_subtitle">Market feed and system activity</string>
+    <string name="nav_accounts_subtitle">Edit broker profiles; connections not yet enabled</string>
+    <string name="nav_research_subtitle">Synthetic NAS100 results and read-only intelligence</string>
+    <string name="nav_risk_subtitle">Position risk and protected bot controls</string>
+    <string name="nav_settings_subtitle">Gateway pairing and diagnostics</string>
+</resources>

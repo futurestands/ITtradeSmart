@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Research DEBUG build only. ADB reverse maps device 127.0.0.1:5000
+         to the Windows Gateway bound on its own loopback. No LAN/mobile-data
+         cleartext endpoints are allowed. Release builds do not include this. -->
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain>127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

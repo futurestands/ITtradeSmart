@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mt5_accounts_heading">METATRADER 5 — MULTI-ACCOUNT MONITOR</string>
+    <string name="mt5_accounts_initial">Account registry: Not checked\nNo broker account has been connected or approved for execution.</string>
+    <string name="mt5_accounts_refresh">Refresh broker accounts</string>
+    <string name="mt5_accounts_editor_heading">ADD OR EDIT A BROKER PROFILE</string>
+    <string name="mt5_accounts_select">Choose a profile</string>
+    <string name="mt5_accounts_alias_hint">Profile ID (e.g. ftmo-trial)</string>
+    <string name="mt5_accounts_label_hint">Display name</string>
+    <string name="mt5_accounts_broker_label">Broker</string>
+    <string name="mt5_accounts_broker_hint">Type broker name (e.g. FTMO)</string>
+    <string name="mt5_accounts_type_label">Account type</string>
+    <string name="mt5_accounts_symbol_hint">MT5 symbol (e.g. US100)</string>
+    <string name="mt5_accounts_editor_note">Profile settings only. No trading access.</string>
+    <string name="mt5_accounts_save">Save profile</string>
+    <string name="mt5_accounts_remove">Remove profile</string>
+</resources>

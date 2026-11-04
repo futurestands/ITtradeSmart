@@ -1,17 +1,23 @@
 package com.ittrader.smarthub
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.OnBackPressedCallback
 import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webSocketManager: MarketWebSocketManager
     private val repository = GatewayRepository()
+    private lateinit var dashboardNavigation: DashboardNavigation
 
     private var liveMarketPrice: Double = 0.0
     private var internalOperationalRisk: Int = 0
@@ -20,12 +26,54 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        dashboardNavigation = DashboardNavigation(this)
+        dashboardNavigation.initialize(savedInstanceState)
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (dashboardNavigation.currentPage != R.id.nav_home) {
+                    dashboardNavigation.navigateTo(R.id.nav_home)
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
+
         GatewaySession.init(this)
 
         val txtLivePrice = findViewById<TextView>(R.id.txtLivePrice)
         val edtLogs = findViewById<EditText>(R.id.edtLogs)
         val btnProcess = findViewById<Button>(R.id.btnProcess)
         val txtAnalysisOutput = findViewById<TextView>(R.id.txtAnalysisOutput)
+
+        // A compact activity strip makes output from hidden screens discoverable
+        // without turning the app into one giant chat-style console.
+        val txtGlobalFeedback = findViewById<TextView>(R.id.txtGlobalFeedback)
+        fun updateCompactStatus(value: CharSequence?) {
+            val summary = value?.toString()?.replace(Regex("\\s+"), " ")?.trim().orEmpty()
+            txtGlobalFeedback.text = summary.ifBlank { getString(R.string.nav_status_default) }
+        }
+        txtAnalysisOutput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) =
+                updateCompactStatus(s)
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
+        updateCompactStatus(txtAnalysisOutput.text)
+        txtGlobalFeedback.setOnClickListener {
+            dashboardNavigation.navigateTo(R.id.nav_home)
+            val home = findViewById<ScrollView>(R.id.pageHome)
+            home.post { home.fullScroll(View.FOCUS_DOWN) }
+        }
+        findViewById<Button>(R.id.btnOpenAccounts).setOnClickListener {
+            dashboardNavigation.navigateTo(R.id.nav_accounts)
+        }
+        findViewById<Button>(R.id.btnOpenResearch).setOnClickListener {
+            dashboardNavigation.navigateTo(R.id.nav_research)
+        }
+        findViewById<Button>(R.id.btnOpenRisk).setOnClickListener {
+            dashboardNavigation.navigateTo(R.id.nav_risk)
+        }
 
         val edtAccountBalance = findViewById<EditText>(R.id.edtAccountBalance)
         val edtRiskPercentage = findViewById<EditText>(R.id.edtRiskPercentage)
@@ -59,6 +107,60 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
             }
+        }
+
+        // NAS100 research: read-only status from the authenticated Gateway.
+        // No model inference, trade candidate submission, or bot controls.
+        val txtNAS100Research = findViewById<TextView>(R.id.txtNAS100Research)
+        val btnRefreshNAS100Research = findViewById<Button>(R.id.btnRefreshNAS100Research)
+        val btnNAS100ResearchDetails = findViewById<Button>(R.id.btnNAS100ResearchDetails)
+        var latestNAS100Response: org.json.JSONObject? = null
+        var showNAS100Details = false
+        btnNAS100ResearchDetails.visibility = View.GONE
+
+        btnNAS100ResearchDetails.setOnClickListener {
+            val snapshot = latestNAS100Response ?: return@setOnClickListener
+            showNAS100Details = !showNAS100Details
+            txtNAS100Research.text = if (showNAS100Details) {
+                NAS100ResearchPresenter.summary(snapshot)
+            } else {
+                NAS100ResearchPresenter.overview(snapshot)
+            }
+            btnNAS100ResearchDetails.setText(
+                if (showNAS100Details) R.string.nas100_research_details_hide
+                else R.string.nas100_research_details_show
+            )
+        }
+        btnRefreshNAS100Research.setOnClickListener {
+            updateGatewayUrlFromInput(edtGatewayIp)
+            btnRefreshNAS100Research.isEnabled = false
+            btnNAS100ResearchDetails.visibility = View.GONE
+            latestNAS100Response = null
+            showNAS100Details = false
+            btnNAS100ResearchDetails.setText(R.string.nas100_research_details_show)
+            txtNAS100Research.text = "Checking local NAS100 research report..."
+            repository.queryNAS100ResearchProgress { result ->
+                runOnUiThread {
+                    btnRefreshNAS100Research.isEnabled = true
+                    txtNAS100Research.text = result.fold(
+                        onSuccess = { response ->
+                            if (NAS100ResearchPresenter.hasVerifiedSyntheticReport(response)) {
+                                latestNAS100Response = response
+                                btnNAS100ResearchDetails.visibility = View.VISIBLE
+                            }
+                            NAS100ResearchPresenter.overview(response)
+                        },
+                        onFailure = { NAS100ResearchPresenter.unavailable() }
+                    )
+                }
+            }
+        }
+
+        // All broker profile edits occur in the APK and persist only to the
+        // Windows Gateway's ignored, credential-free local registry file.
+        // Registering a profile never connects MT5 or authorizes trades.
+        MT5ProfilesEditor(this, repository) {
+            updateGatewayUrlFromInput(edtGatewayIp)
         }
 
         // Pre-fill stored gateway URL
@@ -413,6 +515,11 @@ class MainActivity : AppCompatActivity() {
         }
         val score = (criticalCount * 25) + (warningCount * 10)
         return LogReport(score.coerceAtMost(100))
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        dashboardNavigation.saveState(outState)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onDestroy() {
