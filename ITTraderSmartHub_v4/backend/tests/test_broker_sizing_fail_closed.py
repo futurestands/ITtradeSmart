@@ -56,6 +56,21 @@ def test_rounds_down_on_min_based_step_grid(verified_us100_spec):
     assert result["cash_at_risk"] <= result["risk_budget_usd"]
 
 
+
+def test_fractional_stop_distance_ceil_to_tradable_tick(verified_us100_spec):
+    # A 0.15-price-unit requested stop with 0.1 tick must be risked as 2 ticks.
+    spec = replace(verified_us100_spec, pip_size=0.15)
+    result = calculate_pipnex_lot_size(1_000.0, 1.0, 1.0, "US100", broker_spec=spec)
+    assert result["effective_stop_loss_ticks"] == 2
+    assert result["recommended_lots"] == 50.0
+    assert result["cash_at_risk"] == 10.0
+
+
+def test_risk_limit_above_100_is_rejected(verified_us100_spec):
+    with pytest.raises(ValueError, match="at most 100"):
+        calculate_pipnex_lot_size(10_000, 105, 20, "US100", broker_spec=verified_us100_spec)
+
+
 def test_respects_broker_volume_max(verified_us100_spec):
     spec = replace(verified_us100_spec, volume_max=0.40)
     result = calculate_pipnex_lot_size(10_000.0, 1.0, 20.0, "US100", broker_spec=spec)
