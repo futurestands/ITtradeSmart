@@ -1,18 +1,23 @@
 package com.ittrader.smarthub
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.OnBackPressedCallback
 import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webSocketManager: MarketWebSocketManager
     private val repository = GatewayRepository()
+    private lateinit var dashboardNavigation: DashboardNavigation
 
     private var liveMarketPrice: Double = 0.0
     private var internalOperationalRisk: Int = 0
@@ -21,12 +26,54 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        dashboardNavigation = DashboardNavigation(this)
+        dashboardNavigation.initialize(savedInstanceState)
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (dashboardNavigation.currentPage != R.id.nav_home) {
+                    dashboardNavigation.navigateTo(R.id.nav_home)
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
+
         GatewaySession.init(this)
 
         val txtLivePrice = findViewById<TextView>(R.id.txtLivePrice)
         val edtLogs = findViewById<EditText>(R.id.edtLogs)
         val btnProcess = findViewById<Button>(R.id.btnProcess)
         val txtAnalysisOutput = findViewById<TextView>(R.id.txtAnalysisOutput)
+
+        // A compact activity strip makes output from hidden screens discoverable
+        // without turning the app into one giant chat-style console.
+        val txtGlobalFeedback = findViewById<TextView>(R.id.txtGlobalFeedback)
+        fun updateCompactStatus(value: CharSequence?) {
+            val summary = value?.toString()?.replace(Regex("\\s+"), " ")?.trim().orEmpty()
+            txtGlobalFeedback.text = summary.ifBlank { getString(R.string.nav_status_default) }
+        }
+        txtAnalysisOutput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) =
+                updateCompactStatus(s)
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
+        updateCompactStatus(txtAnalysisOutput.text)
+        txtGlobalFeedback.setOnClickListener {
+            dashboardNavigation.navigateTo(R.id.nav_home)
+            val home = findViewById<ScrollView>(R.id.pageHome)
+            home.post { home.fullScroll(View.FOCUS_DOWN) }
+        }
+        findViewById<Button>(R.id.btnOpenAccounts).setOnClickListener {
+            dashboardNavigation.navigateTo(R.id.nav_accounts)
+        }
+        findViewById<Button>(R.id.btnOpenResearch).setOnClickListener {
+            dashboardNavigation.navigateTo(R.id.nav_research)
+        }
+        findViewById<Button>(R.id.btnOpenRisk).setOnClickListener {
+            dashboardNavigation.navigateTo(R.id.nav_risk)
+        }
 
         val edtAccountBalance = findViewById<EditText>(R.id.edtAccountBalance)
         val edtRiskPercentage = findViewById<EditText>(R.id.edtRiskPercentage)
@@ -468,6 +515,11 @@ class MainActivity : AppCompatActivity() {
         }
         val score = (criticalCount * 25) + (warningCount * 10)
         return LogReport(score.coerceAtMost(100))
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        dashboardNavigation.saveState(outState)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onDestroy() {
