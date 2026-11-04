@@ -152,7 +152,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="6. ALERT CENTER &amp; INCIDENT RESEARCH"
+                android:text="ALERTS &amp; INCIDENT RESEARCH"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent_blue"
@@ -219,7 +219,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="2. V5 TRADING BOT CONTROL CENTRE"
+                android:text="RESEARCH BOT CONTROLS"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent_blue"
@@ -299,7 +299,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="3. PIPNEX SMART LOT &amp; PIP CALCULATOR"
+                android:text="PIPNEX POSITION SIZE CALCULATOR"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent_blue"
@@ -454,7 +454,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="4. PIPNEX PROP FIRM DRAWDOWN SHIELD"
+                android:text="PIPNEX PROP FIRM DRAWDOWN SHIELD"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent_blue"
@@ -527,7 +527,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="1. SECURE DEVICE PAIRING &amp; GATEWAY"
+                android:text="SECURE DEVICE PAIRING &amp; GATEWAY"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent_blue"
@@ -615,7 +615,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="5. IT INFRASTRUCTURE LOG AUDIT"
+                android:text="IT INFRASTRUCTURE LOG AUDIT"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent_blue"
