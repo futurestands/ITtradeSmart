@@ -1,7 +1,7 @@
-"""Pipnex-style smart risk engine with exact broker lot sizing, pip value calculation, and prop firm drawdown rules."""
+"""Research-only risk engine; broker lot sizing fails closed without trusted symbol specifications."""
 from dataclasses import dataclass
 from math import isfinite
-from decimal import Decimal, ROUND_FLOOR
+from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
 import re
 
 @dataclass(frozen=True)
@@ -103,7 +103,12 @@ def calculate_pipnex_lot_size(
     pip_value_per_lot = (
         dec(spec.pip_size) / dec(spec.tick_size) * dec(spec.tick_value_loss_usd)
     )
-    stop_cash_per_lot = dec(stop_loss_pips) * pip_value_per_lot
+    # Stops must be placed on tradable tick increments. Round the requested
+    # price distance UP to the next tick so nominal exposure is never understated.
+    stop_ticks = (
+        dec(stop_loss_pips) * dec(spec.pip_size) / dec(spec.tick_size)
+    ).to_integral_value(rounding=ROUND_CEILING)
+    stop_cash_per_lot = stop_ticks * dec(spec.tick_value_loss_usd)
     if stop_cash_per_lot <= 0:
         raise ValueError("INVALID_BROKER_SPEC: Nonpositive stop-loss cash value")
 
@@ -126,6 +131,8 @@ def calculate_pipnex_lot_size(
 
     if lots < minimum or lots > maximum or actual_cash > budget:
         raise ValueError("INVALID_BROKER_SPEC: Risk-safe volume could not be established")
+    if not all(isfinite(float(value)) for value in (budget, lots, actual_cash, lots * pip_value_per_lot)):
+        raise ValueError("INVALID_BROKER_SPEC: Result exceeds supported numeric range")
 
     return {
         "symbol": normalized,
@@ -136,6 +143,7 @@ def calculate_pipnex_lot_size(
         "risk_budget_usd": round(float(budget), 2),
         "cash_at_risk": round(float(actual_cash), 2),
         "stop_loss_pips": stop_loss_pips,
+        "effective_stop_loss_ticks": int(stop_ticks),
         "recommended_lots": float(lots),
         "pip_value_usd": round(float(lots * pip_value_per_lot), 2),
         "min_lot_step": spec.volume_step,
