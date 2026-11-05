@@ -1,0 +1,4 @@
+# nas100 package: standard library only, except time-zone data on Windows.
+# Python on Windows has no system IANA database; zoneinfo needs this package.
+tzdata>=2024.1; sys_platform == "win32"
+# Tests: pytest (already used by the existing backend tests)

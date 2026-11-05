@@ -1,0 +1,9 @@
+{
+  "status": "BLOCKED_EXPECTED_CONNECTED_TRADE_DISABLED_SESSION",
+  "research_eligible": false,
+  "timebase_status": "TIMEBASE_UNVERIFIED",
+  "exported_rows": 0,
+  "account_mode": "DEMO",
+  "terminal_connected": true,
+  "observed_at_utc": "2026-11-05T08:06:38.357104+00:00"
+}

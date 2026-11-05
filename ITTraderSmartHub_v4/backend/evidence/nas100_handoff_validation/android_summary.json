@@ -1,0 +1,46 @@
+{
+  "jvm_suites": [
+    {
+      "name": "com.ittrader.smarthub.AIIntelligenceTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.ittrader.smarthub.DashboardTabSpecTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.ittrader.smarthub.MT5AccountsPresenterTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.ittrader.smarthub.NAS100ResearchPresenterTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.ittrader.smarthub.V4ContractsTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "total_tests": 32,
+  "lint_status": "PASSED",
+  "lint_errors": 0,
+  "lint_warnings": 210,
+  "assemble_status": "BLOCKED_DEBUG_KEYSTORE_LOCK_ACCESS_DENIED",
+  "app_installed": false,
+  "release_package": "com.ittrader.smarthub"
+}

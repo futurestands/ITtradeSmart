@@ -1,3 +1,4 @@
 flask>=3.0,<4
 jsonschema>=4.20,<5
+-r nas100/requirements-nas100.txt
 # On the Windows host only: pip install MetaTrader5

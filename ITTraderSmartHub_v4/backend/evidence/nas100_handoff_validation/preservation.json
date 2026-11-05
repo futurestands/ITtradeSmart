@@ -1,0 +1,13 @@
+{
+  "source_head": "db8f876617cf43b5e3e1a05981e58c312d0b160a",
+  "source_branch": "feature/mt5-readonly-inspection-20261104",
+  "source_status_porcelain": "",
+  "integration_branch": "feature/nas100-handoff-integration-20261105",
+  "modified_preexisting_files": [
+    "ITTraderSmartHub_v4/android_project/app/src/debug/res/xml/nas100_debug_network_security.xml",
+    "ITTraderSmartHub_v4/backend/requirements-gateway.lock.txt",
+    "ITTraderSmartHub_v4/backend/requirements.txt"
+  ],
+  "github_main": "161edd2ed0420d589afd47b6b1a8a84c528a3cb7",
+  "local_commits_after_github_main": 117
+}

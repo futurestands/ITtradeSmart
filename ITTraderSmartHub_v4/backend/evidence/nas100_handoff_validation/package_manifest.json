@@ -1,0 +1,30 @@
+{
+  "archive": "nas100-phase1-files.zip",
+  "sha256": "00dfaac328255ff3f253a7a59a00db1967cc8908345367f2ee86062e89b7a8a3",
+  "files": [
+    "ITTraderSmartHub_v4/backend/nas100/README.md",
+    "ITTraderSmartHub_v4/backend/nas100/__init__.py",
+    "ITTraderSmartHub_v4/backend/nas100/analysis.py",
+    "ITTraderSmartHub_v4/backend/nas100/candles.py",
+    "ITTraderSmartHub_v4/backend/nas100/config.py",
+    "ITTraderSmartHub_v4/backend/nas100/decision.py",
+    "ITTraderSmartHub_v4/backend/nas100/docs/EA_DIAGNOSTIC_EVIDENCE.md",
+    "ITTraderSmartHub_v4/backend/nas100/docs/ML_DESIGN.md",
+    "ITTraderSmartHub_v4/backend/nas100/fvg.py",
+    "ITTraderSmartHub_v4/backend/nas100/liquidity.py",
+    "ITTraderSmartHub_v4/backend/nas100/requirements-nas100.txt",
+    "ITTraderSmartHub_v4/backend/nas100/sessions.py",
+    "ITTraderSmartHub_v4/backend/nas100/structure.py",
+    "ITTraderSmartHub_v4/backend/nas100/swings.py",
+    "ITTraderSmartHub_v4/backend/nas100/timeframes.py",
+    "ITTraderSmartHub_v4/backend/nas100/tz.py",
+    "ITTraderSmartHub_v4/backend/nas100/volatility.py",
+    "ITTraderSmartHub_v4/backend/tests/nas100_fixtures.py",
+    "ITTraderSmartHub_v4/backend/tests/test_nas100_data.py",
+    "ITTraderSmartHub_v4/backend/tests/test_nas100_decision.py",
+    "ITTraderSmartHub_v4/backend/tests/test_nas100_structure.py"
+  ],
+  "phase2_archive_found": false,
+  "phase2_exact_missing_filenames": null,
+  "reason": "Requested Phase 2 ZIP absent; authoritative Phase 2 filenames were not supplied."
+}

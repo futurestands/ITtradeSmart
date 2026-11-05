@@ -1,0 +1,37 @@
+{
+  "file": "USTECH100M_M15.csv",
+  "sha256": "8bbaf1751398c19658736dd24f752bd3adb63745ac12950e7eff840275f72d27",
+  "timeframe": "M15",
+  "time_column": "time_utc",
+  "rows": 5000,
+  "invalid_ohlc": 0,
+  "strictly_ordered": true,
+  "duplicate_epochs": 0,
+  "first_raw_epoch": 1786483800,
+  "last_raw_epoch": 1793615400,
+  "interval_counts_seconds": {
+    "900": 4942,
+    "3600": 4,
+    "4500": 38,
+    "13500": 1,
+    "18900": 1,
+    "46800": 1,
+    "173700": 1,
+    "177300": 9,
+    "270000": 1,
+    "379800": 1
+  },
+  "nonstandard_intervals": 57,
+  "off_epoch_grid_bars": 0,
+  "unclosed_or_future_against_observation": 0,
+  "observed_at_utc": "2026-11-05T08:16:16.821579+00:00",
+  "timebase_status": "TIMEBASE_UNVERIFIED",
+  "research_eligible": false,
+  "model_trained": false,
+  "signal_counts": null,
+  "performance": null,
+  "blockers": [
+    "INDEPENDENT_TIMEBASE_AND_SESSION_EVIDENCE_REQUIRED",
+    "EXECUTION_COST_AND_CONTRACT_HISTORY_UNVERIFIED"
+  ]
+}
