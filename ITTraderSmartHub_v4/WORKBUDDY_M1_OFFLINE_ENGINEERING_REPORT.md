@@ -9,6 +9,7 @@
 **AI Lab base commit:** `6d0cc8f`  
 **M1 code commits:** SmartHub `7003781`, AI Lab `28892bd`  
 **M1 reports commit:** SmartHub `e6dfc30`  
+**M1 finalization commits:** SmartHub `e1fcfab`, AI Lab `4b25616`  
 **Project root:** `C:\Users\MJ\Documents\ITtradeSmart-NAS100-Integration\ITTraderSmartHub_v4`  
 **AI Lab root:** `C:\Users\MJ\Documents\NAS100-AI-Lab-Phase1B`
 
@@ -261,6 +262,8 @@ unnecessarily").
 | SmartHub | `e6dfc30` | **M1** — all 6 handover documents (3 corrected reports + this new report + 2 carried forward) |
 | AI Lab | `6d0cc8f` | Verified baseline (`feature/chatgpt-walkforward-research`) |
 | AI Lab | `28892bd` | **M1** — 2 new modules + 5 new test files (66 tests) |
+| SmartHub | `e1fcfab` | **M1 finalization** — 5 corrected documents + 18 documentation-integrity tests |
+| AI Lab | `4b25616` | **M1 finalization** — 5 timebase API reconciliation tests |
 | Remote only | `093956d9c22e9d0f80ad0193f119b9783d394667` | `feature/v5-demo-trading-bot` — **EXCLUDED** from all bases/merges |
 
 **Verified full commit IDs** (from `git rev-parse` / `git log --format='%h %H %s'`,
@@ -274,11 +277,14 @@ resolved against the local repositories on 2026-11-05):
 | `e6dfc30` | `e6dfc3049b25c5c9462d96e1861ad941ab492cc1` | SmartHub (M1 reports) |
 | `6d0cc8f` | `6d0cc8fbde71e2d6637cc8a03bbe7fc6028a2127` | AI Lab (baseline) |
 | `28892bd` | `28892bdafdaba56add2fd9d207af3c724288c769` | AI Lab (M1 modules + tests) |
+| `e1fcfab` | `e1fcfabddec4fcbbebf59556ab93f227863f9e10` | SmartHub (M1 finalization docs + 18 tests) |
+| `4b25616` | `4b2561634b9a5c8f4978e6f7ea6978790be6fd40` | AI Lab (M1 finalization, 5 tests) |
 
-The handover-finalization commit that follows `e6dfc30` contains only the
-commit-ID corrections, the tooling reconciliations in Section 7 and the two
-adversarial regression files; its ID is recorded in the handover message rather
-than inside the document it belongs to (avoids a self-referential hash).
+The two handover-finalization commits contain only the commit-ID corrections,
+the tooling reconciliations in Section 7 and the two adversarial regression
+files. The docs-only addendum that records their IDs inside these documents has
+its own ID reported in the handover message rather than embedded here, to avoid
+a self-referential hash.
 
 Both M1 branches are local and isolated. **No push, merge, rebase, reset,
 force-push, branch deletion, or deployment.** Working application codebases are

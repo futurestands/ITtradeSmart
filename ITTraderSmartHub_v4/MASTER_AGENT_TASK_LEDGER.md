@@ -223,13 +223,17 @@
 | `7003781` | `feature/workbuddy-m1-offline-engineering-20261105` (SmartHub) | M1: 2 new test files, 42 regressions, no production changes |
 | `e6dfc30` | `feature/workbuddy-m1-offline-engineering-20261105` (SmartHub) | M1: all 6 handover documents (3 corrected reports + `WORKBUDDY_M1_OFFLINE_ENGINEERING_REPORT.md` + 2 carried forward) |
 | `28892bd` | `feature/workbuddy-m1-offline-engineering-20261105` (AI Lab) | M1: 2 new modules + 5 new test files, 66 regressions |
+| `e1fcfab` | `feature/workbuddy-m1-offline-engineering-20261105` (SmartHub) | M1 finalization: 5 corrected documents + 18 documentation-integrity regressions |
+| `4b25616` | `feature/workbuddy-m1-offline-engineering-20261105` (AI Lab) | M1 finalization: 5 timebase API reconciliation regressions |
 
 **Verified full commit IDs:** `0c0624fcc91ce78e4d35d06e66c0edb6c1005e6f` (`0c0624f`),
 `ae707c0ba1c050beab209cff5b4676873e82d262` (`ae707c0`),
 `7003781d93ab0fb994c4ec4ef1a93409fc05c5d1` (`7003781`),
 `e6dfc3049b25c5c9462d96e1861ad941ab492cc1` (`e6dfc30`),
 `6d0cc8fbde71e2d6637cc8a03bbe7fc6028a2127` (`6d0cc8f`),
-`28892bdafdaba56add2fd9d207af3c724288c769` (`28892bd`).
+`28892bdafdaba56add2fd9d207af3c724288c769` (`28892bd`),
+`e1fcfabddec4fcbbebf59556ab93f227863f9e10` (`e1fcfab`),
+`4b2561634b9a5c8f4978e6f7ea6978790be6fd40` (`4b25616`).
 
 **No push, merge, force-push, or deployment has been performed.**
 
