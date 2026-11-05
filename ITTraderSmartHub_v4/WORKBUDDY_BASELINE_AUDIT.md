@@ -136,6 +136,7 @@ However, the project contains **extensive equivalent documentation** from prior 
 | With writable `--basetemp` (no tzdata) | 544 passed, 56 failed, 2 skipped | All 56 failures = `ZoneInfoNotFoundError: 'No time zone found with key UTC'` |
 | With writable `--basetemp` + tzdata installed | **600 passed, 2 skipped, 0 failed** | 2 skips = Windows symlink privilege (known, pre-existing) |
 | M1 full suite, after 42 new regression tests | **642 passed, 2 skipped, 0 failed** | Baseline 600 + 14 reconciliation + 28 simulator/causality tests |
+| M1 finalization full suite (+18 documentation-integrity tests) | **660 passed, 2 skipped, 0 failed** | Current branch state; no test weakened or removed |
 
 **Critical fix applied:** `tzdata==2026.6` was declared in `requirements-gateway.lock.txt` but was not installed in `.venv-gateway`. The prior Codex session installed it into a temporary `work/deps/` directory rather than the venv. Installed it properly into `.venv-gateway` to resolve all 56 NAS100 test failures.
 
@@ -153,6 +154,7 @@ cd backend
 | Initial run (sandbox temp denied) | 329 passed, 97 errors | All errors = `PermissionError` on `pytest-of-MJ` temp dir |
 | With writable `--basetemp` | **426 passed, 0 failed, 0 errors** | Fully clean |
 | M1 full suite, after 66 new regression tests | **492 passed, 0 failed, 0 errors** | Baseline 426 + 66 M1 tests |
+| M1 finalization full suite (+5 timebase API reconciliation tests) | **497 passed, 0 failed, 0 errors** | Current branch state; no test weakened or removed |
 
 Command:
 ```bash
@@ -226,8 +228,8 @@ Still outstanding (pre-existing, unchanged by M1):
 | Issue | Source | Impact | Safety |
 |---|---|---|---|
 | `tzdata` not in venv (FIXED at audit time) | `requirements-gateway.lock.txt` | NAS100 tests couldn't find timezones | Fixed by installing into `.venv-gateway` |
-| `diagnose_mt5_export_gates.py` terminal detection | `tools/diagnose_mt5_export_gates.py` | Returns `TERMINAL_NOT_ALREADY_RUNNING` although `terminal64.exe` is running | Tooling only; direct read-only SDK diagnostic used, no gate bypass |
-| `analyse_dst_transitions` caller/API mismatch | AI Lab `timebase_evidence.py` | Direct call with a CSV path string raises `AttributeError: 'str' object has no attribute 'columns'` | Tooling only; existing `reports/dst_analysis.json` used |
+| `diagnose_mt5_export_gates.py` terminal detection | `backend/tools/export_mt5_nas100.py:147` | Returns `TERMINAL_NOT_ALREADY_RUNNING` although `terminal64.exe` is running. **M1 root cause:** read-only probe (PID 19796) shows `Get-Process.Path` and CIM `ExecutablePath`/`CommandLine` all empty, so exact-path matching cannot succeed | Tooling only; exact-terminal invariant deliberately not relaxed; direct read-only SDK diagnostic used, no gate bypass |
+| ~~`analyse_dst_transitions` caller/API mismatch~~ | AI Lab `timebase_evidence.py:567` | **RETRACTED — caller error.** API expects a normalized `pd.DataFrame` with `_t`; `cli.py:299` and 5 existing `test_phase2b_timebase.py` tests use it correctly. Our audit passed a CSV path string | No production code changed; DST heuristic remains hypothesis-only |
 | Risk engine hardcoded values | `risk_engine.py` | Not broker sizing | Safe — advisory only |
 | Paper trading $1/point | `bot/paper_trading.py` | Incorrect cost model | Safe — execution disabled |
 

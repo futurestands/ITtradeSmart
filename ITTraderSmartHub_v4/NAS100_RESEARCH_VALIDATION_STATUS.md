@@ -253,8 +253,8 @@ EffectiveRisk = BaseRisk × (1 - 0.5 × InfrastructureStress / 100)
 ### Discrepancies Found
 
 1. **`tzdata` not installed in gateway venv** — The lock file declared it but it was not installed. Fixed by WorkBuddy. This was an environment setup issue, not a code defect.
-2. **`diagnose_mt5_export_gates.py` terminal detection** — The script's `terminal_already_running` check failed to detect the running terminal. The direct SDK approach works. This is a tooling issue, not a safety concern.
-3. **`analyse_dst_transitions` API mismatch** — The AI Lab's function expects a DataFrame but the CLI/report path passes a string path. The existing `reports/dst_analysis.json` was produced correctly by a prior run; the function signature may have changed. Not a safety issue.
+2. **`diagnose_mt5_export_gates.py` terminal detection** — The script's `terminal_already_running` check failed to detect the running terminal. **M1 root cause (read-only probe, PID 19796):** `Get-Process.Path` and CIM `ExecutablePath`/`CommandLine` are empty for the running `terminal64.exe`, so exact-path matching cannot succeed. This is OS process-path visibility, not a logic bug; the exact-terminal invariant was deliberately **not** relaxed. The direct SDK approach works. This is a tooling issue, not a safety concern.
+3. ~~**`analyse_dst_transitions` API mismatch**~~ — **RETRACTED (M1): caller error, not a defect.** The function signature `analyse_dst_transitions(norm_df: pd.DataFrame, ...)` requires a normalized DataFrame with `_t`; `src/nas100lab/cli.py:299` calls it correctly with `norm`, and 5 existing `test_phase2b_timebase.py` tests cover it. Our audit script passed a CSV path string. The existing `reports/dst_analysis.json` remains hypothesis-only evidence. No production code changed.
 
 ---
 
@@ -346,15 +346,18 @@ AST-based scan that finds **zero `order_send` call sites** in production Python
 - `tests/test_m1_reproducibility.py` (34 tests) and
   `tests/test_m1_training_pipeline.py` (7 tests) cover the new modules.
 
-### 8A.4 Verified full-suite results after M1
+### 8A.4 Verified full-suite results after M1 and finalization
 
-| Suite | Baseline | After M1 | Delta |
+| Suite | Baseline | After M1 | After finalization (current) |
 |---|---|---|---|
-| SmartHub backend | 600 passed, 2 skipped | **642 passed, 2 skipped, 0 failed** | +42 |
-| AI Lab | 426 passed | **492 passed, 0 failed, 0 errors** | +66 |
+| SmartHub backend | 600 passed, 2 skipped | **642 passed, 2 skipped, 0 failed** | **660 passed, 2 skipped, 0 failed** (+18) |
+| AI Lab | 426 passed | **492 passed, 0 failed, 0 errors** | **497 passed, 0 failed, 0 errors** (+5) |
 
-No existing test was weakened or removed. No existing production component was
-replaced. Synthetic demonstrations remain software checks only.
+The finalization tests pin commit-ID accuracy, absence of unresolved
+placeholders, the fail-closed verdict, the retracted U-006 caller error and the
+DataFrame-based DST API contract. No existing test was weakened or removed. No
+existing production component was replaced. Synthetic demonstrations remain
+software checks only.
 
 ---
 

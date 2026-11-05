@@ -160,6 +160,13 @@
 - **Deliverables:** corrected ledger, corrected baseline audit, corrected validation status, new `WORKBUDDY_M1_OFFLINE_ENGINEERING_REPORT.md`
 - **Result:** COMPLETED
 
+### TASK-015: M1 handover finalization (commit-ID accuracy + tooling reconciliation)
+- **Corrections:** replaced the unresolved M1 reports-commit placeholder with verified `e6dfc30`; added full 40-char commit IDs; retracted U-006 as an audit caller error; root-caused U-005 to empty OS process paths without relaxing the exact-terminal safety invariant; corrected the obsolete "fix these defects" table in `WORKBUDDY_NEXT_ACTIONS.md`
+- **New regressions:** `backend/tests/test_m1_documentation_integrity.py` — **18 passed**; AI Lab `tests/test_m1_timebase_api_reconciliation.py` — **5 passed**
+- **Full suites re-run:** SmartHub **660 passed, 2 skipped, 0 failed** (20.99s); AI Lab **497 passed, 0 failed, 0 errors** (44.54s)
+- **Production code changed:** NONE (tests and documentation only)
+- **Result:** COMPLETED — no push/merge/deploy
+
 ---
 
 ## Evidence References
@@ -168,8 +175,10 @@
 |---|---|---|
 | SmartHub baseline test output | 600 passed, 2 skipped, 0 failed | `--basetemp` workaround + tzdata install |
 | SmartHub M1 full suite | 642 passed, 2 skipped, 0 failed | +42 M1 regressions |
+| SmartHub finalization full suite | 660 passed, 2 skipped, 0 failed | +18 documentation-integrity regressions |
 | AI Lab baseline test output | 426 passed, 0 failed | `--basetemp` workaround |
 | AI Lab M1 full suite | 492 passed, 0 failed, 0 errors | +66 M1 regressions |
+| AI Lab finalization full suite | 497 passed, 0 failed, 0 errors | +5 timebase API reconciliation regressions |
 | Baseline `/analyze` reproduction | `0c0624f:./backend/app.py:363` valid; 401 unauthenticated / 200 authenticated, no NameError | `test_m1_baseline_reconciliation.py` |
 | Remote demo branch | `git ls-remote --heads origin` → `093956d9...` | Excluded from merges/bases |
 | ML safety gate per-check result | SHA-256 PASS, dossier PASS, 4 blocking FAILs | `NAS100_RESEARCH_VALIDATION_STATUS.md` §3.1 |
@@ -192,8 +201,8 @@
 | U-002 | Timebase UNVERIFIED | BLOCKER | Operator + R1 | Obtain broker DST policy; independent simultaneous UTC comparison. **Unchanged — no certification made.** |
 | U-003 | ~~`/analyze` NameError in `trade_analysis.py`~~ | **RETRACTED (OBSOLETE)** | R7 | NOT reproducible at `0c0624f`. Valid generator expression; regression pinned. **No code changed.** |
 | U-004 | ~~Bot controller AttributeError `last_price`~~ | **RETRACTED (OBSOLETE)** | R7 | Current controller is fail-closed PAPER/DEMO by design. **No trading unlocked.** |
-| U-005 | `diagnose_mt5_export_gates.py` terminal detection fails | TOOLING (OPEN) | R1 | Returns `TERMINAL_NOT_ALREADY_RUNNING` despite running `terminal64.exe`. Direct read-only SDK diagnostic used; no gate bypass |
-| U-006 | `analyse_dst_transitions` API mismatch in AI Lab | TOOLING (OPEN) | R3 | Direct string-path call raises `AttributeError: 'str' object has no attribute 'columns'`; existing `reports/dst_analysis.json` used instead |
+| U-005 | `diagnose_mt5_export_gates.py` terminal detection fails | TOOLING (OPEN, ROOT-CAUSED) | R1 | Read-only probe (PID 19796): `Get-Process.Path`, CIM `ExecutablePath` and `CommandLine` are all **empty**, so exact-path matching cannot succeed. Not a logic bug; exact-terminal invariant deliberately NOT relaxed. Direct read-only SDK diagnostic used; no gate bypass |
+| U-006 | ~~`analyse_dst_transitions` API mismatch~~ | **RETRACTED (CALLER ERROR)** | R3 | Function expects a normalized `pd.DataFrame` with `_t`; `cli.py:299` and 5 existing tests use it correctly. Our audit passed a CSV path string. No code change |
 | U-007 | tzdata was not installed in gateway venv | RESOLVED | WorkBuddy | Fixed by pip install into `.venv-gateway` |
 | U-008 | Three named handover documents not found | INFO | R0 | Equivalent docs found in existing project documentation |
 | U-009 | ~~No physical Android device connected~~ | **CORRECTED (INFO)** | R6 | Owner confirmed phone previously paired and gateway verified. ADB non-detection in this audit is not evidence of failure |
@@ -207,12 +216,20 @@
 
 | Commit | Branch | Description |
 |---|---|---|
-| `0c0624f` (base) | `feature/smarthub-icon-and-mt5-gate-diagnostics-20261105` | User-specified baseline |
+| `0c0624f` (base) | `feature/smarthub-icon-and-mt5-gate-diagnostics-20261105` | User-specified SmartHub baseline |
+| `6d0cc8f` (base) | `feature/chatgpt-walkforward-research` (AI Lab) | Verified AI Lab baseline |
 | `ae707c0` (historical) | baseline ancestry | `fix(research): lock execution and repair explicit backtest accounting` — removed `order_send` |
-| (none yet) | `feature/workbuddy-master-agent-baseline-audit-20261105` | Deliverable documents only; no source code changes |
+| `N/A (no commits on branch)` | `feature/workbuddy-master-agent-baseline-audit-20261105` | Branch still points at `0c0624f`; documents were committed later on the M1 branch |
 | `7003781` | `feature/workbuddy-m1-offline-engineering-20261105` (SmartHub) | M1: 2 new test files, 42 regressions, no production changes |
-| (reports commit, local) | `feature/workbuddy-m1-offline-engineering-20261105` (SmartHub) | M1: corrected 3 reports + `WORKBUDDY_M1_OFFLINE_ENGINEERING_REPORT.md` |
+| `e6dfc30` | `feature/workbuddy-m1-offline-engineering-20261105` (SmartHub) | M1: all 6 handover documents (3 corrected reports + `WORKBUDDY_M1_OFFLINE_ENGINEERING_REPORT.md` + 2 carried forward) |
 | `28892bd` | `feature/workbuddy-m1-offline-engineering-20261105` (AI Lab) | M1: 2 new modules + 5 new test files, 66 regressions |
+
+**Verified full commit IDs:** `0c0624fcc91ce78e4d35d06e66c0edb6c1005e6f` (`0c0624f`),
+`ae707c0ba1c050beab209cff5b4676873e82d262` (`ae707c0`),
+`7003781d93ab0fb994c4ec4ef1a93409fc05c5d1` (`7003781`),
+`e6dfc3049b25c5c9462d96e1861ad941ab492cc1` (`e6dfc30`),
+`6d0cc8fbde71e2d6637cc8a03bbe7fc6028a2127` (`6d0cc8f`),
+`28892bdafdaba56add2fd9d207af3c724288c769` (`28892bd`).
 
 **No push, merge, force-push, or deployment has been performed.**
 

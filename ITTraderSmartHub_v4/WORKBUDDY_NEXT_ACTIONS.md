@@ -4,6 +4,15 @@
 **Agent:** WorkBuddy Master Agent (R0 Coordinator)  
 **Branch:** `feature/workbuddy-master-agent-baseline-audit-20261105`
 
+> **M1 STATUS UPDATE (2026-11-05).** Section 2A was written from the first audit
+> edition and contains **obsolete defect claims carried over from a 2026-11-02
+> handover**. Do NOT implement those "fixes": the `/analyze` NameError and
+> BotController `last_price` claims are not reproducible at `0c0624f`, and the
+> `analyse_dst_transitions` item was an audit caller error. Sections 2B/2C/2D
+> were delivered in M1 on `feature/workbuddy-m1-offline-engineering-20261105`
+> (SmartHub `7003781`, AI Lab `28892bd`, reports `e6dfc30`). **Priority 1
+> blockers remain open.** See `WORKBUDDY_M1_OFFLINE_ENGINEERING_REPORT.md`.
+
 ---
 
 ## Priority 1: Operator Actions Required (BLOCKERS)
@@ -66,16 +75,20 @@ Or the direct SDK diagnostic used in this audit.
 
 These tasks can proceed immediately without broker access or operator action.
 
-### 2A. Fix Known Code Defects
+### 2A. Known Defect Claims — Reconciled (DO NOT "FIX")
 
-| Defect | File | Fix | Effort |
-|---|---|---|---|
-| `/analyze` NameError | `backend/trade_analysis.py` | Fix `key` variable reference in `any(key in body for k in (...))` | Small |
-| Bot controller AttributeError | `backend/bot/bot_controller.py` | Fix `last_price` attribute and `is_data_fresh` reference | Medium |
-| `diagnose_mt5_export_gates.py` terminal detection | `backend/tools/diagnose_mt5_export_gates.py` | Fix `terminal_already_running` check to handle running process | Small |
-| AI Lab `analyse_dst_transitions` API mismatch | `NAS100-AI-Lab-Phase1B/src/nas100lab/timebase_evidence.py` | Fix function to accept file path string or adjust caller | Small |
+| Original claim | Verified reality at `0c0624f` | Action |
+|---|---|---|
+| `/analyze` NameError in `trade_analysis.py` | **RETRACTED.** `backend/app.py:363` has the valid `any(key in body for key in (...))`; authenticated reproduction returns `200 DEAL_HEURISTICS` | None — pinned by `test_m1_baseline_reconciliation.py` |
+| BotController `last_price` AttributeError | **RETRACTED.** Current controller is fail-closed PAPER/DEMO by design | None — **never unlock trading** |
+| `diagnose_mt5_export_gates.py` terminal detection | **ROOT-CAUSED.** Running `terminal64.exe` exposes an empty `Get-Process.Path` and empty CIM `ExecutablePath`/`CommandLine`; exact-path matching cannot succeed | Do not relax the exact-terminal invariant; use the direct read-only SDK diagnostic |
+| AI Lab `analyse_dst_transitions` API mismatch | **RETRACTED (caller error).** API expects a normalized `pd.DataFrame` with `_t`; `cli.py:299` and 5 existing tests use it correctly | None — do not change the function signature |
 
 ### 2B. Enhance Backtesting Engine Validation
+
+**Status: COMPLETED in M1** — `backend/tests/test_m1_simulator_and_causality.py`
+(28 tests: stop-first ambiguity, adverse gaps, no favourable target improvement,
+entry-bar collision, spread/slippage/commission stress, HTF as-of boundaries).
 
 - Add explicit test for stop-first ambiguous exit with intrabar stop and target collision
 - Add test for gap-stop worse-open fill
@@ -86,12 +99,22 @@ These tasks can proceed immediately without broker access or operator action.
 
 ### 2C. Improve Leakage Detection Tests
 
+**Status: COMPLETED in M1** — AI Lab `test_m1_htf_asof.py` (6),
+`test_m1_walkforward_boundaries.py` (13), `test_m1_calibration_isolation.py` (6).
+Feature stationarity across regime changes remains a post-eligibility research
+item, not a correctness defect.
+
 - Add explicit test for HTF feature availability boundary (as-of join correctness)
 - Add test for label-overlap purging with edge cases (label exactly at embargo boundary)
 - Add test for calibration fold isolation (calibrator never sees test fold data)
 - Add test for feature stationarity across regime changes
 
 ### 2D. Reproducibility Infrastructure
+
+**Status: COMPLETED in M1** — `src/nas100lab/reproducibility.py` supplies scoped
+`config_hash()`, immutable dataset manifests, a fail-closed model-card template
+and a hash-chained variant log; `src/nas100lab/training_pipeline.py` supplies
+nine acceptance gates with training unconditionally disabled.
 
 - Create a deterministic data-split freezer that records:
   - Data hash
@@ -103,6 +126,10 @@ These tasks can proceed immediately without broker access or operator action.
 - Create a variant log for recording every tried configuration
 
 ### 2E. Android Validation (When Device Available)
+
+**Owner-verified:** the phone was previously paired and its gateway connection
+was verified by the owner. ADB non-detection during this audit does **not**
+invalidate that result. No change requested.
 
 - Connect physical device via wireless debugging
 - Verify `com.ittrader.smarthub.research` package installation

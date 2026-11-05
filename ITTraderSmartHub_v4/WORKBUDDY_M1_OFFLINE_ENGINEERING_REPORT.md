@@ -8,6 +8,7 @@
 **SmartHub base commit:** `0c0624fcc91ce78e4d35d06e66c0edb6c1005e6f`  
 **AI Lab base commit:** `6d0cc8f`  
 **M1 code commits:** SmartHub `7003781`, AI Lab `28892bd`  
+**M1 reports commit:** SmartHub `e6dfc30`  
 **Project root:** `C:\Users\MJ\Documents\ITtradeSmart-NAS100-Integration\ITTraderSmartHub_v4`  
 **AI Lab root:** `C:\Users\MJ\Documents\NAS100-AI-Lab-Phase1B`
 
@@ -135,11 +136,15 @@ per-check table; ledger corrected.
 | `backend/tests/test_m1_simulator_and_causality.py` | NEW (committed `7003781`) | ~345 | 28 simulator/cost/HTF causality regressions |
 | `WORKBUDDY_BASELINE_AUDIT.md` | CORRECTED | — | Retracted 4 claims, added §11 reconciliation table, M1 branches/result rows |
 | `NAS100_RESEARCH_VALIDATION_STATUS.md` | CORRECTED | — | §3.1 per-check gate results; new §8A M1 work and full-suite results |
-| `MASTER_AGENT_TASK_LEDGER.md` | CORRECTED | — | TASK-010…014, corrected U-003/U-004/U-009/U-011/U-012, branches, commits, safety checklist |
+| `MASTER_AGENT_TASK_LEDGER.md` | CORRECTED | — | TASK-010…015, corrected U-003/U-004/U-006/U-009/U-011/U-012, branches, verified commits, safety checklist |
 | `WORKBUDDY_M1_OFFLINE_ENGINEERING_REPORT.md` | NEW | — | This report |
+| `backend/tests/test_m1_documentation_integrity.py` | NEW (finalization, 18 tests) | ~130 | Pins verified commit IDs, absence of placeholders, excluded branch tip, fail-closed verdict and obsolete-defect corrections |
+| `WORKBUDDY_NEXT_ACTIONS.md` | CORRECTED (finalization) | — | Removed obsolete "fix these defects" instructions; marked 2B/2C/2D delivered, 2E owner-verified |
+| `WORKBUDDY_BASELINE_AUDIT.md`, `NAS100_RESEARCH_VALIDATION_STATUS.md`, `MASTER_AGENT_TASK_LEDGER.md` | CORRECTED (finalization) | — | U-005 root cause, U-006 retraction, verified commit IDs, final suite counts |
 
 **Production source files changed: ZERO.** No Flask route, Android file, risk
-formula, database, MT5 tool, or NAS100 engine module was modified.
+formula, database, MT5 tool, or NAS100 engine module was modified at any point
+in M1 or its finalization.
 
 ### AI Lab (`C:\Users\MJ\Documents\NAS100-AI-Lab-Phase1B`) — all committed `28892bd`
 
@@ -152,6 +157,7 @@ formula, database, MT5 tool, or NAS100 engine module was modified.
 | `tests/test_m1_walkforward_boundaries.py` | NEW (13 tests) | Purged walk-forward off-by-one boundaries |
 | `tests/test_m1_calibration_isolation.py` | NEW (6 tests) | Calibration-fold label isolation spy tests |
 | `tests/test_m1_htf_asof.py` | NEW (6 tests) | HTF as-of alignment and future-bar leakage |
+| `tests/test_m1_timebase_api_reconciliation.py` | NEW (finalization, 5 tests) | Pins the DataFrame-based DST API contract, the audit caller error, heuristic-only output and quarantine provenance |
 
 **Existing AI Lab production modules changed: ZERO.** The two pre-existing
 untracked synthetic report JSONs (`reports/synthetic_candidate_walkforward.json`,
@@ -206,13 +212,18 @@ any new test.**
 |---|---|
 | `./.venv-gateway/Scripts/python.exe -m pytest tests/test_m1_baseline_reconciliation.py tests/test_m1_simulator_and_causality.py -q` | **42 passed in 3.44s** |
 | `./.venv/Scripts/python.exe -m pytest tests/test_m1_*.py -q` (AI Lab, 5 files) | **66 passed in 6.21s** |
+| `./.venv-gateway/Scripts/python.exe -m pytest tests/test_m1_documentation_integrity.py -q` (finalization) | **18 passed in 0.53s** |
+| `./.venv/Scripts/python.exe -m pytest tests/test_m1_timebase_api_reconciliation.py -q` (finalization) | **5 passed in 0.22s** |
 
-### 5.2 Complete suites after all M1 changes
+### 5.2 Complete suites
 
-| Suite | Command | Baseline | After M1 | Delta |
+| Suite | Command | Baseline | M1 milestone | Finalization re-run |
 |---|---|---|---|---|
-| SmartHub backend | `cd backend && ./.venv-gateway/Scripts/python.exe -m pytest -q --basetemp=<writable>` | 600 passed, 2 skipped | **642 passed, 2 skipped, 0 failed** (19.84s) | +42 |
-| AI Lab | `cd NAS100-AI-Lab-Phase1B && ./.venv/Scripts/python.exe -m pytest -q --basetemp=<writable>` | 426 passed | **492 passed, 0 failed, 0 errors** (43.24s) | +66 |
+| SmartHub backend | `cd backend && ./.venv-gateway/Scripts/python.exe -m pytest -q --basetemp=<writable>` | 600 passed, 2 skipped | **642 passed, 2 skipped, 0 failed** (19.84s, +42) | **660 passed, 2 skipped, 0 failed** (20.99s, +18) |
+| AI Lab | `cd NAS100-AI-Lab-Phase1B && ./.venv/Scripts/python.exe -m pytest -q --basetemp=<writable>` | 426 passed | **492 passed, 0 failed, 0 errors** (43.24s, +66) | **497 passed, 0 failed, 0 errors** (44.54s, +5) |
+
+The finalization re-run is the current state of both branches: `642 + 18 = 660`
+and `492 + 5 = 497`, with no test removed, skipped or weakened.
 
 Environment note (unchanged from baseline): Windows default temp
 `C:\Users\MJ\AppData\Local\Temp\pytest-of-MJ` is denied, so
@@ -232,6 +243,7 @@ standard library plus already-installed pandas/numpy/scikit-learn.
 | Initial reconciliation test: `2 failed, 11 passed` | (a) assumed excluded remote tip is not an ancestor; (b) naive `order_send(` substring scan matched docstrings, then included `.venv-gateway/Lib/site-packages/MetaTrader5/__init__.py` | Replaced with AST `ast.Call` detection excluding `tests`, `__pycache__`, `site-packages`, `.venv*`; corrected branch semantics to "historical ancestor, unsafe code removed by `ae707c0`" |
 | `test_variant_log_rejects_unsafe_or_inconsistent_variants` expected 1 synthetic variant | Only a non-synthetic blocked variant had been appended | Append one synthetic and one blocked variant; assert `variants==2`, `synthetic_variants==1` |
 | `test_variant_log_detects_local_tampering_and_chain_breaks` reported `VARIANT_LOG_TAMPERED` instead of `CHAIN_BROKEN` | Test helper stripped `manifest_digest` rather than `entry_digest` when recomputing a variant entry's digest | Use an entry-specific body filter excluding `entry_digest` |
+| Finalization `test_quarantine_provenance_still_blocks_certification`: `1 failed, 4 passed` — `KeyError: 'contract_certified'` | Test assumed a top-level key; the provenance dossier nests it under `contract_spec` | Test now asserts `contract_spec.contract_certified is False`, `status == QUARANTINED`, `timebase_evidence.verified is False` and `CONTRACT_NOT_CERTIFIED` in `quarantine_reasons`. **No data or production code changed** |
 
 No production defect was exposed by the new tests; consequently **no tested
 component was replaced** (owner instruction: "Avoid replacing tested components
@@ -246,10 +258,27 @@ unnecessarily").
 | SmartHub | `0c0624fcc91ce78e4d35d06e66c0edb6c1005e6f` | Verified user-specified baseline (`feature/smarthub-icon-and-mt5-gate-diagnostics-20261105`) |
 | SmartHub | `ae707c0` (historical ancestor) | `fix(research): lock execution and repair explicit backtest accounting` — removed `order_send` |
 | SmartHub | `7003781` | **M1** — 2 new test files (42 tests), no production changes |
-| SmartHub | (reports commit, local) | **M1** — corrected 3 reports + this new report |
+| SmartHub | `e6dfc30` | **M1** — all 6 handover documents (3 corrected reports + this new report + 2 carried forward) |
 | AI Lab | `6d0cc8f` | Verified baseline (`feature/chatgpt-walkforward-research`) |
 | AI Lab | `28892bd` | **M1** — 2 new modules + 5 new test files (66 tests) |
 | Remote only | `093956d9c22e9d0f80ad0193f119b9783d394667` | `feature/v5-demo-trading-bot` — **EXCLUDED** from all bases/merges |
+
+**Verified full commit IDs** (from `git rev-parse` / `git log --format='%h %H %s'`,
+resolved against the local repositories on 2026-11-05):
+
+| Short | Full | Repo |
+|---|---|---|
+| `0c0624f` | `0c0624fcc91ce78e4d35d06e66c0edb6c1005e6f` | SmartHub (owner-specified baseline) |
+| `ae707c0` | `ae707c0ba1c050beab209cff5b4676873e82d262` | SmartHub (historical execution-lock commit) |
+| `7003781` | `7003781d93ab0fb994c4ec4ef1a93409fc05c5d1` | SmartHub (M1 tests) |
+| `e6dfc30` | `e6dfc3049b25c5c9462d96e1861ad941ab492cc1` | SmartHub (M1 reports) |
+| `6d0cc8f` | `6d0cc8fbde71e2d6637cc8a03bbe7fc6028a2127` | AI Lab (baseline) |
+| `28892bd` | `28892bdafdaba56add2fd9d207af3c724288c769` | AI Lab (M1 modules + tests) |
+
+The handover-finalization commit that follows `e6dfc30` contains only the
+commit-ID corrections, the tooling reconciliations in Section 7 and the two
+adversarial regression files; its ID is recorded in the handover message rather
+than inside the document it belongs to (avoids a self-referential hash).
 
 Both M1 branches are local and isolated. **No push, merge, rebase, reset,
 force-push, branch deletion, or deployment.** Working application codebases are
@@ -263,8 +292,8 @@ preserved.
 |---|---|---|---|
 | U-001 | MT5 export gates fail: `account_expert_disabled=false` (`account_trade_expert=true`) and `terminal_trading_disabled=false` (`terminal_trade_allowed=true`) | **OPEN BLOCKER** | Operator: configure an investor/read-only terminal with expert + trading disabled. **Not touched by M1.** |
 | U-002 | Dataset `TIMEBASE_UNVERIFIED`, `research_eligible=false` | **OPEN BLOCKER** | Operator + R1: official broker DST/session documentation plus independent simultaneous UTC clock evidence bound to the dataset digest |
-| U-005 | `tools/diagnose_mt5_export_gates.py` returns `TERMINAL_NOT_ALREADY_RUNNING` although `tasklist.exe` shows `terminal64.exe` | **OPEN TOOLING** | R1: fix `terminal_already_running` detection. Direct read-only SDK diagnostic used; **no safety gate bypassed** |
-| U-006 | AI Lab `analyse_dst_transitions('data/quarantine/...csv')` → `AttributeError: 'str' object has no attribute 'columns'` | **OPEN TOOLING** | R3: reconcile caller/function signature. Existing `reports/dst_analysis.json` used; **no certification inferred** |
+| U-005 | `diagnose_mt5_export_gates.py` returns `TERMINAL_NOT_ALREADY_RUNNING` although `terminal64.exe` is running | **OPEN TOOLING — root cause identified** | Read-only probe: `Get-Process terminal64 -ExpandProperty Path` returns an **empty** `Path` and `Get-CimInstance Win32_Process` returns empty `ExecutablePath`/`CommandLine` (PID 19796). `terminal_already_running()` therefore cannot match the expected path. Not a logic bug and **not changed**: relaxing to "any terminal64 process" would weaken the exact-terminal safety invariant. Direct read-only SDK diagnostic remains the supported path |
+| U-006 | ~~AI Lab `analyse_dst_transitions` caller/API mismatch~~ | **RETRACTED — caller error** | Signature is `analyse_dst_transitions(norm_df: pd.DataFrame, ...)`; it requires a normalized DataFrame with a `_t` column. `src/nas100lab/cli.py:299` calls it correctly with `norm`, and 5 existing `test_phase2b_timebase.py` tests cover it. Passing a CSV path string was our audit-script error, not a defect. **No production code changed.** |
 | U-010 | Supabase live connection UNVERIFIED | OPEN INFO | R6: only when cloud integration is explicitly requested. **No cloud/live DB changes made** |
 | U-011 | `feature/v5-demo-trading-bot` exists remotely with historical unsafe adapter | GUARDED | R5: permanently exclude from bases/merges; regression constants enforce |
 | U-012 | Nine real-data training acceptance gates NO-GO | **OPEN BLOCKER** | Operator: supply independent timebase/contract evidence, then a separate reviewed authorisation |
@@ -272,7 +301,11 @@ preserved.
 
 **Resolved/retracted:** U-003 (`/analyze` NameError) and U-004 (BotController
 `last_price`) are obsolete at baseline; U-009 (Android pairing) is corrected by
-owner evidence; U-007 (`tzdata`) resolved at audit time.
+owner evidence; U-007 (`tzdata`) resolved at audit time; **U-006 is retracted as
+an audit caller error** (the DataFrame-based API is already tested). U-005 is
+now root-caused to OS-level process-path visibility, with the safety-critical
+exact-terminal check deliberately left intact. Neither reconciliation changes
+production code.
 
 ---
 
@@ -316,6 +349,8 @@ original CSVs immutable, no predictive model trained from that hypothesis.
 - [x] Flask API contracts, risk formula, compliance/drawdown guards unchanged
 - [x] Read-only MT5 architecture preserved
 - [x] Both full test suites re-run after changes; no tests weakened
+- [x] All commit references verified against `git rev-parse`; no unresolved placeholders
+- [x] U-005/U-006 reconciled without modifying safety-critical production code
 - [x] Synthetic results labelled as software checks, not market-edge evidence
 - [x] No paid tools, subscriptions or external accounts used
 - [x] No push, merge, force-push, reset, branch deletion or deployment
@@ -334,12 +369,14 @@ original CSVs immutable, no predictive model trained from that hypothesis.
    units, commission and historical contract changes.
 4. **Only then** re-run the nine acceptance gates on a separate reviewed branch;
    real-data training remains disabled until explicit owner approval.
-5. Optional offline follow-ups: fix U-005 terminal detection, fix U-006
-   `analyse_dst_transitions` caller, add an external anchor for the variant-log
-   head digest.
+5. Optional offline follow-ups: resolve U-005 by obtaining a process-path
+   source that is visible to the diagnostic's execution context (or an
+   owner-approved, still exact-terminal detection design) — **do not** relax the
+   exact-match invariant; add an external anchor for the variant-log head
+   digest. U-006 is closed (caller error, no fix required).
 
 **Full detail:** `WORKBUDDY_BASELINE_AUDIT.md` §11,
 `NAS100_RESEARCH_VALIDATION_STATUS.md` §3.1/§8A,
-`MASTER_AGENT_TASK_LEDGER.md` TASK-010…014,
+`MASTER_AGENT_TASK_LEDGER.md` TASK-010…015,
 `MT5_DATA_ELIGIBILITY_AND_TIMEBASE_REPORT.md`,
 `WORKBUDDY_NEXT_ACTIONS.md`.
