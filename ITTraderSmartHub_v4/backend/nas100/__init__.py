@@ -8,13 +8,14 @@
 """
 from .analysis import Analysis, MultiTimeframeAnalysis, analyze, analyze_multitimeframe
 from .candles import (Candle, DataQuality, DataValidationError, candles_from_rates,
-                      validate_candles)
+                      candles_from_broker_wall_rates, validate_candles)
 from .config import EngineConfig
 from .decision import BUY, NO_TRADE, SELL, Decision, decide
 from .sessions import SessionState, session_state
 from .timeframes import htf_closed_by, resample
 
 __all__ = ['Analysis', 'MultiTimeframeAnalysis', 'analyze', 'analyze_multitimeframe', 'Candle',
-           'DataQuality', 'DataValidationError', 'candles_from_rates', 'validate_candles',
+           'DataQuality', 'DataValidationError', 'candles_from_rates',
+           'candles_from_broker_wall_rates', 'validate_candles',
            'EngineConfig', 'BUY', 'SELL', 'NO_TRADE', 'Decision', 'decide', 'SessionState',
            'session_state', 'htf_closed_by', 'resample']

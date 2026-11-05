@@ -1,0 +1,7 @@
+{
+  "status": "BLOCKED_READ_ONLY_DEMO_EXPORT",
+  "reason": "TRADING_MUST_BE_DISABLED",
+  "research_eligible": false,
+  "exit_code": 2,
+  "observed_at_utc": "2026-11-05T12:12:18.438058+00:00"
+}

@@ -1,0 +1,38 @@
+usage: run_nas100_research.py [-h] --csv CSV [--symbol SYMBOL]
+                              --point-size POINT_SIZE
+                              --spread-points SPREAD_POINTS
+                              [--slippage-points-per-side SLIPPAGE_POINTS_PER_SIDE]
+                              [--commission-points-round-trip COMMISSION_POINTS_ROUND_TRIP]
+                              [--base-minutes BASE_MINUTES]
+                              [--htf-minutes HTF_MINUTES] [--start START]
+                              [--stop STOP] [--stride STRIDE]
+                              [--max-inspections MAX_INSPECTIONS]
+                              [--timebase-evidence TIMEBASE_EVIDENCE]
+                              [--metadata METADATA] [--synthetic-fixture]
+
+Run an offline, unvalidated backtest over a broker CSV export. Usage from
+backend: python tools/run_nas100_research.py --csv
+data/nas100/USTECH100M_M5.csv --point-size 0.1 --spread-points 20 --start 500
+--stop 1000 NOTE: --point-size and --spread-points must come from actual
+broker specs and a conservative observed spread scenario; example numbers are
+placeholders only. Never trade using a result from this utility. This is
+research, not a signal API.
+
+options:
+  -h, --help            show this help message and exit
+  --csv CSV
+  --symbol SYMBOL
+  --point-size POINT_SIZE
+  --spread-points SPREAD_POINTS
+  --slippage-points-per-side SLIPPAGE_POINTS_PER_SIDE
+  --commission-points-round-trip COMMISSION_POINTS_ROUND_TRIP
+  --base-minutes BASE_MINUTES
+  --htf-minutes HTF_MINUTES
+  --start START
+  --stop STOP
+  --stride STRIDE
+  --max-inspections MAX_INSPECTIONS
+  --timebase-evidence TIMEBASE_EVIDENCE
+  --metadata METADATA
+  --synthetic-fixture   Explicit synthetic smoke test only; never approves
+                        real-data performance

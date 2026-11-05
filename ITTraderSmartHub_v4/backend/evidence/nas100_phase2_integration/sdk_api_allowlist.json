@@ -1,0 +1,11 @@
+{
+  "calls": [
+    "account_info",
+    "copy_rates_from_pos",
+    "initialize",
+    "shutdown",
+    "symbol_info",
+    "terminal_info"
+  ],
+  "execution_api_introduced": false
+}

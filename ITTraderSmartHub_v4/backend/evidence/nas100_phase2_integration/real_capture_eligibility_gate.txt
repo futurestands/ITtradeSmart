@@ -1,0 +1,1 @@
+{"status": "BLOCKED_DATASET_ELIGIBILITY", "research_eligible": false, "reason": "VERIFIED_TIMEBASE_SESSION_HASH_AND_POINT_EVIDENCE_REQUIRED", "decision_counts": null, "summary": null}

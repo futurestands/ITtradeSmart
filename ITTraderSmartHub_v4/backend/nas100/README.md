@@ -80,9 +80,9 @@ equal-highs/lows clustering, economic-calendar filter, premium/discount zones.
 
 ## Still to connect (not done in this change)
 
-* **MT5:** a read-only collector in the gateway that calls `copy_rates_range` for
-  USTECH100M and passes rows to `candles_from_rates`; plus `symbol_info` capture (digits,
-  point, tick value, volume step/min/max, stops level).
+* **MT5:** the Phase 2 developer collector now exports closed bars and current
+  specifications separately from the gateway. Automatic live synchronization and
+  historical clock/session/economics approval are still separate requirements.
 * **Flask:** a new read-only endpoint (e.g. `/api/v4/nas100/analysis`) behind the existing
   bearer auth. Not added, to leave existing API contracts untouched.
 * **Android:** a result schema/summary builder alongside `V4ApiContracts`, and UI that labels
@@ -111,7 +111,17 @@ python nas100_data_audit.py --input evidence/USTECH100M_M15.csv --timeframe M15
 Its JSON reports hashes, intervals, malformed OHLC, duplicates and future/unclosed
 bars against an observation time. It never normalizes timestamps, emits signals,
 simulates trades or approves a dataset for research. A successful diagnostic exit
-code is not research approval. Phase 2 simulator/exporter/research tests remain
-pending receipt of the actual review archive.
+code is not research approval.
+
+The subsequently supplied one-file bundle has now been integrated selectively:
+`backtest.py`, `research.py`, the two standalone tools and their tests are present.
+Local gap, strict resampling, UTC and HTF freshness guards were retained. The
+corrected package's configuration/live-clock/order-of-setup regressions were
+merged without replacing those stronger checks. See `docs/PHASE2_RESEARCH.md`.
+
+The standard rate adapter now defaults to UTC; the older explicit `server_tz='UTC'`
+call remains compatible. Nonstandard broker wall-clock data has a separately
+named `candles_from_broker_wall_rates` adapter. No Flask analysis route, Android
+analysis screen, trained model, or execution capability was added in Phase 2.
 
 Timestamp convention reference: https://www.mql5.com/en/docs/python_metatrader5/mt5copyratesfrom_py

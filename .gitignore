@@ -31,6 +31,9 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# Private raw broker captures from the developer-only NAS100 exporter.
+ITTraderSmartHub_v4/backend/data/nas100/
+
 # Isolated local Android regression cache
 .gradle-research/
 

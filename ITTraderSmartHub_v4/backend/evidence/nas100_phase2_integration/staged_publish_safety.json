@@ -1,0 +1,8 @@
+{
+  "commits": [],
+  "changed_paths_checked": 30,
+  "findings": [],
+  "status": "PASS",
+  "staged_index_included": true,
+  "scope": "Changed unpublished-commit blobs and optional staged index. Pattern scan plus path review; not a guarantee against all secret formats."
+}

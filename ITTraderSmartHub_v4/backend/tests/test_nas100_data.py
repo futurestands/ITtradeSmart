@@ -115,9 +115,9 @@ def test_adapter_missing_field_and_non_increasing_time_rejected():
         candles_from_rates([_rate(t), _rate(t)], 'UTC')
 
 
-def test_adapter_requires_server_tz_argument():
-    with pytest.raises(TypeError):
-        candles_from_rates([])          # no default timezone: must be supplied explicitly
+def test_adapter_defaults_to_documented_mt5_utc():
+    stamp = _epoch(2026, 1, 6, 10, 0)
+    assert candles_from_rates([_rate(stamp)])[0].time == datetime(2026, 1, 6, 10, 0, tzinfo=UTC)
 
 
 # ---------------------------------------------------------------- resampling / MTF

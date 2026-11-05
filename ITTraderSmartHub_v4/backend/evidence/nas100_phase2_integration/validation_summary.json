@@ -1,0 +1,73 @@
+{
+  "observed_at_utc": "2026-11-05T12:22:38.988993+00:00",
+  "base_commit": "ee2583b007c7dfe8eae862ff2c7277e12aebc829",
+  "supplied_addition_baseline": {
+    "passed": 35
+  },
+  "focused_integrated_suites": {
+    "passed": 71
+  },
+  "complete_backend": {
+    "passed": 591,
+    "failed": 0,
+    "skipped": 2,
+    "skip_reason": "Windows symlink privileges unavailable",
+    "command": "python -m pytest -q -rs -p no:cacheprovider --basetemp=<workspace-private-temp> tests",
+    "working_directory": "ITTraderSmartHub_v4/backend"
+  },
+  "android": {
+    "suites": [
+      {
+        "name": "com.ittrader.smarthub.AIIntelligenceTest",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "timestamp": "2026-11-05T12:16:52"
+      },
+      {
+        "name": "com.ittrader.smarthub.DashboardTabSpecTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "timestamp": "2026-11-05T12:16:57"
+      },
+      {
+        "name": "com.ittrader.smarthub.MT5AccountsPresenterTest",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "timestamp": "2026-11-05T12:16:57"
+      },
+      {
+        "name": "com.ittrader.smarthub.NAS100ResearchPresenterTest",
+        "tests": "10",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "timestamp": "2026-11-05T12:16:57"
+      },
+      {
+        "name": "com.ittrader.smarthub.V4ContractsTest",
+        "tests": "8",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "timestamp": "2026-11-05T12:16:58"
+      }
+    ],
+    "lint_errors": 0,
+    "lint_warnings": 210,
+    "apk_built": true,
+    "signing_key_unchanged_sha256": "67c9fe6e7b47421b7b5ef43fd1b39fa9edfb2a11a3d4226a974ebce1c9aba546"
+  },
+  "model_trained": false,
+  "real_performance_evaluated": false,
+  "database_migrations_applied": false,
+  "desktop_gateway_health": {
+    "mt5_checked": false,
+    "status": "ok"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "status": "VERIFIED_FILE_HASHES_AND_STRUCTURAL_CHECKS_ONLY",
+  "timebase_status": "TIMEBASE_UNVERIFIED",
+  "research_eligible": false,
+  "checked": [
+    "eurusd_h1_historical.csv",
+    "USTECH100M_D1.csv",
+    "USTECH100M_H1.csv",
+    "USTECH100M_H4.csv",
+    "USTECH100M_M15.csv",
+    "USTECH100M_M30.csv"
+  ],
+  "excluded_partial_captures": [
+    "USTECH100M_M5.partial.csv"
+  ],
+  "limitations": "No proof of completeness, economic comparability or strategy performance"
+}

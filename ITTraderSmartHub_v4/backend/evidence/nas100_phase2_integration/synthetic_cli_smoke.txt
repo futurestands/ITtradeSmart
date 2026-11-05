@@ -1,0 +1,46 @@
+{
+  "status": "RESEARCH_ONLY_UNVALIDATED",
+  "source": "C:\\Users\\MJ\\Documents\\Codex\\2026-11-05\\c-users-mj-documents-ittradesmart-nas100\\work\\phase2_synthetic_cli.csv",
+  "symbol": "USTECH100M",
+  "sample_bars": 72,
+  "period_start_utc": "2026-08-03T12:00:00+00:00",
+  "period_end_utc": "2026-08-03T17:55:00+00:00",
+  "inspections": 22,
+  "signals": 0,
+  "decision_counts": {
+    "BUY": 0,
+    "SELL": 0,
+    "NO TRADE": 22
+  },
+  "source_kind": "SYNTHETIC_FIXTURE_UNATTESTED",
+  "performance_validated": false,
+  "model_trained": false,
+  "dataset_sha256": "083eabb80e0ebbdeba20d20bac870e015894dc5e6be25c6d867ec18f77033078",
+  "summary": {
+    "signals": 0,
+    "completed": 0,
+    "no_fill": 0,
+    "incomplete": 0,
+    "wins": 0,
+    "losses": 0,
+    "expectancy_r": null,
+    "max_drawdown_r": null,
+    "gross_r": null,
+    "net_r": null,
+    "validation": "UNVALIDATED_RESEARCH_ONLY"
+  },
+  "assumptions": {
+    "point_size": 0.1,
+    "spread_points": 2.0,
+    "slippage_points_per_side": 0.0,
+    "commission_points_round_trip": 0.0,
+    "max_wait_bars": 3,
+    "max_hold_bars": 48
+  },
+  "notes": [
+    "Not an investor return, forecast, win-rate claim, or trade instruction",
+    "Reference implementation is intentionally slow; no real-data study has been run by the author",
+    "OHLC ordering is unknown: stop-first for ambiguous bars",
+    "No broker order validation, market holidays, or trade execution"
+  ]
+}

@@ -98,7 +98,7 @@ def candle_close_time(candle: Candle, timeframe_minutes: int) -> datetime:
     return candle.time + timedelta(minutes=timeframe_minutes)
 
 
-def candles_from_rates(rates: Iterable, server_tz: str, *,
+def candles_from_rates(rates: Iterable, server_tz: str = 'UTC', *,
                        time_encoding: str = 'utc') -> List[Candle]:
     """Convert MT5-style rate records into UTC `Candle`s (pure, no MT5 import).
 
@@ -134,6 +134,15 @@ def candles_from_rates(rates: Iterable, server_tz: str, *,
                           float(volume or 0.0), None if spread is None else float(spread)))
         prev_utc = utc
     return out
+
+
+def candles_from_broker_wall_rates(rates: Iterable, server_tz: str) -> List[Candle]:
+    """Explicit adapter for independently verified, nonstandard wall-clock exports.
+
+    Never use this with standard MT5 Python API rates. The existing explicit
+    time_encoding keyword remains supported for older local callers.
+    """
+    return candles_from_rates(rates, server_tz, time_encoding='verified_wall_clock')
 
 
 def _get(record, key, default=...):

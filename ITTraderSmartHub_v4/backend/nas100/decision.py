@@ -76,7 +76,10 @@ def _no_trade(ltf: Analysis, regime, bias, blockers, fresh=None, reasons=()) -> 
 
 
 def decide(ltf: Analysis, htf: Optional[Analysis], cfg: EngineConfig = EngineConfig(),
-           now: Optional[datetime] = None) -> Decision:
+           now: Optional[datetime] = None, *, live: bool = False) -> Decision:
+    """Historical checklist by default; live mode also requires an aware clock."""
+    if now is not None and (not isinstance(now, datetime) or now.utcoffset() is None):
+        raise ValueError('now must be timezone-aware')
     n = len(ltf.candles)
     if n == 0 or ltf.status != 'OK' or ltf.atr[-1] is None:
         return _no_trade(ltf, 'UNKNOWN', 'unknown', ['INSUFFICIENT_DATA'])
@@ -90,6 +93,8 @@ def decide(ltf: Analysis, htf: Optional[Analysis], cfg: EngineConfig = EngineCon
     if any(g.after_index + 1 >= n - cfg.gap_lookback_bars for g in ltf.quality.fault_gaps):
         blockers.append('DATA_GAP_RECENT')
     fresh = None
+    if live and now is None:
+        blockers.append('DECISION_TIME_REQUIRED')
     if now is not None:
         if now.utcoffset() is None:
             raise ValueError('now must be timezone-aware')
@@ -126,7 +131,9 @@ def decide(ltf: Analysis, htf: Optional[Analysis], cfg: EngineConfig = EngineCon
         blockers.append('HTF_BAR_NOT_CLOSED')     # leak guard: HTF must be closed by now
     elif htf.timeframe_minutes <= ltf.timeframe_minutes:
         blockers.append('HTF_TIMEFRAME_NOT_HIGHER')
-    elif ltf.as_of - htf.as_of >= timedelta(minutes=htf.timeframe_minutes):
+    elif htf.timeframe_minutes % ltf.timeframe_minutes:
+        blockers.append('HTF_INVALID_TIMEFRAME')
+    elif ltf.as_of - htf.as_of >= timedelta(minutes=htf.timeframe_minutes * cfg.htf_max_lag_bars):
         blockers.append('HTF_STALE_DATA')
     elif any(g.after_index + 1 >= len(htf.candles) - cfg.gap_lookback_bars
              for g in htf.quality.gaps):
@@ -176,11 +183,11 @@ def _build_candidate(ltf: Analysis, d: str, cfg: EngineConfig) -> _Candidate:
     if not sweeps:
         return _Candidate(d, False, ('NO_SWEEP',), ())
     sw = sweeps[-1]
-    shifts = [e for e in ltf.events if e.direction == d and e.index >= max(lo, sw.index)]
+    shifts = [e for e in ltf.events if e.direction == d and e.index > sw.index and e.index >= lo]
     if not shifts:
         return _Candidate(d, False, ('NO_STRUCTURE_SHIFT',), ())
     shift = shifts[-1]
-    fvgs = [f for f in ltf.fvgs if f.direction == d and f.detected_index >= max(lo, shift.index)
+    fvgs = [f for f in ltf.fvgs if f.direction == d and f.detected_index > shift.index and f.detected_index >= lo
             and ltf.fvg_status(f) != 'filled']
     if not fvgs:
         return _Candidate(d, False, ('NO_OPEN_FVG',), ())

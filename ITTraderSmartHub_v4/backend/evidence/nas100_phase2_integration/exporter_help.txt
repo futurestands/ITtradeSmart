@@ -1,0 +1,20 @@
+usage: export_mt5_nas100.py [-h] [--symbol SYMBOL]
+                            [--timeframe {M1,M5,M15,H1}] [--count COUNT]
+                            [--out-dir OUT_DIR] [--terminal TERMINAL]
+
+Export CLOSED MT5 OHLCV bars for research; never sends trade orders. Run from
+Windows with the already configured MT5 investor terminal session: python
+tools/export_mt5_nas100.py --symbol USTECH100M --timeframe M5 --count 10000
+--out-dir data/nas100 Data are written to files under --out-dir and should be
+checked for provider licensing and privacy before sharing. No account number,
+tokens or passwords are written. The existing demo session must satisfy every
+disabled-trading gate; the exporter never changes accounts or terminal
+permissions.
+
+options:
+  -h, --help            show this help message and exit
+  --symbol SYMBOL
+  --timeframe {M1,M5,M15,H1}
+  --count COUNT
+  --out-dir OUT_DIR
+  --terminal TERMINAL

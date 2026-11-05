@@ -1,0 +1,7 @@
+{
+  "status": "PASSED",
+  "scenarios": 1000,
+  "data_origin": "SYNTHETIC_ONLY",
+  "model_trained": false,
+  "performance_validated": false
+}
