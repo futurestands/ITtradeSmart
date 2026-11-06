@@ -44,3 +44,8 @@ ITTraderSmartHub_v4/backend/data/nas100/
 # Local-only broker account aliases and eventual sensitive worker files
 mt5_accounts.local.json
 mt5_accounts.*.local.json
+
+# Cloud project links and private operator material
+.vercel/
+.env.*
+*.private.json

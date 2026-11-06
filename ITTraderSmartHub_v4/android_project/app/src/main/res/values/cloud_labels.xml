@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cloud_mode_label">Cloud HTTPS mode (separate device enrollment)</string>
+    <string name="cloud_mode_initial">Local gateway mode. Existing enrollment preserved.</string>
+</resources>

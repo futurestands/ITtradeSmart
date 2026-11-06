@@ -4,124 +4,144 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import org.json.JSONObject
+import java.security.MessageDigest
 import java.util.UUID
 
-/**
- * Secure Session Credential & Endpoint Store using Android Keystore-backed EncryptedSharedPreferences.
- * Never hardcodes or stores broker account passwords in Android.
- * Never reports success if Keystore operations fail.
- */
+/** Existing local preference keys are preserved; cloud sessions are origin-bound. */
 object GatewaySession {
-    private const val PREFS_NAME = "smarthub_secure_session"
-    private const val KEY_API_TOKEN = "api_token"
-    private const val KEY_GATEWAY_URL = "gateway_url"
-    private const val KEY_DEVICE_ID = "device_id"
+    private var prefs: SharedPreferences? = null
+    private var localToken = ""
+    private var localUrl = "https://127.0.0.1:5000"
+    private var localIssuedAt = localUrl
+    private var cloudUrl = "https://ittradersmarthubvercelcloudpreviewr.vercel.app"
+    private var cloudToken = ""
+    private var cloudRefresh = ""
+    private var cloudExpiry = 0L
+    private var cloudIssuedAt = ""
+    private var id = ""
+    var isCloud: Boolean = false
+        private set
 
-    private var volatileToken: String = ""
-    private var volatileUrl: String = "https://127.0.0.1:5000"
-    private var volatileDeviceId: String = ""
+    private fun encrypted(context: Context): SharedPreferences = EncryptedSharedPreferences.create(
+        context, "smarthub_secure_session",
+        MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
 
-    fun init(context: Context) {
+    private fun prefix(url: String): String = "cloud_" + MessageDigest.getInstance("SHA-256")
+        .digest(url.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+
+    @Synchronized fun init(context: Context) {
         try {
-            val masterKey = MasterKey.Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-
-            val prefs: SharedPreferences = EncryptedSharedPreferences.create(
-                context,
-                PREFS_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-            volatileToken = prefs.getString(KEY_API_TOKEN, "") ?: ""
-            volatileUrl = prefs.getString(KEY_GATEWAY_URL, "https://127.0.0.1:5000") ?: "https://127.0.0.1:5000"
-            volatileDeviceId = prefs.getString(KEY_DEVICE_ID, "") ?: ""
-
-            if (volatileDeviceId.isBlank()) {
-                volatileDeviceId = "dev-" + UUID.randomUUID().toString().take(12)
-                prefs.edit().putString(KEY_DEVICE_ID, volatileDeviceId).apply()
+            prefs = encrypted(context)
+            localUrl = prefs!!.getString("gateway_url", localUrl) ?: localUrl
+            localIssuedAt = localUrl
+            localToken = prefs!!.getString("api_token", "") ?: ""
+            cloudUrl = prefs!!.getString("cloud_gateway_url", cloudUrl) ?: cloudUrl
+            id = prefs!!.getString("device_id", "") ?: ""
+            if (id.isBlank()) {
+                id = "dev-" + UUID.randomUUID().toString().take(12)
+                if (!prefs!!.edit().putString("device_id", id).commit()) throw IllegalStateException()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // On Keystore error, fall back to volatile device ID if needed
-            if (volatileDeviceId.isBlank()) {
-                volatileDeviceId = "dev-" + UUID.randomUUID().toString().take(12)
-            }
+            isCloud = prefs!!.getBoolean("cloud_mode", false)
+            loadCloud()
+        } catch (_: Exception) {
+            prefs = null
+            localToken = ""
+            cloudToken = ""
+            cloudRefresh = ""
+            if (id.isBlank()) id = "dev-" + UUID.randomUUID().toString().take(12)
         }
     }
 
-    /**
-     * Saves token and URL to EncryptedSharedPreferences.
-     * Returns true ONLY if writing to Keystore succeeds.
-     */
-    fun saveSession(context: Context?, token: String, gatewayUrl: String): Boolean {
-        volatileToken = token.trim()
-        volatileUrl = gatewayUrl.trim().trimEnd('/')
-
-        if (context == null) return true
-
-        return try {
-            val masterKey = MasterKey.Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-
-            val prefs: SharedPreferences = EncryptedSharedPreferences.create(
-                context,
-                PREFS_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-            val success = prefs.edit()
-                .putString(KEY_API_TOKEN, volatileToken)
-                .putString(KEY_GATEWAY_URL, volatileUrl)
-                .commit()
-
-            if (!success) {
-                volatileToken = ""
-            }
-            success
-        } catch (e: Exception) {
-            e.printStackTrace()
-            volatileToken = ""
-            false
-        }
+    private fun loadCloud() {
+        val normalized = ConnectionPolicy.endpoint(cloudUrl, true)
+        val key = normalized?.let { prefix(it) }
+        cloudToken = key?.let { prefs?.getString(it + "_access", "") } ?: ""
+        cloudRefresh = key?.let { prefs?.getString(it + "_refresh", "") } ?: ""
+        cloudExpiry = key?.let { prefs?.getLong(it + "_expiry", 0) } ?: 0
+        cloudIssuedAt = normalized ?: ""
     }
 
-    fun logout(context: Context?): Boolean {
-        volatileToken = ""
-        if (context == null) return true
-
-        return try {
-            val masterKey = MasterKey.Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-
-            val prefs: SharedPreferences = EncryptedSharedPreferences.create(
-                context,
-                PREFS_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-            prefs.edit().remove(KEY_API_TOKEN).commit()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
+    @Synchronized fun selectCloud(enabled: Boolean): Boolean {
+        try {
+            if (prefs?.edit()?.putBoolean("cloud_mode", enabled)?.commit() != true) return false
+        } catch (_: Exception) { return false }
+        isCloud = enabled
+        loadCloud()
+        return true
     }
-
-    var apiToken: String
-        get() = volatileToken
-        set(value) { volatileToken = value }
 
     var gatewayUrl: String
-        get() = volatileUrl
-        set(value) { volatileUrl = value }
+        @Synchronized get() = if (isCloud) cloudUrl else localUrl
+        @Synchronized set(value) {
+            if (isCloud) {
+                cloudUrl = value.trim().trimEnd('/')
+                loadCloud()
+                prefs?.edit()?.putString("cloud_gateway_url", cloudUrl)?.commit()
+            } else localUrl = value.trim().trimEnd('/')
+        }
 
-    val deviceId: String
-        get() = if (volatileDeviceId.isNotBlank()) volatileDeviceId else "dev-default"
+    var apiToken: String
+        @Synchronized get() {
+            val token = if (isCloud) cloudToken else localToken
+            val issuedAt = if (isCloud) cloudIssuedAt else localIssuedAt
+            return if (ConnectionPolicy.canSend(token, issuedAt, gatewayUrl, isCloud)) token else ""
+        }
+        @Synchronized set(value) {
+            // Legacy test/local API only; it cannot import an administrator token into cloud mode.
+            if (!isCloud) { localToken = value; localIssuedAt = localUrl }
+        }
 
-    fun isAuthenticated(): Boolean = volatileToken.isNotBlank() && volatileToken.length >= 32
+    @Synchronized fun saveSession(context: Context?, token: String, gatewayUrl: String): Boolean {
+        if (isCloud) return false
+        val url = ConnectionPolicy.endpoint(gatewayUrl, false) ?: return false
+        return try {
+            val storage = prefs ?: context?.let { encrypted(it) } ?: return false
+            if (!storage.edit().putString("api_token", token.trim()).putString("gateway_url", url).commit()) return false
+            prefs = storage
+            localToken = token.trim(); localUrl = url; localIssuedAt = url
+            true
+        } catch (_: Exception) { false }
+    }
+
+    @Synchronized fun saveCloudSession(response: JSONObject, endpoint: String): Boolean {
+        val url = ConnectionPolicy.endpoint(endpoint, true) ?: return false
+        if (!isCloud || url != ConnectionPolicy.endpoint(cloudUrl, true)) return false
+        val access = response.optString("device_token")
+        val refresh = response.optString("refresh_token")
+        val expires = response.optLong("expires_at", 0)
+        if (!access.startsWith("shc_access_") || access.length < 40 ||
+            !refresh.startsWith("shc_refresh_") || refresh.length < 40 ||
+            expires <= System.currentTimeMillis()/1000) return false
+        val storage = prefs ?: return false
+        val key = prefix(url)
+        if (!storage.edit().putString(key + "_access", access)
+                .putString(key + "_refresh", refresh).putLong(key + "_expiry", expires)
+                .putString("cloud_gateway_url", url).commit()) return false
+        cloudUrl = url; cloudIssuedAt = url; cloudToken = access
+        cloudRefresh = refresh; cloudExpiry = expires
+        return true
+    }
+
+    val refreshToken: String @Synchronized get() = if (isCloud &&
+        cloudIssuedAt == ConnectionPolicy.endpoint(cloudUrl, true)) cloudRefresh else ""
+    fun needsRenewal(): Boolean = isCloud && cloudExpiry <= System.currentTimeMillis()/1000 + 30
+    val deviceId: String get() = if (id.isNotBlank()) id else "dev-default"
+    fun isAuthenticated(): Boolean = apiToken.isNotBlank() && (!isCloud || !needsRenewal())
+
+    @Synchronized fun logout(context: Context?): Boolean {
+        return try {
+            val storage = prefs ?: context?.let { encrypted(it) }
+            if (isCloud) {
+                val key = prefix(cloudIssuedAt)
+                cloudToken = ""; cloudRefresh = ""; cloudExpiry = 0
+                storage?.edit()?.remove(key + "_access")?.remove(key + "_refresh")?.remove(key + "_expiry")?.commit() ?: (context == null)
+            } else {
+                localToken = ""
+                storage?.edit()?.remove("api_token")?.commit() ?: (context == null)
+            }
+        } catch (_: Exception) { false }
+    }
 }

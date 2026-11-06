@@ -85,6 +85,10 @@ class MainActivity : AppCompatActivity() {
         val edtPairingCode = findViewById<EditText>(R.id.edtPairingCode)
         val btnEnrollDevice = findViewById<Button>(R.id.btnEnrollDevice)
         val btnLogout = findViewById<Button>(R.id.btnLogout)
+        val cloudMode = findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.switchCloudMode)
+        val connectionState = findViewById<TextView>(R.id.txtConnectionState)
+        cloudMode.isChecked = GatewaySession.isCloud
+        connectionState.text = if (GatewaySession.isCloud) "Cloud mode. Refresh to authenticate. NO_TRADE." else getString(R.string.cloud_mode_initial)
 
         // V5 Bot Control Buttons
         val btnBotOff = findViewById<Button>(R.id.btnBotOff)
@@ -97,13 +101,24 @@ class MainActivity : AppCompatActivity() {
         val btnRefreshAI = findViewById<Button>(R.id.btnRefreshAI)
         btnRefreshAI.setOnClickListener {
             updateGatewayUrlFromInput(edtGatewayIp)
+            connectionState.text = if (GatewaySession.isCloud) "Checking authenticated cloud connection..." else "Checking local gateway..."
             btnRefreshAI.isEnabled = false
             repository.queryAIStatus { result ->
                 runOnUiThread {
                     btnRefreshAI.isEnabled = true
                     txtAIIntelligence.text = result.fold(
-                        onSuccess = { AIIntelligencePresenter.summary(it) },
-                        onFailure = { AIIntelligencePresenter.unavailable() }
+                        onSuccess = {
+                            val text = AIIntelligencePresenter.summary(it)
+                            val trusted = !text.contains("Response rejected")
+                            connectionState.text = if (GatewaySession.isCloud && trusted)
+                                "Cloud API: authenticated, fresh response. Model: NOT READY. NO_TRADE."
+                                else if (!trusted) "Response rejected. NO_TRADE." else "Local gateway response received."
+                            (if (GatewaySession.isCloud) connectionState.text.toString()+"\n" else "") + text
+                        },
+                        onFailure = {
+                            connectionState.text = "Connection unavailable. No fresh result. NO_TRADE."
+                            AIIntelligencePresenter.unavailable()+"\n"+(it.message ?: "Unavailable")
+                        }
                     )
                 }
             }
@@ -121,7 +136,7 @@ class MainActivity : AppCompatActivity() {
         btnNAS100ResearchDetails.setOnClickListener {
             val snapshot = latestNAS100Response ?: return@setOnClickListener
             showNAS100Details = !showNAS100Details
-            txtNAS100Research.text = if (showNAS100Details) {
+            txtNAS100Research.text = "Cached synthetic snapshot — refresh for current status. NO_TRADE.\n" + if (showNAS100Details) {
                 NAS100ResearchPresenter.summary(snapshot)
             } else {
                 NAS100ResearchPresenter.overview(snapshot)
@@ -138,7 +153,7 @@ class MainActivity : AppCompatActivity() {
             latestNAS100Response = null
             showNAS100Details = false
             btnNAS100ResearchDetails.setText(R.string.nas100_research_details_show)
-            txtNAS100Research.text = "Checking local NAS100 research report..."
+            txtNAS100Research.text = "Checking ${if (GatewaySession.isCloud) "cloud" else "local"} NAS100 research status..."
             repository.queryNAS100ResearchProgress { result ->
                 runOnUiThread {
                     btnRefreshNAS100Research.isEnabled = true
@@ -148,7 +163,7 @@ class MainActivity : AppCompatActivity() {
                                 latestNAS100Response = response
                                 btnNAS100ResearchDetails.visibility = View.VISIBLE
                             }
-                            NAS100ResearchPresenter.overview(response)
+                            (if (GatewaySession.isCloud) "Fresh authenticated cloud response. NO_TRADE.\n" else "") + NAS100ResearchPresenter.overview(response)
                         },
                         onFailure = { NAS100ResearchPresenter.unavailable() }
                     )
@@ -165,6 +180,25 @@ class MainActivity : AppCompatActivity() {
 
         // Pre-fill stored gateway URL
         edtGatewayIp.setText(GatewaySession.gatewayUrl)
+        cloudMode.setOnCheckedChangeListener { _, enabled ->
+            if (enabled != GatewaySession.isCloud) {
+                updateGatewayUrlFromInput(edtGatewayIp)
+                if (!GatewaySession.selectCloud(enabled)) {
+                    cloudMode.isChecked = GatewaySession.isCloud
+                    connectionState.text = "Secure mode storage failed. Connection unchanged."
+                } else {
+                    edtGatewayIp.setText(GatewaySession.gatewayUrl)
+                    edtPairingCode.setText("")
+                    latestNAS100Response = null
+                    btnNAS100ResearchDetails.visibility = View.GONE
+                    txtNAS100Research.text = NAS100ResearchPresenter.unavailable()+"\nNO_TRADE."
+                    txtAIIntelligence.text = AIIntelligencePresenter.unavailable()
+                    connectionState.text = if (enabled) "Cloud mode selected. Separate cloud enrollment required. NO_TRADE." else "Local gateway mode restored."
+                    for (button in listOf(btnBotOff, btnBotBacktest, btnBotPaper, btnBotEmergencyStop)) button.isEnabled = !enabled
+                }
+            }
+        }
+        if (GatewaySession.isCloud) for (button in listOf(btnBotOff, btnBotBacktest, btnBotPaper, btnBotEmergencyStop)) button.isEnabled = false
 
         // Legacy credential inputs remain disabled. Credentials stay on Windows gateway.
         findViewById<EditText>(R.id.edtMt5Login).apply { isEnabled = false; hint = "Configured on gateway"; setText("") }
@@ -201,6 +235,8 @@ class MainActivity : AppCompatActivity() {
         btnEnrollDevice.setOnClickListener {
             val code = edtPairingCode.text.toString().trim()
             val url = edtGatewayIp.text.toString().trim()
+            updateGatewayUrlFromInput(edtGatewayIp)
+            val enrollingCloud = GatewaySession.isCloud
 
             if (code.isBlank()) {
                 Toast.makeText(this, "Enter one-time pairing code from administrator", Toast.LENGTH_LONG).show()
@@ -215,10 +251,11 @@ class MainActivity : AppCompatActivity() {
                             val token = json.optString("device_token")
                             val expiresAt = json.optString("expires_at")
                             if (token.isNotBlank()) {
-                                val saved = GatewaySession.saveSession(this, token, url)
+                                val saved = if (enrollingCloud) GatewaySession.saveCloudSession(json, url)
+                                    else if (!GatewaySession.isCloud) GatewaySession.saveSession(this, token, url) else false
                                 if (saved) {
                                     txtAnalysisOutput.text = "[Device Pairing Successful]\n" +
-                                            "Device ID: ${GatewaySession.deviceId}\n" +
+                                            "Device ID: ${if (enrollingCloud) json.optString("device_id") else GatewaySession.deviceId}\n" +
                                             "Status: Paired & Token Saved to Android Keystore\n" +
                                             "Token Expiration: $expiresAt"
                                     Toast.makeText(this, "Device Paired Successfully!", Toast.LENGTH_SHORT).show()

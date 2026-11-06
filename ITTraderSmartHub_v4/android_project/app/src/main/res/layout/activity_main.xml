@@ -534,6 +534,20 @@
                 android:letterSpacing="0.05"
                 android:paddingBottom="10dp" />
 
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchCloudMode"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/cloud_mode_label"
+                android:textColor="@color/text_primary" />
+            <TextView
+                android:id="@+id/txtConnectionState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/cloud_mode_initial"
+                android:textColor="@color/text_secondary"
+                android:paddingBottom="8dp" />
+
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
@@ -568,7 +582,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="One-Time Pairing Code (e.g. PAIR-123456)"
-                    android:inputType="textCapCharacters"
+                    android:inputType="textPassword"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
             </com.google.android.material.textfield.TextInputLayout>

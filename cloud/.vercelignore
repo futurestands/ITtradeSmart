@@ -1,0 +1,8 @@
+.env*
+*.private.json
+tests/
+ops/
+schema.sql
+docs/
+__pycache__/
+.pytest_cache/
