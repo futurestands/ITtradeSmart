@@ -11,6 +11,7 @@ from v4_services import ContextStore, risk_context, research_request
 from bot import BotController, BacktestEngine, MarketDataManager, TrendFollowingMACrossoverStrategy
 from ai_lab_adapter import AILabAdapter
 from nas100_research_status import read_progress_snapshot
+from nas100_research_preview import synthetic_preview
 from mt5_account_registry import (read_mt5_accounts, upsert_mt5_profile, delete_mt5_profile, ProfileConfigError)
 from ai_contract import ContractError, strict_json
 
@@ -67,6 +68,22 @@ def ai_research_progress():
     response.headers['Cache-Control'] = 'no-store'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response, 200
+
+
+@app.get('/api/v5/nas100/research-preview')
+def nas100_synthetic_research_preview():
+    """Device-authenticated prototype, disabled unless explicitly opted in locally."""
+    if os.environ.get('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED') != '1':
+        response = jsonify({'status': 'DISABLED', 'decision': 'NO_TRADE'})
+        response.status_code = 503
+    elif request.args or request.get_data():
+        response = jsonify({'error': 'This fixed synthetic preview accepts no inputs', 'decision': 'NO_TRADE'})
+        response.status_code = 400
+    else:
+        response = jsonify(synthetic_preview())
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
 
 
 @app.get('/api/v5/mt5/accounts')

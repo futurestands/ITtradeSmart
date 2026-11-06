@@ -144,16 +144,32 @@ def export_closed_rates(mt5, *, symbol: str, timeframe: str, count: int, out_dir
     return path, meta_path, metadata
 
 
+def _native_terminal_images():
+    from tools.terminal_identity import terminal_image_paths
+    return terminal_image_paths()
+
+
 def terminal_already_running(terminal):
     """Read process image paths; do not launch a saved terminal/account implicitly."""
     if sys.platform != 'win32' or not Path(terminal).is_file():
         return False
-    result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
-        'Get-Process -Name terminal64 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path'],
-        capture_output=True, text=True, timeout=10)
     expected = str(Path(terminal).resolve()).casefold()
-    return any(str(Path(line.strip()).resolve()).casefold() == expected
-               for line in result.stdout.splitlines() if line.strip())
+    try:
+        result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
+            'Get-Process -Name terminal64 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path'],
+            capture_output=True, text=True, timeout=10)
+        if any(str(Path(line.strip()).resolve()).casefold() == expected
+               for line in result.stdout.splitlines() if line.strip()):
+            return True
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    try:
+        images = _native_terminal_images()
+        return bool(images) and all(images) and sum(
+            str(Path(path).resolve()).casefold() == expected for path in images
+        ) == 1
+    except OSError:
+        return False
 
 
 def main(argv=None):
