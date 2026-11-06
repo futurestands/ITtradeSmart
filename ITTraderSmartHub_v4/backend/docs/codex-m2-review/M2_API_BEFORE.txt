@@ -1,0 +1,107 @@
+.FFFFFF                                                                  [100%]
+================================== FAILURES ===================================
+__________________________ test_preview_default_off ___________________________
+
+api = (<FlaskClient <Flask 'app'>>, <test_analyze_api.FakeMT5 object at 0x000001F851AB9810>, <module 'app' from 'C:\\Users\\...Codex\\2026-11-05\\c-users-mj-documents-ittradesmart-nas100\\work\\m2-smarthub\\ITTraderSmartHub_v4\\backend\\app.py'>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F851B23230>
+
+    def test_preview_default_off(api, monkeypatch):
+        client, fake, _ = api
+        monkeypatch.delenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', raising=False)
+>       assert client.get(URL, headers=ADMIN).status_code == 503
+E       AssertionError: assert 404 == 503
+E        +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code
+E        +    where <WrapperTestResponse streamed [404 NOT FOUND]> = get('/api/v5/nas100/research-preview', headers={'Authorization': 'Bearer cccccccccccccccccccccccccccccccccccccccccccccccc'})
+E        +      where get = <FlaskClient <Flask 'app'>>.get
+
+tests\test_codex_m2_research_preview.py:18: AssertionError
+_________ test_preview_exposes_rule_engine_without_predictive_claims __________
+
+api = (<FlaskClient <Flask 'app'>>, <test_analyze_api.FakeMT5 object at 0x000001F851036C10>, <module 'app' from 'C:\\Users\\...Codex\\2026-11-05\\c-users-mj-documents-ittradesmart-nas100\\work\\m2-smarthub\\ITTraderSmartHub_v4\\backend\\app.py'>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F851BC4170>
+
+    def test_preview_exposes_rule_engine_without_predictive_claims(api, monkeypatch):
+        client, fake, _ = api
+        monkeypatch.setenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', '1')
+        response = client.get(URL, headers=ADMIN)
+>       assert response.status_code == 200
+E       assert 404 == 200
+E        +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code
+
+tests\test_codex_m2_research_preview.py:26: AssertionError
+________ test_preview_rejects_all_client_data_inputs[path=private.csv] ________
+
+api = (<FlaskClient <Flask 'app'>>, <test_analyze_api.FakeMT5 object at 0x000001F851B23100>, <module 'app' from 'C:\\Users\\...Codex\\2026-11-05\\c-users-mj-documents-ittradesmart-nas100\\work\\m2-smarthub\\ITTraderSmartHub_v4\\backend\\app.py'>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F851B278A0>
+query = 'path=private.csv'
+
+    @pytest.mark.parametrize('query', ['path=private.csv', 'symbol=USTECH100M', 'prices=1', 'count=200000'])
+    def test_preview_rejects_all_client_data_inputs(api, monkeypatch, query):
+        client, fake, _ = api
+        monkeypatch.setenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', '1')
+>       assert client.get(URL+'?'+query, headers=ADMIN).status_code == 400
+E       AssertionError: assert 404 == 400
+E        +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code
+E        +    where <WrapperTestResponse streamed [404 NOT FOUND]> = get((('/api/v5/nas100/research-preview' + '?') + 'path=private.csv'), headers={'Authorization': 'Bearer cccccccccccccccccccccccccccccccccccccccccccccccc'})
+E        +      where get = <FlaskClient <Flask 'app'>>.get
+
+tests\test_codex_m2_research_preview.py:44: AssertionError
+_______ test_preview_rejects_all_client_data_inputs[symbol=USTECH100M] ________
+
+api = (<FlaskClient <Flask 'app'>>, <test_analyze_api.FakeMT5 object at 0x000001F851B23360>, <module 'app' from 'C:\\Users\\...Codex\\2026-11-05\\c-users-mj-documents-ittradesmart-nas100\\work\\m2-smarthub\\ITTraderSmartHub_v4\\backend\\app.py'>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F851110490>
+query = 'symbol=USTECH100M'
+
+    @pytest.mark.parametrize('query', ['path=private.csv', 'symbol=USTECH100M', 'prices=1', 'count=200000'])
+    def test_preview_rejects_all_client_data_inputs(api, monkeypatch, query):
+        client, fake, _ = api
+        monkeypatch.setenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', '1')
+>       assert client.get(URL+'?'+query, headers=ADMIN).status_code == 400
+E       AssertionError: assert 404 == 400
+E        +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code
+E        +    where <WrapperTestResponse streamed [404 NOT FOUND]> = get((('/api/v5/nas100/research-preview' + '?') + 'symbol=USTECH100M'), headers={'Authorization': 'Bearer cccccccccccccccccccccccccccccccccccccccccccccccc'})
+E        +      where get = <FlaskClient <Flask 'app'>>.get
+
+tests\test_codex_m2_research_preview.py:44: AssertionError
+____________ test_preview_rejects_all_client_data_inputs[prices=1] ____________
+
+api = (<FlaskClient <Flask 'app'>>, <test_analyze_api.FakeMT5 object at 0x000001F851A6FBF0>, <module 'app' from 'C:\\Users\\...Codex\\2026-11-05\\c-users-mj-documents-ittradesmart-nas100\\work\\m2-smarthub\\ITTraderSmartHub_v4\\backend\\app.py'>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F851B7D450>
+query = 'prices=1'
+
+    @pytest.mark.parametrize('query', ['path=private.csv', 'symbol=USTECH100M', 'prices=1', 'count=200000'])
+    def test_preview_rejects_all_client_data_inputs(api, monkeypatch, query):
+        client, fake, _ = api
+        monkeypatch.setenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', '1')
+>       assert client.get(URL+'?'+query, headers=ADMIN).status_code == 400
+E       AssertionError: assert 404 == 400
+E        +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code
+E        +    where <WrapperTestResponse streamed [404 NOT FOUND]> = get((('/api/v5/nas100/research-preview' + '?') + 'prices=1'), headers={'Authorization': 'Bearer cccccccccccccccccccccccccccccccccccccccccccccccc'})
+E        +      where get = <FlaskClient <Flask 'app'>>.get
+
+tests\test_codex_m2_research_preview.py:44: AssertionError
+__________ test_preview_rejects_all_client_data_inputs[count=200000] __________
+
+api = (<FlaskClient <Flask 'app'>>, <test_analyze_api.FakeMT5 object at 0x000001F851B26BE0>, <module 'app' from 'C:\\Users\\...Codex\\2026-11-05\\c-users-mj-documents-ittradesmart-nas100\\work\\m2-smarthub\\ITTraderSmartHub_v4\\backend\\app.py'>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F851B7C150>
+query = 'count=200000'
+
+    @pytest.mark.parametrize('query', ['path=private.csv', 'symbol=USTECH100M', 'prices=1', 'count=200000'])
+    def test_preview_rejects_all_client_data_inputs(api, monkeypatch, query):
+        client, fake, _ = api
+        monkeypatch.setenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', '1')
+>       assert client.get(URL+'?'+query, headers=ADMIN).status_code == 400
+E       AssertionError: assert 404 == 400
+E        +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code
+E        +    where <WrapperTestResponse streamed [404 NOT FOUND]> = get((('/api/v5/nas100/research-preview' + '?') + 'count=200000'), headers={'Authorization': 'Bearer cccccccccccccccccccccccccccccccccccccccccccccccc'})
+E        +      where get = <FlaskClient <Flask 'app'>>.get
+
+tests\test_codex_m2_research_preview.py:44: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_codex_m2_research_preview.py::test_preview_default_off - As...
+FAILED tests/test_codex_m2_research_preview.py::test_preview_exposes_rule_engine_without_predictive_claims
+FAILED tests/test_codex_m2_research_preview.py::test_preview_rejects_all_client_data_inputs[path=private.csv]
+FAILED tests/test_codex_m2_research_preview.py::test_preview_rejects_all_client_data_inputs[symbol=USTECH100M]
+FAILED tests/test_codex_m2_research_preview.py::test_preview_rejects_all_client_data_inputs[prices=1]
+FAILED tests/test_codex_m2_research_preview.py::test_preview_rejects_all_client_data_inputs[count=200000]
+6 failed, 1 passed in 0.67s

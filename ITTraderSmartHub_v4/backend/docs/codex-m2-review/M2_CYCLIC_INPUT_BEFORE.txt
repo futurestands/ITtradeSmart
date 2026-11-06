@@ -1,0 +1,27 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+____________ test_cyclic_config_has_a_controlled_validation_error _____________
+
+    def test_cyclic_config_has_a_controlled_validation_error():
+        config = {}
+        config['self'] = config
+        with pytest.raises(rep.ReproducibilityError):
+>           rep.config_hash(config)
+
+tests\test_codex_m2_reproducibility_review.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\nas100lab\reproducibility.py:98: in config_hash
+    return sha256_hex(canonical_bytes(
+src\nas100lab\reproducibility.py:65: in canonical_bytes
+    validate_keys(value)
+src\nas100lab\reproducibility.py:60: in validate_keys
+    validate_keys(child)
+src\nas100lab\reproducibility.py:60: in validate_keys
+    validate_keys(child)
+src\nas100lab\reproducibility.py:60: in validate_keys
+    validate_keys(child)
+E   RecursionError: maximum recursion depth exceeded
+!!! Recursion detected (same locals & position)
+=========================== short test summary info ===========================
+FAILED tests/test_codex_m2_reproducibility_review.py::test_cyclic_config_has_a_controlled_validation_error
+1 failed, 13 deselected in 0.35s

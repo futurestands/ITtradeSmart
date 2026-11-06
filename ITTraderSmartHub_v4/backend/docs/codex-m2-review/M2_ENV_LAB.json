@@ -1,0 +1,42 @@
+{
+  "python": "3.12.10",
+  "packages": {
+    "pytest": "9.2.0",
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "scikit-learn": "1.9.1",
+    "tzdata": "2026.6"
+  },
+  "http": {
+    "5000": {
+      "health_http_status": 200
+    },
+    "8765": {
+      "health_http_status": null,
+      "error_type": "URLError"
+    }
+  },
+  "owner_reported_sqlite": {
+    "exists": true,
+    "runtime_target_independently_confirmed": false,
+    "quick_check": "ok",
+    "user_version": 0,
+    "table_names": [
+      "alerts",
+      "auth_audit",
+      "bot_decisions",
+      "bot_signals",
+      "devices",
+      "mt5_candles",
+      "pairing_codes",
+      "research_backtest_runs",
+      "sqlite_sequence",
+      "telemetry"
+    ]
+  },
+  "adb": {
+    "states": [],
+    "authorized_count": 0,
+    "returncode": 0
+  }
+}

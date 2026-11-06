@@ -1,0 +1,38 @@
+{
+  "m2-smarthub": {
+    "base": "8998f0f30abc7f814fb935e458e9c04c2a6a56a0",
+    "branch": "feature/codex-m2-independent-review-20261106",
+    "staged_files": [
+      "ITTraderSmartHub_v4/backend/app.py",
+      "ITTraderSmartHub_v4/backend/docs/CODEX_M2_REVIEW.md",
+      "ITTraderSmartHub_v4/backend/nas100_research_preview.py",
+      "ITTraderSmartHub_v4/backend/tests/test_codex_m2_research_preview.py",
+      "ITTraderSmartHub_v4/backend/tests/test_codex_m2_terminal_identity.py",
+      "ITTraderSmartHub_v4/backend/tools/export_mt5_nas100.py",
+      "ITTraderSmartHub_v4/backend/tools/terminal_identity.py"
+    ],
+    "production_python_files_parsed": 53,
+    "broker_order_calls": [],
+    "private_material_pattern_findings": [],
+    "limitation": "Pattern/AST review is bounded; not a forensic audit of repository history."
+  },
+  "m2-lab": {
+    "base": "4b2561634b9a5c8f4978e6f7ea6978790be6fd40",
+    "branch": "feature/codex-m2-independent-review-20261106",
+    "staged_files": [
+      "docs/CODEX_M2_REVIEW.md",
+      "src/nas100lab/reproducibility.py",
+      "src/nas100lab/timebase_observation.py",
+      "tests/test_codex_m2_reproducibility_review.py",
+      "tests/test_codex_m2_timebase_observation.py"
+    ],
+    "production_python_files_parsed": 27,
+    "broker_order_calls": [],
+    "private_material_pattern_findings": [],
+    "limitation": "Pattern/AST review is bounded; not a forensic audit of repository history."
+  },
+  "preserved_source_untracked_reports": {
+    "synthetic_candidate_walkforward.json": "2cd043260cb9f1147f3f3bd6a752b7d6ccb34b8daaa5e07757bc20ceefb4a8c1",
+    "synthetic_confluence_stress.json": "247d7fb15de8a80b97e11e805defb23a8013ba3d366b73ad73553b4e154c252b"
+  }
+}

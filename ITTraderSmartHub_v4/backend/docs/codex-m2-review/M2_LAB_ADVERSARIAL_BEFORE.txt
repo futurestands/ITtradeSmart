@@ -1,0 +1,267 @@
+FFFFFFFFFFFF.                                                            [100%]
+================================== FAILURES ===================================
+__________ test_nested_config_keys_must_not_collide_with_string_keys __________
+
+    def test_nested_config_keys_must_not_collide_with_string_keys():
+        textual = rep.config_hash({'model': {'1': 'a'}})
+>       with pytest.raises(rep.ReproducibilityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ReproducibilityError
+
+tests\test_codex_m2_reproducibility_review.py:13: Failed
+__________ test_nested_manifest_scan_uses_manifest_root_coordinates ___________
+
+tmp_path = WindowsPath('C:/Users/MJ/Documents/Codex/2026-11-05/c-users-mj-documents-ittradesmart-nas100/work/m2-lab-red-temp/test_nested_manifest_scan_uses0')
+
+    def test_nested_manifest_scan_uses_manifest_root_coordinates(tmp_path):
+        nested = tmp_path/'data'
+        nested.mkdir()
+        (nested/'bars.csv').write_text('SYNTHETIC_BYTES\n', encoding='utf-8')
+        manifest = rep.create_dataset_manifest(['data/bars.csv'], root=tmp_path, dataset_id='SYNTHETIC')
+>       report = rep.verify_dataset_manifest(manifest, root=tmp_path, strict_directory=nested)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_codex_m2_reproducibility_review.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+manifest = {'schema': 'm1-reproducibility-1.0', 'dataset_id': 'SYNTHETIC', 'created_at_utc': '2026-11-06T06:13:39Z', 'root_label': 'test_nested_manifest_scan_uses0', ...}
+root = WindowsPath('C:/Users/MJ/Documents/Codex/2026-11-05/c-users-mj-documents-ittradesmart-nas100/work/m2-lab-red-temp/test_nested_manifest_scan_uses0')
+strict_directory = WindowsPath('C:/Users/MJ/Documents/Codex/2026-11-05/c-users-mj-documents-ittradesmart-nas100/work/m2-lab-red-temp/test_nested_manifest_scan_uses0/data')
+
+    def verify_dataset_manifest(
+        manifest: Mapping[str, Any],
+        *,
+        root: str | Path,
+        strict_directory: str | Path | None = None,
+    ) -> dict[str, Any]:
+        """Recompute every file hash and the manifest's own digest.
+    
+        Fails closed on: a modified body, a missing/changed/added file, an invalid
+        SHA-256, or any attempt to make the manifest certify eligibility/training.
+        """
+        if not isinstance(manifest, Mapping):
+            raise ReproducibilityError("manifest must be a JSON object")
+        data = dict(manifest)
+        digest = data.get("manifest_digest")
+        if not isinstance(digest, str) or not _SHA256_RE.match(digest):
+            raise ReproducibilityError("manifest_digest must be a lowercase SHA-256")
+        body = {k: v for k, v in data.items() if k != "manifest_digest"}
+        if sha256_hex(canonical_bytes(body)) != digest:
+            raise ReproducibilityError("MANIFEST_TAMPERED: manifest_digest does not match its body")
+        if data.get("schema") != SCHEMA_VERSION:
+            raise ReproducibilityError("Unsupported manifest schema")
+        if data.get("immutable") is not True:
+            raise ReproducibilityError("Manifest must be declared immutable")
+        # A manifest must never be able to promote itself to eligible evidence.
+        for field, allowed in (
+            ("research_eligible", False),
+            ("training_enabled", False),
+            ("timebase_status", TIMEBASE_UNVERIFIED),
+        ):
+            if data.get(field) != allowed:
+                raise ReproducibilityError(
+                    f"MANIFEST_CANNOT_CERTIFY_ELIGIBILITY: '{field}' must remain {allowed!r}"
+                )
+    
+        files = data.get("files")
+        if not isinstance(files, list) or not files:
+            raise ReproducibilityError("manifest must list at least one file")
+        root_path = Path(root).resolve()
+        seen: set[str] = set()
+        for record in files:
+            if not isinstance(record, dict):
+                raise ReproducibilityError("file entry must be a JSON object")
+            rel = record.get("path")
+            if not isinstance(rel, str) or rel.startswith("/") or ".." in rel.split("/"):
+                raise ReproducibilityError("invalid manifest relative path")
+            if rel in seen:
+                raise ReproducibilityError(f"duplicate manifest path: {rel}")
+            seen.add(rel)
+            expected = record.get("sha256")
+            if not isinstance(expected, str) or not _SHA256_RE.match(expected):
+                raise ReproducibilityError(f"invalid SHA-256 for {rel}")
+            path = (root_path / rel).resolve()
+            if _relative_path(root_path, path) != rel:
+                raise ReproducibilityError(f"manifest path escapes root: {rel}")
+            if not path.is_file():
+                raise ReproducibilityError(f"MISSING_DATASET_FILE: {rel}")
+            payload = path.read_bytes()
+            if sha256_hex(payload) != expected:
+                raise ReproducibilityError(f"ALTERED_DATASET_FILE: {rel}")
+            if record.get("size_bytes") != len(payload):
+                raise ReproducibilityError(f"SIZE_MISMATCH: {rel}")
+    
+        if strict_directory is not None:
+            scan_root = Path(strict_directory).resolve()
+            if not scan_root.is_dir():
+                raise ReproducibilityError("strict_directory must be an existing directory")
+            on_disk = {
+                _relative_path(scan_root, p)
+                for p in scan_root.rglob("*")
+                if p.is_file() and not p.name.endswith(".manifest.json")
+            }
+            extra = sorted(on_disk - seen)
+            if extra:
+>               raise ReproducibilityError(f"UNMANIFESTED_FILES: {extra}")
+E               nas100lab.reproducibility.ReproducibilityError: UNMANIFESTED_FILES: ['bars.csv']
+
+src\nas100lab\reproducibility.py:247: ReproducibilityError
+_________ test_strict_scan_rejects_unrelated_directory_even_if_empty __________
+
+tmp_path = WindowsPath('C:/Users/MJ/Documents/Codex/2026-11-05/c-users-mj-documents-ittradesmart-nas100/work/m2-lab-red-temp/test_strict_scan_rejects_unrel0')
+
+    def test_strict_scan_rejects_unrelated_directory_even_if_empty(tmp_path):
+        root, other = tmp_path/'root', tmp_path/'other'
+        root.mkdir()
+        other.mkdir()
+        (root/'bars.csv').write_bytes(b'SYNTHETIC')
+        manifest = rep.create_dataset_manifest(['bars.csv'], root=root, dataset_id='SYNTHETIC')
+>       with pytest.raises(rep.ReproducibilityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ReproducibilityError
+
+tests\test_codex_m2_reproducibility_review.py:33: Failed
+_ test_integrity_flags_require_boolean_false_not_numeric_zero[research_eligible] _
+
+tmp_path = WindowsPath('C:/Users/MJ/Documents/Codex/2026-11-05/c-users-mj-documents-ittradesmart-nas100/work/m2-lab-red-temp/test_integrity_flags_require_b0')
+field = 'research_eligible'
+
+    @pytest.mark.parametrize('field', ['research_eligible', 'training_enabled'])
+    def test_integrity_flags_require_boolean_false_not_numeric_zero(tmp_path, field):
+        (tmp_path/'bars.csv').write_bytes(b'SYNTHETIC')
+        manifest = rep.create_dataset_manifest(['bars.csv'], root=tmp_path, dataset_id='SYNTHETIC')
+        manifest[field] = 0
+        body = {k: v for k, v in manifest.items() if k != 'manifest_digest'}
+        manifest['manifest_digest'] = rep.sha256_hex(rep.canonical_bytes(body))
+>       with pytest.raises(rep.ReproducibilityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ReproducibilityError
+
+tests\test_codex_m2_reproducibility_review.py:44: Failed
+_ test_integrity_flags_require_boolean_false_not_numeric_zero[training_enabled] _
+
+tmp_path = WindowsPath('C:/Users/MJ/Documents/Codex/2026-11-05/c-users-mj-documents-ittradesmart-nas100/work/m2-lab-red-temp/test_integrity_flags_require_b1')
+field = 'training_enabled'
+
+    @pytest.mark.parametrize('field', ['research_eligible', 'training_enabled'])
+    def test_integrity_flags_require_boolean_false_not_numeric_zero(tmp_path, field):
+        (tmp_path/'bars.csv').write_bytes(b'SYNTHETIC')
+        manifest = rep.create_dataset_manifest(['bars.csv'], root=tmp_path, dataset_id='SYNTHETIC')
+        manifest[field] = 0
+        body = {k: v for k, v in manifest.items() if k != 'manifest_digest'}
+        manifest['manifest_digest'] = rep.sha256_hex(rep.canonical_bytes(body))
+>       with pytest.raises(rep.ReproducibilityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ReproducibilityError
+
+tests\test_codex_m2_reproducibility_review.py:44: Failed
+___ test_model_card_rejects_invalid_identity_or_schema[schema-unsupported] ____
+
+field = 'schema', value = 'unsupported'
+
+    @pytest.mark.parametrize('field,value', [
+        ('schema', 'unsupported'), ('model_id', None), ('model_version', ''), ('intended_use', []),
+    ])
+    def test_model_card_rejects_invalid_identity_or_schema(field, value):
+        card = completed_card()
+        card[field] = value
+>       with pytest.raises(rep.ReproducibilityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ReproducibilityError
+
+tests\test_codex_m2_reproducibility_review.py:54: Failed
+______ test_model_card_rejects_invalid_identity_or_schema[model_id-None] ______
+
+field = 'model_id', value = None
+
+    @pytest.mark.parametrize('field,value', [
+        ('schema', 'unsupported'), ('model_id', None), ('model_version', ''), ('intended_use', []),
+    ])
+    def test_model_card_rejects_invalid_identity_or_schema(field, value):
+        card = completed_card()
+        card[field] = value
+>       with pytest.raises(rep.ReproducibilityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ReproducibilityError
+
+tests\test_codex_m2_reproducibility_review.py:54: Failed
+_____ test_model_card_rejects_invalid_identity_or_schema[model_version-] ______
+
+field = 'model_version', value = ''
+
+    @pytest.mark.parametrize('field,value', [
+        ('schema', 'unsupported'), ('model_id', None), ('model_version', ''), ('intended_use', []),
+    ])
+    def test_model_card_rejects_invalid_identity_or_schema(field, value):
+        card = completed_card()
+        card[field] = value
+>       with pytest.raises(rep.ReproducibilityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ReproducibilityError
+
+tests\test_codex_m2_reproducibility_review.py:54: Failed
+___ test_model_card_rejects_invalid_identity_or_schema[intended_use-value3] ___
+
+field = 'intended_use', value = []
+
+    @pytest.mark.parametrize('field,value', [
+        ('schema', 'unsupported'), ('model_id', None), ('model_version', ''), ('intended_use', []),
+    ])
+    def test_model_card_rejects_invalid_identity_or_schema(field, value):
+        card = completed_card()
+        card[field] = value
+>       with pytest.raises(rep.ReproducibilityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ReproducibilityError
+
+tests\test_codex_m2_reproducibility_review.py:54: Failed
+_______________________ test_model_card_requires_schema _______________________
+
+    def test_model_card_requires_schema():
+        card = completed_card()
+        del card['schema']
+>       with pytest.raises(rep.ReproducibilityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ReproducibilityError
+
+tests\test_codex_m2_reproducibility_review.py:61: Failed
+___________ test_model_card_rejects_contradictory_evaluation_status ___________
+
+    def test_model_card_rejects_contradictory_evaluation_status():
+        card = completed_card()
+        card['evaluation']['status'] = 'REAL_MARKET_PROFITABILITY_VALIDATED'
+>       with pytest.raises(rep.ReproducibilityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ReproducibilityError
+
+tests\test_codex_m2_reproducibility_review.py:68: Failed
+_________ test_variant_append_refuses_corrupt_history_without_writing _________
+
+tmp_path = WindowsPath('C:/Users/MJ/Documents/Codex/2026-11-05/c-users-mj-documents-ittradesmart-nas100/work/m2-lab-red-temp/test_variant_append_refuses_co0')
+
+    def test_variant_append_refuses_corrupt_history_without_writing(tmp_path):
+        log = tmp_path/'variants.jsonl'
+        rep.append_variant(log, variant('first'))
+        entry = json.loads(log.read_text())
+        entry['config']['seed'] = 999
+        log.write_text(json.dumps(entry)+'\n', encoding='utf-8')
+        before = log.read_bytes()
+>       with pytest.raises(rep.ReproducibilityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ReproducibilityError
+
+tests\test_codex_m2_reproducibility_review.py:79: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_codex_m2_reproducibility_review.py::test_nested_config_keys_must_not_collide_with_string_keys
+FAILED tests/test_codex_m2_reproducibility_review.py::test_nested_manifest_scan_uses_manifest_root_coordinates
+FAILED tests/test_codex_m2_reproducibility_review.py::test_strict_scan_rejects_unrelated_directory_even_if_empty
+FAILED tests/test_codex_m2_reproducibility_review.py::test_integrity_flags_require_boolean_false_not_numeric_zero[research_eligible]
+FAILED tests/test_codex_m2_reproducibility_review.py::test_integrity_flags_require_boolean_false_not_numeric_zero[training_enabled]
+FAILED tests/test_codex_m2_reproducibility_review.py::test_model_card_rejects_invalid_identity_or_schema[schema-unsupported]
+FAILED tests/test_codex_m2_reproducibility_review.py::test_model_card_rejects_invalid_identity_or_schema[model_id-None]
+FAILED tests/test_codex_m2_reproducibility_review.py::test_model_card_rejects_invalid_identity_or_schema[model_version-]
+FAILED tests/test_codex_m2_reproducibility_review.py::test_model_card_rejects_invalid_identity_or_schema[intended_use-value3]
+FAILED tests/test_codex_m2_reproducibility_review.py::test_model_card_requires_schema
+FAILED tests/test_codex_m2_reproducibility_review.py::test_model_card_rejects_contradictory_evaluation_status
+FAILED tests/test_codex_m2_reproducibility_review.py::test_variant_append_refuses_corrupt_history_without_writing
+12 failed, 1 passed in 0.64s

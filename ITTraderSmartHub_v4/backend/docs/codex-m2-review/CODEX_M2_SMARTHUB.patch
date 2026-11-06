@@ -1,0 +1,404 @@
+From 74f266ce9a7619a8f33f72ea4329688fc2d7a2eb Mon Sep 17 00:00:00 2001
+From: futurestands <mugarurajohnson56@gmail.com>
+Date: Fri, 6 Nov 2026 09:26:27 +0300
+Subject: [PATCH] feat(research): add gated synthetic preview and exact
+ terminal identity fallback
+
+---
+ ITTraderSmartHub_v4/backend/app.py            | 17 +++++
+ .../backend/docs/CODEX_M2_REVIEW.md           | 41 ++++++++++++
+ .../backend/nas100_research_preview.py        | 48 ++++++++++++++
+ .../tests/test_codex_m2_research_preview.py   | 65 +++++++++++++++++++
+ .../tests/test_codex_m2_terminal_identity.py  | 57 ++++++++++++++++
+ .../backend/tools/export_mt5_nas100.py        | 26 ++++++--
+ .../backend/tools/terminal_identity.py        | 62 ++++++++++++++++++
+ 7 files changed, 311 insertions(+), 5 deletions(-)
+ create mode 100644 ITTraderSmartHub_v4/backend/docs/CODEX_M2_REVIEW.md
+ create mode 100644 ITTraderSmartHub_v4/backend/nas100_research_preview.py
+ create mode 100644 ITTraderSmartHub_v4/backend/tests/test_codex_m2_research_preview.py
+ create mode 100644 ITTraderSmartHub_v4/backend/tests/test_codex_m2_terminal_identity.py
+ create mode 100644 ITTraderSmartHub_v4/backend/tools/terminal_identity.py
+
+diff --git a/ITTraderSmartHub_v4/backend/app.py b/ITTraderSmartHub_v4/backend/app.py
+index 896e8e0..df06ea3 100644
+--- a/ITTraderSmartHub_v4/backend/app.py
++++ b/ITTraderSmartHub_v4/backend/app.py
+@@ -11,6 +11,7 @@ from v4_services import ContextStore, risk_context, research_request
+ from bot import BotController, BacktestEngine, MarketDataManager, TrendFollowingMACrossoverStrategy
+ from ai_lab_adapter import AILabAdapter
+ from nas100_research_status import read_progress_snapshot
++from nas100_research_preview import synthetic_preview
+ from mt5_account_registry import (read_mt5_accounts, upsert_mt5_profile, delete_mt5_profile, ProfileConfigError)
+ from ai_contract import ContractError, strict_json
+ 
+@@ -69,6 +70,22 @@ def ai_research_progress():
+     return response, 200
+ 
+ 
++@app.get('/api/v5/nas100/research-preview')
++def nas100_synthetic_research_preview():
++    """Device-authenticated prototype, disabled unless explicitly opted in locally."""
++    if os.environ.get('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED') != '1':
++        response = jsonify({'status': 'DISABLED', 'decision': 'NO_TRADE'})
++        response.status_code = 503
++    elif request.args or request.get_data():
++        response = jsonify({'error': 'This fixed synthetic preview accepts no inputs', 'decision': 'NO_TRADE'})
++        response.status_code = 400
++    else:
++        response = jsonify(synthetic_preview())
++    response.headers['Cache-Control'] = 'no-store'
++    response.headers['X-Content-Type-Options'] = 'nosniff'
++    return response
++
++
+ @app.get('/api/v5/mt5/accounts')
+ def mt5_registered_accounts():
+     """Device-authenticated read-only MT5 aliases. NOT broker connections."""
+diff --git a/ITTraderSmartHub_v4/backend/docs/CODEX_M2_REVIEW.md b/ITTraderSmartHub_v4/backend/docs/CODEX_M2_REVIEW.md
+new file mode 100644
+index 0000000..503b7e3
+--- /dev/null
++++ b/ITTraderSmartHub_v4/backend/docs/CODEX_M2_REVIEW.md
+@@ -0,0 +1,41 @@
++# Codex M2 local review candidate
++
++Based on WorkBuddy SmartHub `8998f0f30abc7f814fb935e458e9c04c2a6a56a0`.
++Not pushed, merged, deployed or independently approved.
++
++## Terminal identity
++
++The existing exact resolved executable path check remains. If PowerShell image
++metadata is empty/unavailable, Windows Toolhelp inventory plus
++`QueryFullProcessImageNameW` with `PROCESS_QUERY_LIMITED_INFORMATION` can supply
++the full executable path. Unknown or duplicate native candidates fail closed.
++No command lines, process memory or credentials are read. This identifies an
++image, not a verified account or data timebase; all existing SDK identity and
++permission gates remain mandatory. The existing precheck/SDK-attachment race is
++not an atomic process binding and remains a limitation.
++
++## Synthetic research API prototype
++
++`GET /api/v5/nas100/research-preview` uses existing device-scope authentication.
++It returns 503 unless `SMARTHUB_SYNTHETIC_PREVIEW_ENABLED=1` is explicitly set in
++a local test gateway. Do not enable it in the running gateway without deployment
++review. Query parameters and request bodies are rejected. It consumes only a
++fixed 96-bar integer synthetic fixture and invokes the existing pure NAS100 rule
++engine. It returns rule counts/trend/session state, fixture hash/as-of, reasons,
++invalidation, `NO_TRADE`, null probability and `MODEL_NOT_READY`.
++
++This is an API contract demonstration, not a real symbol quote or prediction.
++No exporter, broker SDK, file loader, estimator or AI Lab call is reachable from
++the handler. Existing Android screens do not call this route. There are no
++Android, signing, database, Supabase, risk-engine or execution-interlock changes.
++
++## Validation
++
++Windows gateway Python 3.14.6, pytest 9.2.0: **675 passed, 2 skipped**.
++Skipped tests require filesystem symlink privileges. New regressions cover exact
++native identity, other-path rejection, missing/ambiguous metadata, authentication,
++default-off behavior, deterministic synthetic output and input rejection.
++
++Independent reviewer must assess the native API/handle lifecycle and route
++contract before integrating these local changes. No market-edge claim follows
++from passing software tests.
+diff --git a/ITTraderSmartHub_v4/backend/nas100_research_preview.py b/ITTraderSmartHub_v4/backend/nas100_research_preview.py
+new file mode 100644
+index 0000000..adabf56
+--- /dev/null
++++ b/ITTraderSmartHub_v4/backend/nas100_research_preview.py
+@@ -0,0 +1,48 @@
++"""Bounded synthetic rule-engine contract demonstration; never a market signal.
++
++No file, SDK, network, estimator or caller-supplied prices are consumed. Fixture
++timestamps are invented UTC and carry no evidence about a broker's timebase.
++"""
++from dataclasses import asdict
++from datetime import datetime, timedelta, timezone
++from hashlib import sha256
++import json
++
++from nas100.analysis import analyze
++from nas100.candles import Candle
++from nas100.sessions import session_state
++
++
++def synthetic_preview():
++    start = datetime(2024, 3, 11, 8, tzinfo=timezone.utc)
++    bars = []
++    for i in range(96):
++        # Integer arithmetic keeps this fixture stable across platforms.
++        opening = 10000 + i * 2 + (i % 12 if (i // 12) % 2 == 0 else 12 - i % 12) * 5
++        close = opening + (3 if i % 3 else -4)
++        bars.append(Candle(start + timedelta(minutes=5*i), opening,
++                           max(opening, close)+6, min(opening, close)-6, close, 100, 0))
++    result = analyze(bars, 5)
++    digest = sha256(json.dumps([
++        [b.time.isoformat(), b.open, b.high, b.low, b.close, b.volume, b.spread]
++        for b in bars
++    ], separators=(',', ':')).encode()).hexdigest()
++    return {
++        'schema': 'nas100-synthetic-research-preview-v1',
++        'decision': 'NO_TRADE', 'probability': None, 'model_status': 'MODEL_NOT_READY',
++        'execution_enabled': False,
++        'data': {'dataset_id': 'synthetic-integer-fixture-v1', 'sha256': digest,
++                 'is_synthetic': True, 'research_eligible': False,
++                 'freshness': 'FIXED_OFFLINE_FIXTURE_NOT_LIVE',
++                 'timebase_status': 'SYNTHETIC_UTC_NOT_BROKER_EVIDENCE',
++                 'as_of': result.as_of.isoformat()},
++        'analysis': {'bars': len(bars), 'timeframe_minutes': 5,
++                     'status': result.status, 'trend': result.trend,
++                     'structure_event_count': len(result.events),
++                     'fvg_count': len(result.fvgs), 'sweep_count': len(result.sweeps),
++                     'sessions_at_as_of': asdict(session_state(result.as_of))},
++        'reasons': ['SYNTHETIC_DEMONSTRATION_ONLY', 'NO_VALIDATED_REAL_MARKET_MODEL',
++                    'REAL_DATA_ELIGIBILITY_UNRESOLVED'],
++        'invalidation': ['Never use this fixture for a market decision.',
++                         'Any real-data replacement needs independent provenance, UTC, costs and model review.'],
++    }
+diff --git a/ITTraderSmartHub_v4/backend/tests/test_codex_m2_research_preview.py b/ITTraderSmartHub_v4/backend/tests/test_codex_m2_research_preview.py
+new file mode 100644
+index 0000000..a3e360c
+--- /dev/null
++++ b/ITTraderSmartHub_v4/backend/tests/test_codex_m2_research_preview.py
+@@ -0,0 +1,65 @@
++"""Authenticated offline prototype: no data inputs, broker, estimator or orders."""
++import pytest
++from test_analyze_api import api, ADMIN
++
++URL = '/api/v5/nas100/research-preview'
++
++
++def test_preview_requires_authentication(api, monkeypatch):
++    client, fake, _ = api
++    monkeypatch.setenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', '1')
++    assert client.get(URL).status_code == 401
++    assert fake.calls == []
++
++
++def test_preview_default_off(api, monkeypatch):
++    client, fake, _ = api
++    monkeypatch.delenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', raising=False)
++    assert client.get(URL, headers=ADMIN).status_code == 503
++    assert fake.calls == []
++
++
++def test_preview_exposes_rule_engine_without_predictive_claims(api, monkeypatch):
++    client, fake, _ = api
++    monkeypatch.setenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', '1')
++    response = client.get(URL, headers=ADMIN)
++    assert response.status_code == 200
++    body = response.get_json()
++    assert body['decision'] == 'NO_TRADE'
++    assert body['probability'] is None and body['model_status'] == 'MODEL_NOT_READY'
++    assert body['data']['is_synthetic'] is True
++    assert body['data']['freshness'] == 'FIXED_OFFLINE_FIXTURE_NOT_LIVE'
++    assert body['data']['research_eligible'] is False
++    assert body['analysis']['bars'] == 96
++    assert body['reasons'] and body['invalidation']
++    assert response.headers['Cache-Control'] == 'no-store'
++    assert client.get(URL, headers=ADMIN).get_json() == body
++    assert fake.calls == []
++
++
++@pytest.mark.parametrize('query', ['path=private.csv', 'symbol=USTECH100M', 'prices=1', 'count=200000'])
++def test_preview_rejects_all_client_data_inputs(api, monkeypatch, query):
++    client, fake, _ = api
++    monkeypatch.setenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', '1')
++    assert client.get(URL+'?'+query, headers=ADMIN).status_code == 400
++    assert fake.calls == []
++
++
++def test_enrolled_device_can_read_but_cannot_change_bot_state(api, monkeypatch):
++    client, fake, gateway = api
++    monkeypatch.setenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', '1')
++    code = gateway._v4_store.generate_pairing_code()['pairing_code']
++    token = gateway._v4_store.enroll_device('synthetic-preview-test', 'TEST', code)['device_token']
++    headers = {'Authorization': 'Bearer '+token}
++    before = gateway._bot.get_status()
++    assert client.get(URL, headers=headers).status_code == 200
++    assert gateway._bot.get_status() == before
++    assert client.post('/api/v5/bot/mode', headers=headers, json={'mode': 'PAPER'}).status_code == 403
++    assert fake.calls == []
++
++
++def test_preview_rejects_request_body(api, monkeypatch):
++    client, fake, _ = api
++    monkeypatch.setenv('SMARTHUB_SYNTHETIC_PREVIEW_ENABLED', '1')
++    assert client.get(URL, data='client-provided-prices', headers=ADMIN).status_code == 400
++    assert fake.calls == []
+diff --git a/ITTraderSmartHub_v4/backend/tests/test_codex_m2_terminal_identity.py b/ITTraderSmartHub_v4/backend/tests/test_codex_m2_terminal_identity.py
+new file mode 100644
+index 0000000..a2a5956
+--- /dev/null
++++ b/ITTraderSmartHub_v4/backend/tests/test_codex_m2_terminal_identity.py
+@@ -0,0 +1,57 @@
++"""Exact-image fallback regressions: no broker SDK, login, flags or orders."""
++from types import SimpleNamespace
++
++import pytest
++
++from tools import export_mt5_nas100 as exporter
++
++
++@pytest.fixture(autouse=True)
++def windows_contract(monkeypatch):
++    monkeypatch.setattr(exporter.sys, 'platform', 'win32')
++
++
++def test_exact_native_image_can_resolve_empty_powershell_metadata(tmp_path, monkeypatch):
++    terminal = tmp_path/'terminal64.exe'
++    terminal.write_bytes(b'SYNTHETIC_NONEXECUTABLE_FIXTURE')
++    monkeypatch.setattr(exporter.subprocess, 'run', lambda *a, **k: SimpleNamespace(stdout=''))
++    monkeypatch.setattr(exporter, '_native_terminal_images', lambda: [str(terminal)], raising=False)
++    assert exporter.terminal_already_running(str(terminal))
++
++
++def test_same_basename_at_another_path_is_not_identity(tmp_path, monkeypatch):
++    expected = tmp_path/'terminal64.exe'
++    expected.write_bytes(b'SYNTHETIC_NONEXECUTABLE_FIXTURE')
++    monkeypatch.setattr(exporter.subprocess, 'run', lambda *a, **k: SimpleNamespace(stdout=''))
++    monkeypatch.setattr(exporter, '_native_terminal_images', lambda: [str(tmp_path/'other'/'terminal64.exe')], raising=False)
++    assert not exporter.terminal_already_running(str(expected))
++
++
++def test_no_image_metadata_remains_blocked(tmp_path, monkeypatch):
++    terminal = tmp_path/'terminal64.exe'
++    terminal.write_bytes(b'SYNTHETIC_NONEXECUTABLE_FIXTURE')
++    monkeypatch.setattr(exporter.subprocess, 'run', lambda *a, **k: SimpleNamespace(stdout=''))
++    monkeypatch.setattr(exporter, '_native_terminal_images', lambda: [], raising=False)
++    assert not exporter.terminal_already_running(str(terminal))
++
++
++@pytest.mark.parametrize('unknown', [True, False])
++def test_unreadable_or_duplicate_native_candidates_remain_blocked(tmp_path, monkeypatch, unknown):
++    terminal = tmp_path/'terminal64.exe'
++    terminal.write_bytes(b'SYNTHETIC_NONEXECUTABLE_FIXTURE')
++    monkeypatch.setattr(exporter.subprocess, 'run', lambda *a, **k: SimpleNamespace(stdout=''))
++    candidates = [str(terminal), '' if unknown else str(terminal)]
++    monkeypatch.setattr(exporter, '_native_terminal_images', lambda: candidates, raising=False)
++    assert not exporter.terminal_already_running(str(terminal))
++
++
++def test_powershell_failure_can_use_exact_read_only_fallback(tmp_path, monkeypatch):
++    terminal = tmp_path/'terminal64.exe'
++    terminal.write_bytes(b'SYNTHETIC_NONEXECUTABLE_FIXTURE')
++
++    def denied(*args, **kwargs):
++        raise PermissionError('SYNTHETIC_DENIAL')
++
++    monkeypatch.setattr(exporter.subprocess, 'run', denied)
++    monkeypatch.setattr(exporter, '_native_terminal_images', lambda: [str(terminal)], raising=False)
++    assert exporter.terminal_already_running(str(terminal))
+diff --git a/ITTraderSmartHub_v4/backend/tools/export_mt5_nas100.py b/ITTraderSmartHub_v4/backend/tools/export_mt5_nas100.py
+index 8a6f446..056e123 100644
+--- a/ITTraderSmartHub_v4/backend/tools/export_mt5_nas100.py
++++ b/ITTraderSmartHub_v4/backend/tools/export_mt5_nas100.py
+@@ -144,16 +144,32 @@ def export_closed_rates(mt5, *, symbol: str, timeframe: str, count: int, out_dir
+     return path, meta_path, metadata
+ 
+ 
++def _native_terminal_images():
++    from tools.terminal_identity import terminal_image_paths
++    return terminal_image_paths()
++
++
+ def terminal_already_running(terminal):
+     """Read process image paths; do not launch a saved terminal/account implicitly."""
+     if sys.platform != 'win32' or not Path(terminal).is_file():
+         return False
+-    result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
+-        'Get-Process -Name terminal64 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path'],
+-        capture_output=True, text=True, timeout=10)
+     expected = str(Path(terminal).resolve()).casefold()
+-    return any(str(Path(line.strip()).resolve()).casefold() == expected
+-               for line in result.stdout.splitlines() if line.strip())
++    try:
++        result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
++            'Get-Process -Name terminal64 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path'],
++            capture_output=True, text=True, timeout=10)
++        if any(str(Path(line.strip()).resolve()).casefold() == expected
++               for line in result.stdout.splitlines() if line.strip()):
++            return True
++    except (OSError, subprocess.TimeoutExpired):
++        pass
++    try:
++        images = _native_terminal_images()
++        return bool(images) and all(images) and sum(
++            str(Path(path).resolve()).casefold() == expected for path in images
++        ) == 1
++    except OSError:
++        return False
+ 
+ 
+ def main(argv=None):
+diff --git a/ITTraderSmartHub_v4/backend/tools/terminal_identity.py b/ITTraderSmartHub_v4/backend/tools/terminal_identity.py
+new file mode 100644
+index 0000000..7c96e91
+--- /dev/null
++++ b/ITTraderSmartHub_v4/backend/tools/terminal_identity.py
+@@ -0,0 +1,62 @@
++"""Read existing Windows process image names with limited query access only.
++
++No process is started, stopped or modified. No command line, process memory,
++account identity or credentials are read. An unreadable terminal remains unknown.
++"""
++import sys
++
++
++def terminal_image_paths():
++    if sys.platform != 'win32':
++        return []
++    import ctypes
++    from ctypes import wintypes
++
++    class PROCESSENTRY32W(ctypes.Structure):
++        _fields_ = [('dwSize', wintypes.DWORD), ('cntUsage', wintypes.DWORD),
++                    ('th32ProcessID', wintypes.DWORD), ('th32DefaultHeapID', ctypes.c_size_t),
++                    ('th32ModuleID', wintypes.DWORD), ('cntThreads', wintypes.DWORD),
++                    ('th32ParentProcessID', wintypes.DWORD), ('pcPriClassBase', wintypes.LONG),
++                    ('dwFlags', wintypes.DWORD), ('szExeFile', wintypes.WCHAR * 260)]
++
++    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
++    kernel.CreateToolhelp32Snapshot.argtypes = [wintypes.DWORD, wintypes.DWORD]
++    kernel.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
++    for name in ('Process32FirstW', 'Process32NextW'):
++        fn = getattr(kernel, name)
++        fn.argtypes = [wintypes.HANDLE, ctypes.POINTER(PROCESSENTRY32W)]
++        fn.restype = wintypes.BOOL
++    kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
++    kernel.OpenProcess.restype = wintypes.HANDLE
++    kernel.QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD,
++                                                wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)]
++    kernel.QueryFullProcessImageNameW.restype = wintypes.BOOL
++    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
++    kernel.CloseHandle.restype = wintypes.BOOL
++    snapshot = kernel.CreateToolhelp32Snapshot(0x2, 0)  # TH32CS_SNAPPROCESS
++    if snapshot == ctypes.c_void_p(-1).value:
++        return []
++    paths = []
++    try:
++        entry = PROCESSENTRY32W()
++        entry.dwSize = ctypes.sizeof(entry)
++        available = kernel.Process32FirstW(snapshot, ctypes.byref(entry))
++        while available:
++            if entry.szExeFile.casefold() == 'terminal64.exe':
++                process = kernel.OpenProcess(0x1000, False, entry.th32ProcessID)
++                path = ''  # unknown identity must not become a basename match
++                if process:
++                    try:
++                        size = wintypes.DWORD(32768)
++                        buffer = ctypes.create_unicode_buffer(size.value)
++                        if kernel.QueryFullProcessImageNameW(process, 0, buffer, ctypes.byref(size)):
++                            path = buffer.value
++                    finally:
++                        kernel.CloseHandle(process)
++                paths.append(path)
++            available = kernel.Process32NextW(snapshot, ctypes.byref(entry))
++        if ctypes.get_last_error() != 18:  # ERROR_NO_MORE_FILES; partial inventory is unsafe
++            return []
++        return paths
++    finally:
++        kernel.CloseHandle(snapshot)
+-- 
+2.56.0.windows.4
+

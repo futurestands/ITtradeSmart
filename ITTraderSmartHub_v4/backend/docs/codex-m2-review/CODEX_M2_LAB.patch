@@ -1,0 +1,366 @@
+From 10517541f48424dfe970f04ce7ac15bdd2d5e896 Mon Sep 17 00:00:00 2001
+From: futurestands <mugarurajohnson56@gmail.com>
+Date: Fri, 6 Nov 2026 09:26:27 +0300
+Subject: [PATCH] fix(research): harden reproducibility validation and prepare
+ UTC observation checks
+
+---
+ docs/CODEX_M2_REVIEW.md                       | 39 ++++++++
+ src/nas100lab/reproducibility.py              | 42 +++++++-
+ src/nas100lab/timebase_observation.py         | 38 ++++++++
+ tests/test_codex_m2_reproducibility_review.py | 96 +++++++++++++++++++
+ tests/test_codex_m2_timebase_observation.py   | 40 ++++++++
+ 5 files changed, 251 insertions(+), 4 deletions(-)
+ create mode 100644 docs/CODEX_M2_REVIEW.md
+ create mode 100644 src/nas100lab/timebase_observation.py
+ create mode 100644 tests/test_codex_m2_reproducibility_review.py
+ create mode 100644 tests/test_codex_m2_timebase_observation.py
+
+diff --git a/docs/CODEX_M2_REVIEW.md b/docs/CODEX_M2_REVIEW.md
+new file mode 100644
+index 0000000..6d7bbce
+--- /dev/null
++++ b/docs/CODEX_M2_REVIEW.md
+@@ -0,0 +1,39 @@
++# Codex M2 local review candidate
++
++Based on WorkBuddy Lab `4b2561634b9a5c8f4978e6f7ea6978790be6fd40`.
++Not pushed, merged, deployed or independently approved.
++
++Twelve independently failing adversarial cases reproduced weaknesses in M1:
++nested numeric JSON keys could collide with string keys; strict directory scans
++used inconsistent path coordinates and admitted unrelated empty directories;
++numeric zero passed Boolean safety fields; model-card schema/identity and
++evaluation status were insufficiently checked; appending did not verify existing
++variant-log history. These are now rejected or correctly handled. Normal string
++key configurations retain their hashes and existing schema version.
++
++Hashing is integrity evidence, not authentication or research eligibility.
++Manifest files are not made immutable by filesystem permissions. Variant logs
++are single-writer; an independently trusted head/count is still needed to detect
++whole-log replacement or suffix truncation. Model-card validation is a restricted
++research-only check, not approval of performance, economics or deployment.
++
++`timebase_observation.assess_tick_clock` prepares a pure offline witness contract:
++aware UTC brackets, short monotonic-consistent collection intervals and raw tick
++epochs. It reports an offset interval without modifying epochs. Even a matching
++sample remains `TIMEBASE_UNVERIFIED` and ineligible. No live collector was run;
++independent clock synchronization, fresh quotes and historical DST evidence are
++still required. Six synthetic regressions cover +2/+3 hour contradictions, a
++matching sample across a DST-date boundary, stale ticks, clock steps and naive
++timestamps.
++
++Real-data training remains unconditionally disabled in `training_pipeline.py`,
++including when all nine supplied evidence flags claim success. No real estimator
++was trained. Synthetic fits in existing software tests are not market evidence.
++
++Python 3.12.10, pytest 9.2.0: **517 passed, 0 skipped, 0 failed**. A clean clone
++initially has **496 passed, 1 failed** because an M1 integration test reads ignored
++local `data/quarantine/USTECH100M_M5_raw.provenance.json`. The final run supplies
++only the unchanged owner-local metadata at that ignored path; no raw CSV was
++copied, no certification flag changed, and the file is not committed. Preserve
++this distinction when reproducing validation in CI. Making that existing test
++hermetic without losing the separate local-data check is a follow-up review item.
+diff --git a/src/nas100lab/reproducibility.py b/src/nas100lab/reproducibility.py
+index 85dfc4b..c845462 100644
+--- a/src/nas100lab/reproducibility.py
++++ b/src/nas100lab/reproducibility.py
+@@ -52,12 +52,23 @@ def canonical_bytes(value: Any) -> bytes:
+     insertion order and of JSON whitespace. `allow_nan=False` prevents silent
+     non-reproducible float values from entering a hash.
+     """
++    def validate_keys(item: Any) -> None:
++        if isinstance(item, Mapping):
++            if any(not isinstance(key, str) for key in item):
++                raise ReproducibilityError("JSON object keys must be strings at every depth")
++            for child in item.values():
++                validate_keys(child)
++        elif isinstance(item, (list, tuple)):
++            for child in item:
++                validate_keys(child)
++
+     try:
++        validate_keys(value)
+         text = json.dumps(
+             value, sort_keys=True, separators=(",", ":"),
+             ensure_ascii=False, allow_nan=False,
+         )
+-    except (TypeError, ValueError, OverflowError) as exc:
++    except (TypeError, ValueError, OverflowError, RecursionError) as exc:
+         raise ReproducibilityError(
+             f"Value is not canonically serialisable: {exc}"
+         ) from exc
+@@ -200,7 +211,7 @@ def verify_dataset_manifest(
+         ("training_enabled", False),
+         ("timebase_status", TIMEBASE_UNVERIFIED),
+     ):
+-        if data.get(field) != allowed:
++        if (data.get(field) is not False if allowed is False else data.get(field) != allowed):
+             raise ReproducibilityError(
+                 f"MANIFEST_CANNOT_CERTIFY_ELIGIBILITY: '{field}' must remain {allowed!r}"
+             )
+@@ -237,8 +248,12 @@ def verify_dataset_manifest(
+         scan_root = Path(strict_directory).resolve()
+         if not scan_root.is_dir():
+             raise ReproducibilityError("strict_directory must be an existing directory")
++        try:
++            scan_root.relative_to(root_path)
++        except ValueError as exc:
++            raise ReproducibilityError("strict_directory must be inside the manifest root") from exc
+         on_disk = {
+-            _relative_path(scan_root, p)
++            _relative_path(root_path, p)
+             for p in scan_root.rglob("*")
+             if p.is_file() and not p.name.endswith(".manifest.json")
+         }
+@@ -322,7 +337,7 @@ def validate_model_card(card: Mapping[str, Any]) -> dict[str, Any]:
+     if not isinstance(card, Mapping):
+         raise ReproducibilityError("model card must be a JSON object")
+     required = (
+-        "model_id", "model_version", "intended_use", "data_provenance",
++        "schema", "model_id", "model_version", "intended_use", "data_provenance",
+         "training", "evaluation", "limitations", "authorization", "claim_discipline",
+     )
+     missing = [key for key in required if key not in card]
+@@ -331,6 +346,11 @@ def validate_model_card(card: Mapping[str, Any]) -> dict[str, Any]:
+     for text in _walk_strings(dict(card)):
+         if any(token in text.upper() for token in _PLACEHOLDERS):
+             raise ReproducibilityError("model card still contains an unfilled placeholder")
++    if card["schema"] != SCHEMA_VERSION:
++        raise ReproducibilityError("Unsupported model card schema")
++    for field in ("model_id", "model_version", "intended_use"):
++        if not isinstance(card[field], str) or not card[field].strip():
++            raise ReproducibilityError(f"{field} must be a nonempty string")
+ 
+     prov = card["data_provenance"]
+     training = card["training"]
+@@ -359,6 +379,10 @@ def validate_model_card(card: Mapping[str, Any]) -> dict[str, Any]:
+         raise ReproducibilityError("training.status must remain a disabled/synthetic-only state")
+     if training.get("real_market_model_trained") is not False:
+         raise ReproducibilityError("real_market_model_trained must be False")
++    if evaluation.get("status") not in (
++        "NOT_EVALUATED_ON_REAL_MARKET_DATA", "SYNTHETIC_EVALUATION_ONLY",
++    ):
++        raise ReproducibilityError("evaluation.status must remain unevaluated/synthetic-only")
+     for field in (
+         "is_market_edge_claim", "profitability_claim",
+         "real_market_performance_evaluated",
+@@ -449,6 +473,7 @@ def append_variant(path: str | Path, variant: Mapping[str, Any]) -> dict[str, An
+     """Append exactly one hash-chained variant record. Never rewrites history."""
+     log = Path(path)
+     existing = load_variant_log(log)
++    _verify_variant_entries(existing)
+     prev = existing[-1]["entry_digest"] if existing else GENESIS_DIGEST
+     if any(entry.get("variant_id") == variant.get("variant_id") for entry in existing):
+         raise ReproducibilityError("DUPLICATE_VARIANT_ID")
+@@ -473,6 +498,15 @@ def verify_variant_log(
+         raise ReproducibilityError(
+             f"VARIANT_LOG_TRUNCATED: expected {expected_count} entries, found {len(entries)}"
+         )
++    return _verify_variant_entries(entries)
++
++
++def _verify_variant_entries(entries: list[dict[str, Any]]) -> dict[str, Any]:
++    """Validate the same snapshot before either reporting integrity or appending.
++
++    Single-writer local log: callers must serialize writers. A trusted external
++    head/count is still necessary to detect whole-log replacement or truncation.
++    """
+     seen: set[str] = set()
+     prev = GENESIS_DIGEST
+     for index, entry in enumerate(entries):
+diff --git a/src/nas100lab/timebase_observation.py b/src/nas100lab/timebase_observation.py
+new file mode 100644
+index 0000000..01b9ec5
+--- /dev/null
++++ b/src/nas100lab/timebase_observation.py
+@@ -0,0 +1,38 @@
++"""Offline UTC witness assessment. Never transforms labels or certifies history.
++
++An eventual collector must bracket one read-only tick metadata call with aware
++UTC and monotonic clocks, recording clock synchronization evidence separately.
++A single matching sample cannot establish historical DST rules or eligibility.
++"""
++from datetime import datetime, timedelta
++from math import isfinite
++
++
++def assess_tick_clock(*, raw_epoch: int, utc_before: datetime, utc_after: datetime,
++                      monotonic_elapsed_seconds: float) -> dict:
++    for clock in (utc_before, utc_after):
++        if not isinstance(clock, datetime) or clock.utcoffset() != timedelta(0):
++            raise ValueError('Observation clocks must be aware UTC')
++    if type(raw_epoch) is not int or raw_epoch <= 0:
++        raise ValueError('Raw tick epoch must be a positive integer')
++    wall_elapsed = (utc_after-utc_before).total_seconds()
++    if (type(monotonic_elapsed_seconds) not in (int, float)
++            or not isfinite(monotonic_elapsed_seconds)
++            or not 0 <= wall_elapsed <= 5
++            or monotonic_elapsed_seconds < 0
++            or abs(wall_elapsed-monotonic_elapsed_seconds) > 0.25):
++        raise ValueError('Unstable, reversed or excessive observation clock interval')
++    # Epoch seconds are truncated; permit at most one second of quantization.
++    lower = raw_epoch-utc_after.timestamp()
++    upper = raw_epoch-utc_before.timestamp()
++    if lower > 1:
++        status = 'SOURCE_LABEL_AHEAD_OF_UTC_BRACKET'
++    elif upper < -1:
++        status = 'STALE_OR_DIFFERENT_CLOCK_UNRESOLVED'
++    else:
++        status = 'WITHIN_UTC_BRACKET_NOT_CERTIFIED'
++    return {'observation': status, 'raw_epoch': raw_epoch,
++            'raw_epoch_preserved': True, 'offset_interval_seconds': [lower, upper],
++            'timebase_status': 'TIMEBASE_UNVERIFIED', 'research_eligible': False,
++            'limitations': ['Host UTC synchronization and quote freshness need independent evidence.',
++                            'No historical offset or DST policy is certified by this observation.']}
+diff --git a/tests/test_codex_m2_reproducibility_review.py b/tests/test_codex_m2_reproducibility_review.py
+new file mode 100644
+index 0000000..6f5b8ac
+--- /dev/null
++++ b/tests/test_codex_m2_reproducibility_review.py
+@@ -0,0 +1,96 @@
++"""Independent M1 adversarial review. Synthetic bytes/configs only; no fitting."""
++import json
++
++import pytest
++
++from nas100lab import reproducibility as rep
++from test_m1_reproducibility import completed_card, variant
++
++
++def test_nested_config_keys_must_not_collide_with_string_keys():
++    textual = rep.config_hash({'model': {'1': 'a'}})
++    with pytest.raises(rep.ReproducibilityError):
++        rep.config_hash({'model': {1: 'a'}})
++    assert len(textual) == 64
++
++
++def test_cyclic_config_has_a_controlled_validation_error():
++    config = {}
++    config['self'] = config
++    with pytest.raises(rep.ReproducibilityError):
++        rep.config_hash(config)
++
++
++def test_nested_manifest_scan_uses_manifest_root_coordinates(tmp_path):
++    nested = tmp_path/'data'
++    nested.mkdir()
++    (nested/'bars.csv').write_text('SYNTHETIC_BYTES\n', encoding='utf-8')
++    manifest = rep.create_dataset_manifest(['data/bars.csv'], root=tmp_path, dataset_id='SYNTHETIC')
++    report = rep.verify_dataset_manifest(manifest, root=tmp_path, strict_directory=nested)
++    assert report['files_verified'] == 1 and not report['research_eligible']
++
++
++def test_strict_scan_rejects_unrelated_directory_even_if_empty(tmp_path):
++    root, other = tmp_path/'root', tmp_path/'other'
++    root.mkdir()
++    other.mkdir()
++    (root/'bars.csv').write_bytes(b'SYNTHETIC')
++    manifest = rep.create_dataset_manifest(['bars.csv'], root=root, dataset_id='SYNTHETIC')
++    with pytest.raises(rep.ReproducibilityError):
++        rep.verify_dataset_manifest(manifest, root=root, strict_directory=other)
++
++
++@pytest.mark.parametrize('field', ['research_eligible', 'training_enabled'])
++def test_integrity_flags_require_boolean_false_not_numeric_zero(tmp_path, field):
++    (tmp_path/'bars.csv').write_bytes(b'SYNTHETIC')
++    manifest = rep.create_dataset_manifest(['bars.csv'], root=tmp_path, dataset_id='SYNTHETIC')
++    manifest[field] = 0
++    body = {k: v for k, v in manifest.items() if k != 'manifest_digest'}
++    manifest['manifest_digest'] = rep.sha256_hex(rep.canonical_bytes(body))
++    with pytest.raises(rep.ReproducibilityError):
++        rep.verify_dataset_manifest(manifest, root=tmp_path)
++
++
++@pytest.mark.parametrize('field,value', [
++    ('schema', 'unsupported'), ('model_id', None), ('model_version', ''), ('intended_use', []),
++])
++def test_model_card_rejects_invalid_identity_or_schema(field, value):
++    card = completed_card()
++    card[field] = value
++    with pytest.raises(rep.ReproducibilityError):
++        rep.validate_model_card(card)
++
++
++def test_model_card_requires_schema():
++    card = completed_card()
++    del card['schema']
++    with pytest.raises(rep.ReproducibilityError):
++        rep.validate_model_card(card)
++
++
++def test_model_card_rejects_contradictory_evaluation_status():
++    card = completed_card()
++    card['evaluation']['status'] = 'REAL_MARKET_PROFITABILITY_VALIDATED'
++    with pytest.raises(rep.ReproducibilityError):
++        rep.validate_model_card(card)
++
++
++def test_variant_append_refuses_corrupt_history_without_writing(tmp_path):
++    log = tmp_path/'variants.jsonl'
++    rep.append_variant(log, variant('first'))
++    entry = json.loads(log.read_text())
++    entry['config']['seed'] = 999
++    log.write_text(json.dumps(entry)+'\n', encoding='utf-8')
++    before = log.read_bytes()
++    with pytest.raises(rep.ReproducibilityError):
++        rep.append_variant(log, variant('second'))
++    assert log.read_bytes() == before
++
++
++def test_reproducibility_corrections_cannot_enable_real_training():
++    from nas100lab.training_pipeline import training_acceptance_gates, prepare_real_data_training, TrainingDisabledError
++    evidence = {item['gate']: True for item in training_acceptance_gates()['gates']}
++    evidence['explicit_owner_approval_id'] = 'APPROVED'
++    assert training_acceptance_gates(**evidence)['training_enabled'] is False
++    with pytest.raises(TrainingDisabledError):
++        prepare_real_data_training(**evidence)
+diff --git a/tests/test_codex_m2_timebase_observation.py b/tests/test_codex_m2_timebase_observation.py
+new file mode 100644
+index 0000000..6d2d2fe
+--- /dev/null
++++ b/tests/test_codex_m2_timebase_observation.py
+@@ -0,0 +1,40 @@
++"""Synthetic clock observations, without broker I/O or dataset certification."""
++from datetime import datetime, timedelta, timezone
++import pytest
++from nas100lab.timebase_observation import assess_tick_clock
++
++
++def observation(shift=0, **changes):
++    before = datetime(2026, 3, 29, 0, 59, 59, tzinfo=timezone.utc)
++    args = dict(raw_epoch=int(before.timestamp())+shift, utc_before=before,
++                utc_after=before+timedelta(seconds=2), monotonic_elapsed_seconds=2)
++    return assess_tick_clock(**(args | changes))
++
++
++@pytest.mark.parametrize('shift', [7200, 10800])
++def test_future_broker_clock_is_contradictory_not_corrected(shift):
++    result = observation(shift)
++    assert result['observation'] == 'SOURCE_LABEL_AHEAD_OF_UTC_BRACKET'
++    assert result['raw_epoch_preserved'] is True
++    assert result['timebase_status'] == 'TIMEBASE_UNVERIFIED'
++    assert result['research_eligible'] is False
++
++
++def test_consistent_observation_does_not_certify_history():
++    result = observation()
++    assert result['observation'] == 'WITHIN_UTC_BRACKET_NOT_CERTIFIED'
++    assert result['research_eligible'] is False
++
++
++def test_stale_quote_is_not_treated_as_timezone_evidence():
++    assert observation(-3600)['observation'] == 'STALE_OR_DIFFERENT_CLOCK_UNRESOLVED'
++
++
++def test_clock_step_invalidates_observation():
++    with pytest.raises(ValueError, match='clock'):
++        observation(monotonic_elapsed_seconds=0.2)
++
++
++def test_naive_wall_clock_rejected():
++    with pytest.raises(ValueError, match='UTC'):
++        observation(utc_before=datetime(2026, 3, 29))
+-- 
+2.56.0.windows.4
+

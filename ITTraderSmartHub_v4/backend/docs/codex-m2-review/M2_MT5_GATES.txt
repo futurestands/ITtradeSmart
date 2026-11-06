@@ -1,0 +1,1 @@
+{"checks": {"account_expert_disabled": false, "account_trading_disabled": true, "demo_account": true, "terminal_connected": true, "terminal_trading_disabled": false}, "failed_checks": ["account_expert_disabled", "terminal_trading_disabled"], "note": "Never relax export checks or switch to trading-enabled credentials.", "reason": "REQUIRED_FLAG_NOT_DISABLED", "status": "BLOCKED"}

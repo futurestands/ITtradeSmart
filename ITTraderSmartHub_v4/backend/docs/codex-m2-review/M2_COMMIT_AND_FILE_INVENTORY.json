@@ -1,0 +1,58 @@
+{
+  "SmartHub": {
+    "source_reviewed_commit": "8998f0f30abc7f814fb935e458e9c04c2a6a56a0",
+    "local_commit": "74f266ce9a7619a8f33f72ea4329688fc2d7a2eb",
+    "review_branch": "feature/codex-m2-independent-review-20261106",
+    "review_checkout": "C:\\Users\\MJ\\Documents\\Codex\\2026-11-05\\c-users-mj-documents-ittradesmart-nas100\\work\\m2-smarthub",
+    "clean": true,
+    "m1_inventory": [
+      "A\tITTraderSmartHub_v4/MASTER_AGENT_TASK_LEDGER.md",
+      "A\tITTraderSmartHub_v4/MT5_DATA_ELIGIBILITY_AND_TIMEBASE_REPORT.md",
+      "A\tITTraderSmartHub_v4/NAS100_RESEARCH_VALIDATION_STATUS.md",
+      "A\tITTraderSmartHub_v4/WORKBUDDY_BASELINE_AUDIT.md",
+      "A\tITTraderSmartHub_v4/WORKBUDDY_M1_OFFLINE_ENGINEERING_REPORT.md",
+      "A\tITTraderSmartHub_v4/WORKBUDDY_NEXT_ACTIONS.md",
+      "A\tITTraderSmartHub_v4/backend/tests/test_m1_baseline_reconciliation.py",
+      "A\tITTraderSmartHub_v4/backend/tests/test_m1_documentation_integrity.py",
+      "A\tITTraderSmartHub_v4/backend/tests/test_m1_simulator_and_causality.py"
+    ],
+    "m2_inventory": [
+      "M\tITTraderSmartHub_v4/backend/app.py",
+      "A\tITTraderSmartHub_v4/backend/docs/CODEX_M2_REVIEW.md",
+      "A\tITTraderSmartHub_v4/backend/nas100_research_preview.py",
+      "A\tITTraderSmartHub_v4/backend/tests/test_codex_m2_research_preview.py",
+      "A\tITTraderSmartHub_v4/backend/tests/test_codex_m2_terminal_identity.py",
+      "M\tITTraderSmartHub_v4/backend/tools/export_mt5_nas100.py",
+      "A\tITTraderSmartHub_v4/backend/tools/terminal_identity.py"
+    ]
+  },
+  "Lab": {
+    "source_reviewed_commit": "4b2561634b9a5c8f4978e6f7ea6978790be6fd40",
+    "local_commit": "10517541f48424dfe970f04ce7ac15bdd2d5e896",
+    "review_branch": "feature/codex-m2-independent-review-20261106",
+    "review_checkout": "C:\\Users\\MJ\\Documents\\Codex\\2026-11-05\\c-users-mj-documents-ittradesmart-nas100\\work\\m2-lab",
+    "clean": true,
+    "m1_inventory": [
+      "A\tsrc/nas100lab/reproducibility.py",
+      "A\tsrc/nas100lab/training_pipeline.py",
+      "A\ttests/test_m1_calibration_isolation.py",
+      "A\ttests/test_m1_htf_asof.py",
+      "A\ttests/test_m1_reproducibility.py",
+      "A\ttests/test_m1_timebase_api_reconciliation.py",
+      "A\ttests/test_m1_training_pipeline.py",
+      "A\ttests/test_m1_walkforward_boundaries.py"
+    ],
+    "m2_inventory": [
+      "A\tdocs/CODEX_M2_REVIEW.md",
+      "M\tsrc/nas100lab/reproducibility.py",
+      "A\tsrc/nas100lab/timebase_observation.py",
+      "A\ttests/test_codex_m2_reproducibility_review.py",
+      "A\ttests/test_codex_m2_timebase_observation.py"
+    ]
+  },
+  "metadata_fixture": {
+    "sha256": "a209537c38701a398d2f0a9b8e3eaf3d885be54b601d2ef85113eb18acc32b37",
+    "raw_csv_copied": false,
+    "ignored": true
+  }
+}

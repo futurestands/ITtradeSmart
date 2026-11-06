@@ -1,0 +1,54 @@
+F..F                                                                     [100%]
+================================== FAILURES ===================================
+________ test_exact_native_image_can_resolve_empty_powershell_metadata ________
+
+tmp_path = WindowsPath('C:/Users/MJ/Documents/Codex/2026-11-05/c-users-mj-documents-ittradesmart-nas100/work/m2-smarthub-red-temp/test_exact_native_image_can_re0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000179951663F0>
+
+    def test_exact_native_image_can_resolve_empty_powershell_metadata(tmp_path, monkeypatch):
+        terminal = tmp_path/'terminal64.exe'
+        terminal.write_bytes(b'SYNTHETIC_NONEXECUTABLE_FIXTURE')
+        monkeypatch.setattr(exporter.subprocess, 'run', lambda *a, **k: SimpleNamespace(stdout=''))
+        monkeypatch.setattr(exporter, '_native_terminal_images', lambda: [str(terminal)], raising=False)
+>       assert exporter.terminal_already_running(str(terminal))
+E       AssertionError: assert False
+E        +  where False = <function terminal_already_running at 0x0000017995159640>('C:\\Users\\MJ\\Documents\\Codex\\2026-11-05\\c-users-mj-documents-ittradesmart-nas100\\work\\m2-smarthub-red-temp\\test_exact_native_image_can_re0\\terminal64.exe')
+E        +    where <function terminal_already_running at 0x0000017995159640> = exporter.terminal_already_running
+E        +    and   'C:\\Users\\MJ\\Documents\\Codex\\2026-11-05\\c-users-mj-documents-ittradesmart-nas100\\work\\m2-smarthub-red-temp\\test_exact_native_image_can_re0\\terminal64.exe' = str(WindowsPath('C:/Users/MJ/Documents/Codex/2026-11-05/c-users-mj-documents-ittradesmart-nas100/work/m2-smarthub-red-temp/test_exact_native_image_can_re0/terminal64.exe'))
+
+tests\test_codex_m2_terminal_identity.py:14: AssertionError
+__________ test_powershell_failure_can_use_exact_read_only_fallback ___________
+
+tmp_path = WindowsPath('C:/Users/MJ/Documents/Codex/2026-11-05/c-users-mj-documents-ittradesmart-nas100/work/m2-smarthub-red-temp/test_powershell_failure_can_us0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001799516A9C0>
+
+    def test_powershell_failure_can_use_exact_read_only_fallback(tmp_path, monkeypatch):
+        terminal = tmp_path/'terminal64.exe'
+        terminal.write_bytes(b'SYNTHETIC_NONEXECUTABLE_FIXTURE')
+    
+        def denied(*args, **kwargs):
+            raise PermissionError('SYNTHETIC_DENIAL')
+    
+        monkeypatch.setattr(exporter.subprocess, 'run', denied)
+        monkeypatch.setattr(exporter, '_native_terminal_images', lambda: [str(terminal)], raising=False)
+>       assert exporter.terminal_already_running(str(terminal))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_codex_m2_terminal_identity.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tools\export_mt5_nas100.py:151: in terminal_already_running
+    result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+args = (['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', 'Get-Process -Name terminal64 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path'],)
+kwargs = {'capture_output': True, 'text': True, 'timeout': 10}
+
+    def denied(*args, **kwargs):
+>       raise PermissionError('SYNTHETIC_DENIAL')
+E       PermissionError: SYNTHETIC_DENIAL
+
+tests\test_codex_m2_terminal_identity.py:38: PermissionError
+=========================== short test summary info ===========================
+FAILED tests/test_codex_m2_terminal_identity.py::test_exact_native_image_can_resolve_empty_powershell_metadata
+FAILED tests/test_codex_m2_terminal_identity.py::test_powershell_failure_can_use_exact_read_only_fallback
+2 failed, 2 passed in 0.75s
