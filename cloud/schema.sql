@@ -2,13 +2,24 @@
 -- No HTTP/import/deployment path executes this file. Target: smarthub-phase3-preview.
 -- Abort preflight on any existing schema/role; do not adopt unknown objects.
 BEGIN;
+-- Fail before DDL if the resource display name was mistaken for a database name.
+-- Confirm the physical database identifier in a separately approved preflight.
+DO $target_gate$
+BEGIN
+ IF pg_catalog.current_database() <> 'smarthub-phase3-preview' THEN
+   RAISE EXCEPTION 'Unexpected database identity; migration refused';
+ END IF;
+END;
+$target_gate$;
 CREATE SCHEMA smarthub_cloud_auth;
 CREATE ROLE smarthub_cloud_runtime NOLOGIN NOINHERIT;
 CREATE ROLE smarthub_cloud_operator NOLOGIN NOINHERIT;
 -- Dedicated private login identity remains DISABLED until separate bootstrap.
 -- No owner/operator membership, password, or LOGIN activation in this migration.
 CREATE ROLE smarthub_cloud_preview_login NOLOGIN NOINHERIT;
-GRANT smarthub_cloud_runtime TO smarthub_cloud_preview_login;
+GRANT smarthub_cloud_runtime TO smarthub_cloud_preview_login WITH ADMIN FALSE;
+GRANT smarthub_cloud_runtime TO smarthub_cloud_preview_login WITH INHERIT FALSE;
+GRANT smarthub_cloud_runtime TO smarthub_cloud_preview_login WITH SET TRUE;
 
 CREATE TABLE smarthub_cloud_auth.devices (
  id TEXT PRIMARY KEY, name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 128),

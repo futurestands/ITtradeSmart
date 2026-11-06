@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from hashlib import sha256
 import os
 import secrets
+import certifi
 from urllib.parse import parse_qs, unquote, urlsplit
 
 PRIVATE_LOGIN = 'smarthub_cloud_preview_login'
@@ -27,7 +28,12 @@ IDENTITY_SQL = (
     "OR EXISTS (SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n "
     "ON c.relnamespace=n.oid JOIN pg_catalog.pg_roles r ON c.relowner=r.oid "
     "WHERE n.nspname='smarthub_cloud_auth' "
-    "AND r.rolname IN ('smarthub_cloud_preview_login','smarthub_cloud_runtime'))) "
+    "AND r.rolname IN ('smarthub_cloud_preview_login','smarthub_cloud_runtime'))),"
+    "((SELECT count(*) FROM pg_catalog.pg_auth_members m "
+    "JOIN pg_catalog.pg_roles u ON m.member=u.oid "
+    "JOIN pg_catalog.pg_roles r ON m.roleid=r.oid "
+    "WHERE u.rolname='smarthub_cloud_preview_login' AND r.rolname='smarthub_cloud_runtime' "
+    "AND NOT m.admin_option AND NOT m.inherit_option AND m.set_option)<>1) "
     "FROM pg_catalog.pg_roles WHERE rolname=session_user"
 )
 RATE_LIMITS = {'enrollment': 10, 'access': 120}
@@ -50,15 +56,32 @@ def postgres_connection():
     parsed = urlsplit(dsn)
     if parsed.scheme not in ('postgres', 'postgresql') or not parsed.hostname:
         raise RuntimeError('Cloud authentication is not configured')
-    if parse_qs(parsed.query).get('sslmode') != ['verify-full']:
+    params = parse_qs(parsed.query, keep_blank_values=True)
+    if params.get('sslmode') != ['verify-full']:
         raise RuntimeError('Verified database TLS is required')
+    if set(params)-{'sslmode', 'channel_binding'} or params.get('channel_binding', ['require']) != ['require']:
+        raise RuntimeError('Unapproved database connection options')
     if unquote(parsed.username or '') != PRIVATE_LOGIN:
         raise RuntimeError('Dedicated private runtime login required')
+    if os.environ.get('PGOPTIONS') or os.environ.get('PGSERVICE'):
+        raise RuntimeError('Implicit PostgreSQL session configuration is not permitted')
+    expected_host = os.environ.get('SMARTHUB_CLOUD_DATABASE_HOST', '')
+    expected_database = os.environ.get('SMARTHUB_CLOUD_DATABASE_NAME', '')
+    if (not expected_host or not expected_database or parsed.hostname != expected_host
+            or not expected_host.endswith('.neon.tech') or '-pooler.' not in expected_host
+            or unquote(parsed.path) != '/'+expected_database or parsed.port not in (None, 5432)):
+        raise RuntimeError('Approved Neon pooled endpoint and database must match')
     import psycopg
     with psycopg.connect(dsn, connect_timeout=5,
-                         options='-c statement_timeout=5000 -c idle_in_transaction_session_timeout=10000') as connection:
+                         sslmode='verify-full', sslrootcert=certifi.where(), channel_binding='require',
+                         ssl_min_protocol_version='TLSv1.2', gssencmode='disable',
+                         options='', autocommit=False, prepare_threshold=None) as connection:
+        # Neon transaction pooling: no dependence on session/startup settings.
+        connection.execute('SET LOCAL search_path = pg_catalog')
+        connection.execute("SET LOCAL statement_timeout = '5s'")
+        connection.execute("SET LOCAL idle_in_transaction_session_timeout = '10s'")
         identity = connection.execute(IDENTITY_SQL).fetchone()
-        if identity != (PRIVATE_LOGIN, PRIVATE_LOGIN) + (False,)*10:
+        if identity != (PRIVATE_LOGIN, PRIVATE_LOGIN) + (False,)*11:
             raise RuntimeError('Database identity or privileges rejected')
         connection.execute('SET LOCAL ROLE smarthub_cloud_runtime')
         if connection.execute('SELECT current_user').fetchone() != (RUNTIME_ROLE,):

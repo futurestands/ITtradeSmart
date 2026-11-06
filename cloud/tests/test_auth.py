@@ -33,11 +33,13 @@ def fixture(tmp_path):
     '''
     with sqlite3.connect(path) as connection:
         connection.executescript(schema)
+    observed_sql = []
 
     class Connection:
         def __init__(self, db):
             self.db = db
         def execute(self, sql, params=()):
+            observed_sql.append(sql)  # SQL text only; never record token parameters.
             if sql == DB_NOW:
                 return self.db.execute('SELECT ?', (clock[0],))
             return self.db.execute(sql.replace('smarthub_cloud_auth.', '').replace('%s', '?'), params)
@@ -49,6 +51,7 @@ def fixture(tmp_path):
             yield Connection(db)
     clock = [1800000000]
     store = Store(connect=connect)
+    store._test_sql = observed_sql
     app = create_app(store)
     app.config['TESTING'] = True
     return store, app.test_client(), clock, path
@@ -295,3 +298,16 @@ def test_concurrent_rate_counters_do_not_overgrant_and_saturate(fixture):
 def test_unregistered_rate_policies_are_rejected(fixture, scope, limit):
     with pytest.raises(ValueError):
         fixture[0].rate(scope, 'TEST', limit)
+
+
+def test_final_gate_runtime_dml_is_valid_postgresql(fixture):
+    import re
+    from pglast import parse_sql
+    store, client, _, _ = fixture
+    session, _ = enrollment(store, client)
+    assert client.get('/api/v5/ai/status', headers=auth(session)).status_code == 200
+    renewed = store.renew(session['refresh_token'])
+    assert renewed and store.revoke(renewed['device_id'])
+    for sql in set(store._test_sql):
+        indexes = iter(range(1, sql.count('%s')+1))
+        assert parse_sql(re.sub(r'%s', lambda _: '$'+str(next(indexes)), sql))

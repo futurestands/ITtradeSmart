@@ -19,6 +19,25 @@ def test_catalog_identity_guard_and_database_clock_parse_as_postgresql():
     assert parse_sql(IDENTITY_SQL) and parse_sql(DB_NOW)
 
 
+def test_final_gate_membership_options_are_explicit():
+    membership = [s for s in statements() if s['@'] == 'GrantRoleStmt']
+    options = {o['defname']:o['arg']['boolval'] for s in membership for o in (s['opt'] or ())}
+    assert options == {'admin':False, 'inherit':False, 'set':True}
+
+
+def test_final_gate_has_no_definer_routine_and_refuses_wrong_database_before_ddl():
+    from pglast import parse_plpgsql
+    sql = (ROOT/'schema.sql').read_text()
+    statements = [item.stmt() for item in parse_sql(sql)]
+    assert not any(item['@'] in ('CreateFunctionStmt','AlterOwnerStmt') for item in statements)
+    assert 'SECURITY DEFINER' not in sql
+    assert "pg_catalog.current_database() <> 'smarthub-phase3-preview'" in sql
+    assert sql.index('DO $target_gate$') < sql.index('CREATE SCHEMA')
+    block = sql[sql.index('DO $target_gate$'):sql.index('CREATE SCHEMA')]
+    assert parse_plpgsql(block)
+    assert statements[0]['@'] == statements[-1]['@'] == 'TransactionStmt'
+
+
 def granted(table, role, operation):
     columns = set()
     for item in statements():
@@ -62,7 +81,7 @@ def test_enrollment_uses_database_device_default():
     assert granted('devices', RUNTIME, 'update') == {'revoked'}
 
 
-@pytest.mark.parametrize('operation', ['select', 'update', 'delete'])
+@pytest.mark.parametrize('operation', ['select', 'update', 'delete', 'truncate'])
 def test_web_runtime_cannot_read_or_rewrite_audit(operation):
     assert granted('audit', RUNTIME, operation) == set()
 
@@ -72,6 +91,12 @@ def test_offline_operator_can_read_audit_but_not_erase_it():
     assert granted('audit', OPERATOR, 'insert') == {'occurred_at', 'event', 'principal_hash'}
     assert not granted('audit', OPERATOR, 'update')
     assert not granted('audit', OPERATOR, 'delete')
+
+
+def test_final_gate_runtime_cannot_overwrite_audit_identity_or_reset_its_sequence():
+    assert granted('audit', RUNTIME, 'insert') == {'occurred_at','event','principal_hash'}
+    assert not granted('audit_id_seq', RUNTIME, 'update')
+    assert granted('audit_id_seq', RUNTIME, 'usage')
 
 
 def test_runtime_cannot_delete_rate_buckets_or_extend_their_lifetime():
@@ -103,9 +128,10 @@ def test_login_mapping_never_grants_operator_to_the_web_login():
         assert options['canlogin']['boolval'] is False
         assert options['inherit']['boolval'] is False
     membership = [s for s in statements() if s['@'] == 'GrantRoleStmt']
-    assert len(membership) == 1
-    assert membership[0]['granted_roles'][0]['priv_name'] == RUNTIME
-    assert membership[0]['grantee_roles'][0]['rolename'] == 'smarthub_cloud_preview_login'
+    assert len(membership) == 3
+    for grant in membership:
+        assert grant['granted_roles'][0]['priv_name'] == RUNTIME
+        assert grant['grantee_roles'][0]['rolename'] == 'smarthub_cloud_preview_login'
 
 
 def evaluate(node, row, devices):

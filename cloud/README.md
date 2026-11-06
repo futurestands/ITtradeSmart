@@ -1,5 +1,10 @@
 # Phase 3 cloud authentication candidate — not deployed
 
+The final migration gate is documented in `docs/FINAL_MIGRATION_GATE.md` and
+supersedes earlier connection/default-membership assumptions. No SQL is authorized.
+Live Neon TLS/pooling remains unverified; the final report must not claim a full
+execution-gate PASS. The revised SQL checks the exact physical database name.
+
 The owner authorized only provisioning of the dedicated Neon `free_v3` database
 `smarthub-phase3-preview`, resource `store_3WehZ5haplK9AUbU`, exclusively connected
 to SmartHub project `prj_WCV9dRjSufSvTeoYLJVhSf6yyKkC` in team
