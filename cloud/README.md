@@ -4,10 +4,14 @@ The owner authorized only provisioning of the dedicated Neon `free_v3` database
 `smarthub-phase3-preview`, resource `store_3WehZ5haplK9AUbU`, exclusively connected
 to SmartHub project `prj_WCV9dRjSufSvTeoYLJVhSf6yyKkC` in team
 `team_QYSxGQ6tdhAh4OMvaf7wTcX8`, environments Preview and Development.
-Provisioning is complete. **No SQL was executed. Stop before schema application.**
+Provisioning is complete. **No SQL was executed against Neon. Stop before schema application.**
 
-`schema.sql` is the complete proposed v1 DDL for separate owner review. It adds
-one isolated schema, five tables and a non-login least-privilege runtime role.
+`schema.sql` is now the proposed v1.1 fresh-install DDL; `schema.v1.review.sql`
+preserves the unapplied v1 proposal. The v1.1 permission, login, rate-window and
+operator controls in `docs/AUTH_V1_1_REVIEW.md` supersede the older v1 notes below.
+Runtime/operator privilege roles must always remain NOLOGIN. A separate private
+web login starts NOLOGIN/NOINHERIT and maps only to runtime; its activation is a
+separately approved bootstrap, not a conversion of a privilege role into a login.
 No runtime import, request or deployment applies migrations. PostgreSQL TLS must
 use `sslmode=verify-full`; configure the post-review runtime URL only as
 `SMARTHUB_CLOUD_DATABASE_URL`, never use an owner connection as the HTTP identity.
@@ -44,3 +48,15 @@ Remaining review items include direct PostgreSQL integration/role tests, separat
 private bootstrap tooling, rate/audit retention, distributed edge abuse controls,
 device-storage instrumentation, real HTTPS/mobile acceptance and external review.
 No production-readiness claim is made from offline tests.
+
+v1.1 uses database-clock 60-second windows and explicit expiry columns. Operator
+cleanup is bounded, has a five-minute grace and appends an audit event. Runtime
+cannot delete buckets, change their windows, read/rewrite audit or create/rotate/
+revoke admin sessions. Existing admin HTTP tokens remain read-valid for code
+issuance/device revocation; admin rotation/revocation and audit reads are offline
+operator tasks. There is no HTTP audit reader or scheduled cleanup job.
+
+The connector rejects Production/unknown environments and privileged/owner/
+operator URLs or sessions, then SET LOCAL ROLEs to runtime. No dedicated runtime
+URL, private login or database role mapping has actually been installed. SQL
+and maintenance artifacts are excluded from Vercel uploads and never auto-run.

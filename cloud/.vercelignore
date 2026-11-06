@@ -3,6 +3,9 @@
 tests/
 ops/
 schema.sql
+*.sql
+maintenance/
+requirements-dev.txt
 docs/
 __pycache__/
 .pytest_cache/

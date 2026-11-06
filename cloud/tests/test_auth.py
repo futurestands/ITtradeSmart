@@ -11,16 +11,26 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app import create_app
-from auth_store import Store, digest, postgres_connection
+from auth_store import Store, digest, new_token, postgres_connection, DB_NOW
 
 
 @pytest.fixture
 def fixture(tmp_path):
     path = tmp_path/'TEST_ONLY.sqlite3'
-    schema = (Path(__file__).parents[1]/'schema.sql').read_text()
-    schema = schema.replace('CREATE SCHEMA IF NOT EXISTS smarthub_cloud_auth;', '')
-    schema = schema.replace('smarthub_cloud_auth.', '').replace('BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY', 'INTEGER PRIMARY KEY')
-    schema = '\n'.join(line for line in schema.splitlines() if not line.startswith(('REVOKE ', 'GRANT ', 'CREATE ROLE ')))
+    # Deliberately separate test-double DDL. PostgreSQL roles/RLS/grants are
+    # parsed in test_v11_security.py, NOT simulated as verified PostgreSQL here.
+    schema = '''
+    CREATE TABLE devices(id TEXT PRIMARY KEY, name TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'device' CHECK(role IN ('device','admin')),
+      revoked BOOLEAN NOT NULL DEFAULT FALSE, created_at BIGINT NOT NULL DEFAULT 1800000000);
+    CREATE TABLE sessions(access_hash TEXT PRIMARY KEY, refresh_hash TEXT UNIQUE NOT NULL,
+      device_id TEXT NOT NULL REFERENCES devices(id), access_until BIGINT NOT NULL, refresh_until BIGINT NOT NULL);
+    CREATE TABLE enrollment(code_hash TEXT PRIMARY KEY, expires_at BIGINT NOT NULL, used BOOLEAN NOT NULL DEFAULT FALSE);
+    CREATE TABLE rate_limits(scope TEXT NOT NULL, identity_hash TEXT NOT NULL,
+      window_start BIGINT NOT NULL, expires_at BIGINT NOT NULL, count INTEGER NOT NULL,
+      PRIMARY KEY(scope,identity_hash,window_start));
+    CREATE TABLE audit(id INTEGER PRIMARY KEY,occurred_at BIGINT NOT NULL,event TEXT NOT NULL,principal_hash TEXT NOT NULL);
+    '''
     with sqlite3.connect(path) as connection:
         connection.executescript(schema)
 
@@ -28,6 +38,8 @@ def fixture(tmp_path):
         def __init__(self, db):
             self.db = db
         def execute(self, sql, params=()):
+            if sql == DB_NOW:
+                return self.db.execute('SELECT ?', (clock[0],))
             return self.db.execute(sql.replace('smarthub_cloud_auth.', '').replace('%s', '?'), params)
 
     @contextmanager
@@ -36,7 +48,7 @@ def fixture(tmp_path):
             db.execute('PRAGMA foreign_keys=ON')
             yield Connection(db)
     clock = [1800000000]
-    store = Store(connect=connect, clock=lambda: clock[0])
+    store = Store(connect=connect)
     app = create_app(store)
     app.config['TESTING'] = True
     return store, app.test_client(), clock, path
@@ -51,6 +63,17 @@ def enrollment(store, client, device='phone1'):
 
 def auth(session):
     return {'Authorization': 'Bearer '+session['device_token']}
+
+
+def operator_bootstrap(store, clock):
+    """Privileged fixture setup only; production web Store cannot issue this."""
+    access, refresh = new_token('access'), new_token('refresh')
+    with store.connect() as db:
+        db.execute('INSERT INTO smarthub_cloud_auth.devices VALUES (%s,%s,%s,FALSE,%s)',
+                   ('admin1', 'OPERATOR', 'admin', clock[0]))
+        db.execute('INSERT INTO smarthub_cloud_auth.sessions VALUES (%s,%s,%s,%s,%s)',
+                   (digest(access), digest(refresh), 'admin1', clock[0]+3600, clock[0]+2592000))
+    return dict(device_token=access, refresh_token=refresh)
 
 
 @pytest.mark.parametrize('route', ['/api/v5/ai/status', '/api/v5/ai/research-progress', '/api/v5/ai/advisory', '/api/v5/admin/enrollment-codes'])
@@ -74,7 +97,7 @@ def test_code_consumption_is_atomic_across_instances(fixture):
     store, _, _, _ = fixture
     code = store.enrollment_code()
     def consume(i):
-        return Store(store.connect, store.clock).enroll('phone'+str(i), 'TEST', code)
+        return Store(store.connect).enroll('phone'+str(i), 'TEST', code)
     with ThreadPoolExecutor(max_workers=2) as executor:
         results = list(executor.map(consume, (10, 11)))
     assert sum(result is not None for result in results) == 1
@@ -119,17 +142,15 @@ def test_device_cannot_issue_codes_or_revoke_another_device(fixture):
 
 
 def test_admin_is_a_separate_database_role(fixture):
-    store, client, _, _ = fixture
-    with store.connect() as db:
-        db.execute('INSERT INTO smarthub_cloud_auth.devices VALUES (%s,%s,%s,FALSE,%s)', ('admin1', 'OPERATOR', 'admin', 1))
-        session = store._session(db, 'admin1')
+    store, client, clock, _ = fixture
+    session = operator_bootstrap(store, clock)
     assert client.post('/api/v5/admin/enrollment-codes', headers=auth(session)).status_code == 201
 
 
 def test_state_survives_a_new_store_and_application_instance(fixture):
     store, client, _, _ = fixture
     session, _ = enrollment(store, client)
-    cold = create_app(Store(store.connect, store.clock)).test_client()
+    cold = create_app(Store(store.connect)).test_client()
     assert cold.get('/api/v5/ai/status', headers=auth(session)).status_code == 200
     assert cold.post('/api/v5/device/revoke', headers=auth(session)).status_code == 200
     assert client.get('/api/v5/ai/status', headers=auth(session)).status_code == 401
@@ -139,7 +160,7 @@ def test_rate_limit_is_durable_and_audited(fixture):
     store, client, _, path = fixture
     for _ in range(10):
         assert client.post('/api/v5/device/enroll', json={}).status_code == 400
-    cold = create_app(Store(store.connect, store.clock)).test_client()
+    cold = create_app(Store(store.connect)).test_client()
     assert cold.post('/api/v5/device/enroll', json={}).status_code == 429
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT COUNT(*) FROM audit WHERE event='ENROLLMENT_RATE_LIMIT'").fetchone()[0] == 1
@@ -181,6 +202,7 @@ def test_contracts_no_trade_headers_and_no_execution_routes(fixture):
 
 
 def test_missing_store_does_not_fall_back_to_local_state(monkeypatch):
+    monkeypatch.setenv('VERCEL_ENV', 'development')
     monkeypatch.delenv('SMARTHUB_CLOUD_DATABASE_URL', raising=False)
     with pytest.raises(RuntimeError):
         with postgres_connection():
@@ -189,7 +211,87 @@ def test_missing_store_does_not_fall_back_to_local_state(monkeypatch):
 
 @pytest.mark.parametrize('dsn', ['sqlite:///state.db', 'postgresql://test.invalid/db?sslmode=disable', 'postgresql://test.invalid/db?sslmode=require'])
 def test_database_transport_requires_verified_tls(monkeypatch, dsn):
+    monkeypatch.setenv('VERCEL_ENV', 'development')
     monkeypatch.setenv('SMARTHUB_CLOUD_DATABASE_URL', dsn)
     with pytest.raises(RuntimeError):
         with postgres_connection():
             pytest.fail('Unverified database transport')
+
+
+def test_database_default_creates_device_without_selecting_client_identity(fixture):
+    store, client, _, path = fixture
+    first, _ = enrollment(store, client, 'admin1')
+    second, _ = enrollment(store, client, 'admin1')
+    assert first['device_id'] != second['device_id'] != 'admin1'
+    with sqlite3.connect(path) as db:
+        assert db.execute('SELECT DISTINCT role FROM devices').fetchall() == [('device',)]
+
+
+def test_runtime_cannot_mint_rotate_or_self_revoke_operator_admin_session(fixture):
+    store, client, clock, _ = fixture
+    admin = operator_bootstrap(store, clock)
+    with store.connect() as db, pytest.raises(PermissionError):
+        store._session(db, 'admin1')
+    assert client.post('/api/v5/device/renew', json={'refresh_token': admin['refresh_token']}).status_code == 401
+    assert client.post('/api/v5/device/revoke', headers=auth(admin)).status_code == 403
+    assert store.principal(admin['device_token']) == ('admin1', 'admin')
+    assert client.post('/api/v5/admin/devices/admin1/revoke', headers=auth(admin)).status_code == 404
+    assert client.get('/api/v5/admin/audit', headers=auth(admin)).status_code == 404
+
+
+def test_admin_can_revoke_device_and_device_cannot_read_admin_audit(fixture):
+    store, client, clock, _ = fixture
+    admin = operator_bootstrap(store, clock)
+    device, _ = enrollment(store, client)
+    assert client.get('/api/v5/admin/audit', headers=auth(device)).status_code == 403
+    assert client.post('/api/v5/admin/devices/'+device['device_id']+'/revoke', headers=auth(admin)).status_code == 200
+    assert store.principal(device['device_token']) is None
+    assert store.renew(device['refresh_token']) is None
+
+
+def test_rotation_issuance_failure_rolls_back_consumption(fixture, monkeypatch):
+    store, client, _, _ = fixture
+    session, _ = enrollment(store, client)
+    def fail(*args):
+        raise RuntimeError('SYNTHETIC_PRIVATE_FAILURE')
+    monkeypatch.setattr(store, '_session', fail)
+    response = client.post('/api/v5/device/renew', json={'refresh_token': session['refresh_token']})
+    assert response.status_code == 503 and 'SYNTHETIC_PRIVATE_FAILURE' not in response.get_data(as_text=True)
+    assert store.principal(session['device_token'])
+
+
+def test_concurrent_refresh_consumption_has_one_winner(fixture):
+    store, client, _, _ = fixture
+    session, _ = enrollment(store, client)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(lambda _: Store(store.connect).renew(session['refresh_token']), (1, 2)))
+    assert sum(value is not None for value in results) == 1
+    assert store.principal(session['device_token']) is None
+
+
+def test_rate_windows_roll_over_without_reusing_expired_counters(fixture):
+    store, _, clock, path = fixture
+    assert all(store.rate('enrollment', 'TEST_IDENTITY', 10) for _ in range(10))
+    assert not store.rate('enrollment', 'TEST_IDENTITY', 10)
+    clock[0] += 59
+    assert not Store(store.connect).rate('enrollment', 'TEST_IDENTITY', 10)
+    clock[0] += 1
+    assert Store(store.connect).rate('enrollment', 'TEST_IDENTITY', 10)
+    with sqlite3.connect(path) as db:
+        rows = db.execute('SELECT window_start,expires_at,count FROM rate_limits ORDER BY window_start').fetchall()
+    assert rows == [(1800000000, 1800000060, 11), (1800000060, 1800000120, 1)]
+
+
+def test_concurrent_rate_counters_do_not_overgrant_and_saturate(fixture):
+    store, _, _, path = fixture
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(lambda _: Store(store.connect).rate('enrollment', 'SHARED', 10), range(30)))
+    assert sum(results) == 10
+    with sqlite3.connect(path) as db:
+        assert db.execute('SELECT count FROM rate_limits').fetchone() == (11,)
+
+
+@pytest.mark.parametrize('scope,limit', [('arbitrary', 10), ('enrollment', 1000), ('access', True)])
+def test_unregistered_rate_policies_are_rejected(fixture, scope, limit):
+    with pytest.raises(ValueError):
+        fixture[0].rate(scope, 'TEST', limit)

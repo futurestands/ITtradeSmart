@@ -94,7 +94,10 @@ def create_app(store=None):
     def revoke():
         if request.get_data():
             return error('NO_INPUTS_ACCEPTED', 400)
-        backend().revoke(g.device_id)
+        if g.role != 'device':
+            return error('ADMIN_SESSION_IS_OPERATOR_CONTROLLED', 403)
+        if not backend().revoke(g.device_id):
+            return error('DEVICE_NOT_FOUND', 404)
         backend().audit('DEVICE_SELF_REVOKED', g.device_id)
         return jsonify(status='REVOKED')
 
@@ -110,7 +113,8 @@ def create_app(store=None):
     def admin_revoke(device_id):
         if not re.fullmatch(r'[A-Za-z0-9_-]{3,64}', device_id):
             return error('INVALID_DEVICE_ID', 400)
-        backend().revoke(device_id)
+        if not backend().revoke(device_id):
+            return error('DEVICE_NOT_FOUND_OR_OPERATOR_CONTROLLED', 404)
         backend().audit('ADMIN_DEVICE_REVOKED', device_id)
         return jsonify(status='REVOKED')
 
