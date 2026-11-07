@@ -25,7 +25,9 @@ unit tests passed. This is a research/debug prerelease, not a Play Store release
 ## Select the cloud connection
 
 1. Open the app and scroll to its connection/device-pairing section.
-2. Enable **Cloud HTTPS mode (separate device enrollment)**.
+2. Enable **Cloud HTTPS mode (separate device enrollment)** FIRST. Switching mode
+   clears the pairing field and loads that mode's saved URL; enter both fields
+   after enabling it.
 3. In **HTTPS Gateway URL**, enter this root URL exactly, with no extra path:
 
        https://ittrader-smarthub-phase3-phone-preview-futurestands.vercel.app
@@ -48,6 +50,22 @@ Public HTTPS health returns 200; protected AI status without a device token
 returns 401 CLOUD_DEVICE_AUTH_REQUIRED. No Vercel bypass secret is used.
 One ten-minute enrollment code was issued and displayed privately on the local
 computer. Phone installation and successful enrollment remain unverified.
+
+## Pair button diagnosis and fix (7 November 2026)
+
+Read-only Preview request logs showed three requests to `/api/v4/device/enroll`:
+the phone was in local mode. The cloud endpoint is `/api/v5/device/enroll`.
+At diagnosis, both issued codes were unused and no cloud device existed.
+
+The pairing-fix build rejects cloud invitations in local mode before sending
+any request. It shows progress/errors next to Pair Device, disables duplicate
+submissions while pending, clears the code after secure storage succeeds, and
+bounds the complete network call to 30 seconds. It also uses the approved
+Preview as its default cloud URL. Existing saved URLs still need checking.
+
+The research package and signing key are retained. Update-install over the
+existing research app; do not uninstall or clear app data. No phone update or
+successful enrollment is claimed until observed.
 
 ## Troubleshooting
 

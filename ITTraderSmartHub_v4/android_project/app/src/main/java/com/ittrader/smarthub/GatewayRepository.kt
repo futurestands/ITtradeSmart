@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 class GatewayRepository {
 
     private val httpClient: OkHttpClient = OkHttpClient.Builder()
+        .callTimeout(30, TimeUnit.SECONDS)
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .followRedirects(false)
@@ -343,6 +344,13 @@ class GatewayRepository {
             return
         }
 
+        val route = try {
+            EnrollmentPolicy.route(GatewaySession.isCloud, pairingCode)
+        } catch (error: IllegalArgumentException) {
+            callback(Result.failure(error))
+            return
+        }
+
         val deviceId = GatewaySession.deviceId
         val payload = V4ApiContracts.deviceEnroll(deviceId, deviceName, pairingCode)
         val body = payload.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
@@ -352,7 +360,6 @@ class GatewayRepository {
             callback(Result.failure(IllegalArgumentException("Use a separate one-time cloud enrollment code.")))
             return
         }
-        val route = if (GatewaySession.isCloud) "/api/v5/device/enroll" else "/api/v4/device/enroll"
         val request = Request.Builder()
             .url(endpoint+route)
             .post(body)

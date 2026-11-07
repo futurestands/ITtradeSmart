@@ -14,7 +14,7 @@ object GatewaySession {
     private var localToken = ""
     private var localUrl = "https://127.0.0.1:5000"
     private var localIssuedAt = localUrl
-    private var cloudUrl = "https://ittradersmarthubvercelcloudpreviewr.vercel.app"
+    private var cloudUrl = "https://ittrader-smarthub-phase3-phone-preview-futurestands.vercel.app"
     private var cloudToken = ""
     private var cloudRefresh = ""
     private var cloudExpiry = 0L

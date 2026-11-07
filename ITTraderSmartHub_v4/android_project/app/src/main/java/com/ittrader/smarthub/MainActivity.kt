@@ -87,6 +87,12 @@ class MainActivity : AppCompatActivity() {
         val btnLogout = findViewById<Button>(R.id.btnLogout)
         val cloudMode = findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.switchCloudMode)
         val connectionState = findViewById<TextView>(R.id.txtConnectionState)
+        val pairingStatus = findViewById<TextView>(R.id.txtPairingStatus)
+        fun showPairingStatus(message: String) {
+            pairingStatus.text = message
+            connectionState.text = message
+            txtAnalysisOutput.text = message
+        }
         cloudMode.isChecked = GatewaySession.isCloud
         connectionState.text = if (GatewaySession.isCloud) "Cloud mode. Refresh to authenticate. NO_TRADE." else getString(R.string.cloud_mode_initial)
 
@@ -239,13 +245,26 @@ class MainActivity : AppCompatActivity() {
             val enrollingCloud = GatewaySession.isCloud
 
             if (code.isBlank()) {
+                showPairingStatus("Enter a fresh one-time pairing code, then tap Pair Device.")
                 Toast.makeText(this, "Enter one-time pairing code from administrator", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
-            txtAnalysisOutput.text = "Pairing device with gateway..."
+            showPairingStatus("Pairing device with gateway… Please wait up to 30 seconds.")
+            btnEnrollDevice.isEnabled = false
+            btnEnrollDevice.setText(R.string.pairing_in_progress)
+            edtGatewayIp.isEnabled = false
+            edtPairingCode.isEnabled = false
+            cloudMode.isEnabled = false
+            btnLogout.isEnabled = false
             repository.enrollDevice(url, code, "Android " + android.os.Build.MODEL) { result ->
                 runOnUiThread {
+                    btnEnrollDevice.isEnabled = true
+                    btnEnrollDevice.setText(R.string.pair_device)
+                    edtGatewayIp.isEnabled = true
+                    edtPairingCode.isEnabled = true
+                    cloudMode.isEnabled = true
+                    btnLogout.isEnabled = true
                     result.fold(
                         onSuccess = { json ->
                             val token = json.optString("device_token")
@@ -254,21 +273,23 @@ class MainActivity : AppCompatActivity() {
                                 val saved = if (enrollingCloud) GatewaySession.saveCloudSession(json, url)
                                     else if (!GatewaySession.isCloud) GatewaySession.saveSession(this, token, url) else false
                                 if (saved) {
-                                    txtAnalysisOutput.text = "[Device Pairing Successful]\n" +
+                                    showPairingStatus("[Device Pairing Successful]\n" +
                                             "Device ID: ${if (enrollingCloud) json.optString("device_id") else GatewaySession.deviceId}\n" +
                                             "Status: Paired & Token Saved to Android Keystore\n" +
-                                            "Token Expiration: $expiresAt"
+                                            "Token Expiration: $expiresAt")
+                                    edtPairingCode.setText("")
                                     Toast.makeText(this, "Device Paired Successfully!", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    txtAnalysisOutput.text = "⚠️ Keystore Save Failed: Unable to persist token securely."
+                                    showPairingStatus("⚠️ Keystore Save Failed: Unable to persist token securely.")
                                     Toast.makeText(this, "Keystore Storage Failed!", Toast.LENGTH_LONG).show()
                                 }
                             } else {
-                                txtAnalysisOutput.text = "Pairing failed: No token issued."
+                                showPairingStatus("Pairing failed: No token issued.")
                             }
                         },
                         onFailure = { err ->
-                            txtAnalysisOutput.text = "Pairing Error: ${err.message}"
+                            showPairingStatus("Pairing Error: ${err.message}")
+                            Toast.makeText(this, "Pairing failed. See the status below Pair Device.", Toast.LENGTH_LONG).show()
                         }
                     )
                 }

@@ -581,7 +581,7 @@
                     android:id="@+id/edtPairingCode"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="One-Time Pairing Code (e.g. PAIR-123456)"
+                    android:hint="One-Time Pairing Code"
                     android:inputType="textPassword"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
@@ -616,6 +616,14 @@
                     android:textColor="@color/white"
                     android:layout_marginStart="6dp" />
             </LinearLayout>
+            <TextView
+                android:id="@+id/txtPairingStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="8dp"
+                android:accessibilityLiveRegion="polite"
+                android:text="@string/pairing_status_initial"
+                android:textColor="@color/text_secondary" />
         </LinearLayout>
 
 <LinearLayout
