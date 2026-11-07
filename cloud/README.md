@@ -2,11 +2,14 @@
 
 Current status (7 November 2026): the approved schema migration completed on
 `winter-hat-40889380 / br-autumn-scene-bcqp4rjv / ep-winter-cake-bcffwgio / neondb`.
-The three privilege/login roles remain NOLOGIN; no cloud runtime credential or
-phone enrollment code has been activated. Preview/Development provider aliases
+The two privilege roles remain NOLOGIN. The owner subsequently approved the
+private runtime login activation; it is active only on the child with restricted
+runtime membership. No phone enrollment code has yet been issued. See
+`docs/PREVIEW_RUNTIME_ACTIVATION.md` and `docs/PHONE_CONNECTION_GUIDE.md`.
+Preview/Development provider aliases
 were retargeted to the child. Production is unchanged. See
 `docs/SCHEMA_MIGRATION_COMPLETION.md` for the authoritative migration record and
-`docs/PRIVATE_RUNTIME_BOOTSTRAP_PLAN.md` for the separate activation gate.
+`docs/PRIVATE_RUNTIME_BOOTSTRAP_PLAN.md` for the earlier activation review plan.
 
 The owner has now requested GitHub publishing and an online phone preview.
 Publishing/deployment alone does not activate authentication storage, provide
