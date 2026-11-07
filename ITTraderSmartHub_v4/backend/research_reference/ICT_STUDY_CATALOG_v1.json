@@ -1,0 +1,22 @@
+{
+  "version": "ict-study-v1",
+  "purpose": "LOCAL_EDUCATIONAL_RETRIEVAL_NOT_MODEL_TRAINING",
+  "official_channel_id": "UCtjxa77NqamhVC8atV85Rog",
+  "official_channel_url": "https://www.youtube.com/innercircletrader",
+  "identity_source": "https://theinnercircletrader.com/index.html",
+  "transcript_status": "UNAVAILABLE_PUBLIC_CAPTIONS_EMPTY_AND_BROWSER_PANEL_STALLED",
+  "videos": [
+    {"id": "tmeCWULSTHc", "title": "2022 ICT Mentorship Episode 2", "duration_seconds": 2976, "review": "METADATA_ONLY", "full_lesson_reviewed": false},
+    {"id": "nQfHZ2DEJ8c", "title": "2022 ICT Mentorship Episode 3", "duration_seconds": 3147, "review": "METADATA_AND_CHAPTERS_ONLY", "full_lesson_reviewed": false},
+    {"id": "Bkt8B3kLATQ", "title": "2022 ICT Mentorship Episode 6", "duration_seconds": 2899, "review": "METADATA_ONLY", "full_lesson_reviewed": false}
+  ],
+  "cards": [
+    {"id": "lesson-3", "kind": "OFFICIAL_VIDEO_METADATA", "video_id": "nQfHZ2DEJ8c", "timestamp_seconds": 128, "terms": ["market structure", "liquidity", "mss", "ict"], "note": "Episode 3 describes internal-range liquidity and market-structure shifts. Its chapter at 2:08 is a starting point for source review; no lecture transcript was obtained."},
+    {"id": "confirmed-structure", "kind": "IMPLEMENTATION_HYPOTHESIS", "video_id": null, "timestamp_seconds": null, "terms": ["market structure", "mss", "bos", "choch", "swing", "confirmation"], "note": "Existing close-through-confirmed-pivot events are measurable research proxies. Their BOS/CHoCH labels have not been validated as equivalent to ICT market-structure shifts.", "implementation": "nas100/structure.py; nas100/swings.py"},
+    {"id": "sweep", "kind": "IMPLEMENTATION_HYPOTHESIS", "video_id": null, "timestamp_seconds": null, "terms": ["liquidity", "sweep", "stop hunt", "rejection"], "note": "The existing detector measures a trade-through and close-back across an already confirmed pivot. It does not observe actual resting stops or prove a reversal.", "implementation": "nas100/liquidity.py"},
+    {"id": "imbalance", "kind": "IMPLEMENTATION_HYPOTHESIS", "video_id": null, "timestamp_seconds": null, "terms": ["fvg", "fair value gap", "imbalance", "displacement"], "note": "The existing three-candle non-overlap zone is available only after candle three closes. Its ATR filter and gap-fill rules are code conventions requiring annotation and ablation studies.", "implementation": "nas100/fvg.py"},
+    {"id": "time-context", "kind": "RESEARCH_PROTOCOL", "video_id": null, "timestamp_seconds": null, "terms": ["session", "kill zone", "timezone", "dst", "news"], "note": "Define session boundaries with explicit timezone and historical DST evidence. Keep event publication times and revisions point-in-time. No universal ICT session window is certified here.", "implementation": "nas100/point_in_time.py"},
+    {"id": "discipline", "kind": "USER_POLICY", "video_id": null, "timestamp_seconds": null, "terms": ["discipline", "risk", "ftmo", "stop loss", "revenge", "overtrade"], "note": "The selected personal ceiling is 0.5% of original account size and at most three entries daily, including zero. Existing risk gates can reduce this ceiling. Account binding is not implemented.", "implementation": "prop_account_plan.py; nas100/discipline.py"},
+    {"id": "learning-evidence", "kind": "RESEARCH_PROTOCOL", "video_id": null, "timestamp_seconds": null, "terms": ["training", "model", "walk forward", "profit", "accuracy", "holdout"], "note": "Fit only after dataset eligibility is established. Separate chronological training, calibration and untouched evaluation; purge overlapping labels. Include costs, no-trade cases and failed setups. Video study is not evidence of market accuracy."}
+  ]
+}

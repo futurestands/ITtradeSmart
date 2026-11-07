@@ -1,5 +1,14 @@
 # Cloud auth v1.1 — local approval candidate
 
+Current preflight status supersedes the historical unqueried-target notes below:
+physical database `neondb` and client verify-full direct/pooled connections were
+verified with approved read-only SELECTs. The owner authorized changing the guard
+to `neondb`. Provider metadata now verifies child `phase3-auth-development`
+(`br-autumn-scene-bcqp4rjv`, `ep-winter-cake-bcffwgio`). Existing Preview/Development
+DSNs still target main; earlier connection tests were on main, not the child.
+Live child connectivity, ACL/RLS and application transactions remain unverified.
+No migration is authorized. See `NEON_PREFLIGHT.md`.
+
 No Neon SQL, login bootstrap, secret configuration, migration, deployment, push
 or merge was performed. The owner requested corrections and a second review.
 

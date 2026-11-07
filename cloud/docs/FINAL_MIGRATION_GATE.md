@@ -25,9 +25,12 @@ ACL/RLS enforcement or a Neon TLS/pooling acceptance test.
 4. Require separately verified non-secret DATABASE_HOST/DATABASE_NAME settings
    to match the private runtime URL exactly (Neon pooled endpoint, port 5432).
    No values were configured. They cannot be guessed from a resource display name.
-5. The migration now checks pg_catalog.current_database() against the owner's
-   exact `smarthub-phase3-preview` identifier before any CREATE/GRANT. Wrong target
-   aborts the transaction; do not silently substitute the provider's default DB.
+5. The migration checks pg_catalog.current_database() against physical database
+   `neondb` before any CREATE/GRANT. The owner explicitly authorized this correction
+   after direct and pooled SELECTs verified the actual name. Wrong target aborts
+   the transaction. `smarthub-phase3-preview` is the resource name, not the database.
+   Independently verify the approved project, branch and endpoint in authenticated
+   provider metadata before execution; the database-name guard cannot prove them.
 
 ## Final gate outcome
 
@@ -39,11 +42,16 @@ and bounded operator cleanup are retained; runtime audit is append-only; source
 and Android contain no database credential; fresh-install DDL is transactional;
 RESEARCH_ONLY_LOCKED/NO_TRADE and no-execution rules remain.
 
-FAIL / NOT VERIFIED for live Neon TLS and pooling configuration. The private login
-is deliberately inactive/uncreated in the target, actual PG database identity and
-certificate/pooled transaction behavior have not been tested, and SQL execution /
-credential bootstrap are forbidden. The code is fail-closed when its required
-target settings are absent. An offline PASS must not be labeled a live PASS.
+Live preflight confirmed `neondb`, direct and pooled SELECT connectivity, and
+client certificate/hostname validation with verify-full on both endpoints.
+The PostgreSQL backend reported ssl=false; see the proxy/TLS distinction in
+`NEON_PREFLIGHT.md`. Authenticated provider metadata now maps the tested endpoint
+to main, not the intended child. Child `phase3-auth-development` is verified as
+`br-autumn-scene-bcqp4rjv`, endpoint `ep-winter-cake-bcffwgio`. Preview/Development
+DSNs still target main. No bindings were changed; migration is NO-GO.
+The private runtime is not provisioned and the application's
+transaction-local role/ACL/RLS sequence has not been verified live. Migration
+and credential bootstrap remain forbidden. An offline PASS is not a live PASS.
 
 The final report in outputs provides the ten-point statement/test checklist and
 the exact SQL checksum. Execution remains withheld, awaiting explicit owner
@@ -55,8 +63,13 @@ merge, remove resources or modify Production from this review.
 
 Target: Neon winter-hat-40889380 / smarthub-phase3-preview, free_v3, store
 store_3WehZ5haplK9AUbU, sole Vercel project prj_WCV9dRjSufSvTeoYLJVhSf6yyKkC,
-Preview and Development only. Resource name is verified; physical PG database /
-branch / host still require preflight. The file does NOT create/rename a database.
+Preview and Development only. Intended physical target: `neondb` on child
+`phase3-auth-development` (`br-autumn-scene-bcqp4rjv`), endpoint
+`ep-winter-cake-bcffwgio`, independently verified in the authenticated console.
+The existing `ep-cold-hall-bcb1xvqr` belongs to main (`br-red-butterfly-bc69ov3c`)
+and must never be used for this migration. Reverify metadata and actual DSN
+bindings immediately before any later approved execution.
+The file does NOT create/rename a database.
 
 Any future migration approval must name the exact file hash and allow only the
 fresh-install transaction after target/collision/version/backup checks. Roles are

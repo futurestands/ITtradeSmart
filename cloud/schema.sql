@@ -1,12 +1,18 @@
 -- v1.1 FRESH INSTALL REVIEW ONLY. v1 has never been applied to Neon.
--- No HTTP/import/deployment path executes this file. Target: smarthub-phase3-preview.
+-- No HTTP/import/deployment path executes this file.
+-- Resource: smarthub-phase3-preview; physical PostgreSQL database: neondb.
+-- Project: winter-hat-40889380; branch: phase3-auth-development
+-- (br-autumn-scene-bcqp4rjv); endpoint: ep-winter-cake-bcffwgio.
+-- Reverify this mapping in authenticated provider metadata before execution.
+-- Never migrate main (br-red-butterfly-bc69ov3c / ep-cold-hall-bcb1xvqr).
+-- A database name alone cannot establish project, branch or endpoint identity.
 -- Abort preflight on any existing schema/role; do not adopt unknown objects.
 BEGIN;
--- Fail before DDL if the resource display name was mistaken for a database name.
--- Confirm the physical database identifier in a separately approved preflight.
+-- Fail before DDL unless connected to the verified physical database identifier.
+-- Provider identity verification is an additional mandatory external gate.
 DO $target_gate$
 BEGIN
- IF pg_catalog.current_database() <> 'smarthub-phase3-preview' THEN
+ IF pg_catalog.current_database() <> 'neondb' THEN
    RAISE EXCEPTION 'Unexpected database identity; migration refused';
  END IF;
 END;

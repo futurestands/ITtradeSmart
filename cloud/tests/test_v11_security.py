@@ -31,11 +31,42 @@ def test_final_gate_has_no_definer_routine_and_refuses_wrong_database_before_ddl
     statements = [item.stmt() for item in parse_sql(sql)]
     assert not any(item['@'] in ('CreateFunctionStmt','AlterOwnerStmt') for item in statements)
     assert 'SECURITY DEFINER' not in sql
-    assert "pg_catalog.current_database() <> 'smarthub-phase3-preview'" in sql
+    assert "pg_catalog.current_database() <> 'neondb'" in sql
     assert sql.index('DO $target_gate$') < sql.index('CREATE SCHEMA')
     block = sql[sql.index('DO $target_gate$'):sql.index('CREATE SCHEMA')]
     assert parse_plpgsql(block)
     assert statements[0]['@'] == statements[-1]['@'] == 'TransactionStmt'
+
+
+@pytest.mark.parametrize('database,refused', [
+    ('neondb', False), ('smarthub-phase3-preview', True),
+    ('postgres', True), ('other_database', True), ('', True),
+])
+def test_physical_database_guard_fails_closed_before_any_schema_change(database, refused):
+    """Interpret the parsed guard, without executing DDL or claiming live RLS."""
+    from pglast import parse_plpgsql
+    sql = (ROOT/'schema.sql').read_text()
+    parsed = [item.stmt() for item in parse_sql(sql)]
+    assert parsed[1]['@'] == 'DoStmt'  # Immediately after BEGIN, before all DDL.
+    block = sql[sql.index('DO $target_gate$'):sql.index('CREATE SCHEMA')]
+    action = parse_plpgsql(block)[0]['PLpgSQL_function']['action']['PLpgSQL_stmt_block']
+    assert not action.get('exceptions')
+    guard = action['body'][0]['PLpgSQL_stmt_if']
+    assert not guard.get('else_body') and not guard.get('elsif_list')
+    condition = guard['cond']['PLpgSQL_expr']['query']
+    expression = parse_sql('SELECT '+condition)[0].stmt()['targetList'][0]['val']
+    assert expression['@'] == 'A_Expr'
+    assert [item['sval'] for item in expression['name']] == ['<>']
+    function = expression['lexpr']
+    assert function['@'] == 'FuncCall' and not function.get('args')
+    assert [item['sval'] for item in function['funcname']] == ['pg_catalog', 'current_database']
+    expected = expression['rexpr']['val']['sval']
+    assert expected == 'neondb'
+    assert (database != expected) is refused
+    assert len(guard['then_body']) == 1
+    exception = guard['then_body'][0]['PLpgSQL_stmt_raise']
+    assert exception['elog_level'] == 21  # PostgreSQL ERROR / RAISE EXCEPTION.
+    assert exception['message'] == 'Unexpected database identity; migration refused'
 
 
 def granted(table, role, operation):
