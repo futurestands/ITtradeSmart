@@ -87,6 +87,6 @@ issuance/device revocation; admin rotation/revocation and audit reads are offlin
 operator tasks. There is no HTTP audit reader or scheduled cleanup job.
 
 The connector rejects Production/unknown environments and privileged/owner/
-operator URLs or sessions, then SET LOCAL ROLEs to runtime. No dedicated runtime
-URL, private login or database role mapping has actually been installed. SQL
+operator URLs or sessions, then SET LOCAL ROLEs to runtime. The approved restricted private login and runtime mapping are now active on
+the isolated child in Preview/Development only; see the activation record. SQL
 and maintenance artifacts are excluded from Vercel uploads and never auto-run.

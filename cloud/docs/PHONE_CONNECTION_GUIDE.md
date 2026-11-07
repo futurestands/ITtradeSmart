@@ -43,11 +43,11 @@ The cloud URL is independent of the Windows gateway's local port 5000.
 
 The schema and restricted private runtime login are active only on the approved
 Neon child and Vercel Preview/Development environments. Production is unchanged.
-The new Preview hostname's Vercel-login exception is awaiting approval. Until
-that is complete, a Vercel login page/403 is an edge protection response, not a
-successful SmartHub connection. No bypass secret should be pasted into the APK.
-The phone code is issued only after that gate is resolved so its short lifetime
-is not wasted while installation/access remains blocked.
+The owner-approved exception is active only on the named Preview hostname.
+Public HTTPS health returns 200; protected AI status without a device token
+returns 401 CLOUD_DEVICE_AUTH_REQUIRED. No Vercel bypass secret is used.
+One ten-minute enrollment code was issued and displayed privately on the local
+computer. Phone installation and successful enrollment remain unverified.
 
 ## Troubleshooting
 

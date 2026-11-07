@@ -26,8 +26,12 @@ Fresh main-branch catalog comparison matched the prior baseline. Production
 deployment dpl_4aVmWQqV445GiPNZAMRGgyzuoy5S and zero Production database variables
 were confirmed unchanged. The schema migration was not rerun.
 
-The runtime was deployed to an isolated Preview. Vercel-hostname protection
-still needs its own scoped exception before native Android can reach the API.
+The runtime was deployed to an isolated Preview. The owner-approved hostname-only
+protection exception is active. Public HTTPS health returned 200 and unauthenticated
+AI status returned 401 CLOUD_DEVICE_AUTH_REQUIRED. Project-wide protection and
+Production remain unchanged. One ten-minute enrollment code was issued using
+existing offline-owner INSERT permissions and displayed privately; no role grants,
+administrator, device or session were created by issuance.
 Phone pairing has not yet been observed. An optional invalid-code enrollment
 POST was blocked by automatic approval review because it could write audit/rate
 state; it was not executed or retried by another route.
