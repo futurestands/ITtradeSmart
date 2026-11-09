@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>SmartHub · Blind ICT study review</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui;background:#101723;color:#e9eef6}body{max-width:1000px;margin:auto;padding:24px}h1{font-size:26px;margin:0 0 8px}p{line-height:1.5}.muted{color:#aebdd0}.notice{border-left:4px solid #edbd65;padding:12px;background:#202634}svg{width:100%;height:auto;min-height:220px;background:#151f2d;border-radius:12px;margin-top:12px}label{display:block;margin-top:16px}select,textarea,input,button{font:inherit;color:inherit;background:#1f2c40;border:1px solid #63758e;border-radius:7px;padding:10px}textarea,input,select{display:block;width:100%;box-sizing:border-box;margin-top:6px}textarea{min-height:80px}button{cursor:pointer;margin:12px 8px 0 0}button:disabled{opacity:.4;cursor:default}button.primary{background:#285ac4}.row{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}#feedback{min-height:24px;color:#b9d4ff}small{overflow-wrap:anywhere}
+</style>
+<h1>Blind ICT study review</h1>
+<p class="muted">Your chart judgments become research annotations. No trading prediction or correct answer is supplied.</p>
+<p class="notice">TIMEBASE UNVERIFIED · Session/news labels disabled · RESEARCH ONLY · NO TRADE<br>Only past candles are included. Gaps stay unclassified. This packet cannot authorize model training.</p>
+<div class="row"><strong id="position"></strong><span id="progress" aria-live="polite"></span></div>
+<svg id="chart" viewBox="0 0 960 360" role="img" aria-label="Historical candles ending at the review cutoff; future candles withheld"></svg>
+<p id="context" class="muted"></p>
+<label>Setup hypothesis<select id="label"><option value="">Choose after inspecting the chart</option></select></label>
+<label>Reason from information visible at this point<textarea id="reason" placeholder="Structure, sweep, FVG, invalidation, or why to stand aside"></textarea></label>
+<label>Lesson reference or your own study note<input id="reference" placeholder="Optional URL and timestamp; do not invent attribution"></label>
+<label>Chart invalidation reasoning<input id="invalidation" placeholder="Optional hypothetical reasoning, not an order"></label>
+<div><button id="previous">Previous</button><button id="save" class="primary">Save annotation</button><button id="next">Next</button><button id="export">Export saved annotations</button></div>
+<p id="feedback" role="status"></p>
+<p class="muted">Drafts stay in this browser when storage is available. Export a copy to keep your work. No network requests are made. Do not inspect later source candles while judging these tasks. Annotations still need independent review.</p>
+<small id="provenance" class="muted"></small>
+<script id="packet" type="application/json">__REVIEW_PACKET_JSON__</script>
+<script>
+'use strict';
+const packet=JSON.parse(document.getElementById('packet').textContent);
+const el=id=>document.getElementById(id), key='smarthub-review-'+packet.packet_sha256;
+let current=0, saved={};
+try{const candidate=JSON.parse(localStorage.getItem(key)||'{}');if(candidate && typeof candidate==='object'&&!Array.isArray(candidate))saved=candidate;}catch{}
+for(const value of packet.labels){const option=document.createElement('option');option.value=value;option.textContent=value.replaceAll('_',' ');el('label').appendChild(option);}
+function entries(){return packet.tasks.filter(t=>saved[t.task_id]&&packet.labels.includes(saved[t.task_id].label)&&typeof saved[t.task_id].reason==='string'&&saved[t.task_id].reason.trim()).map(t=>{const a=saved[t.task_id];return {task_id:t.task_id,label:a.label,reason:a.reason,lesson_reference:typeof a.lesson_reference==='string'?a.lesson_reference:'',invalidation_reason:typeof a.invalidation_reason==='string'?a.invalidation_reason:'',annotated_at_utc:a.annotated_at_utc,independently_reviewed:false};});}
+function render(){
+ const task=packet.tasks[current], bars=task.bars, prior=saved[task.task_id]||{};
+ el('position').textContent='Chart '+(current+1)+' of '+packet.tasks.length;
+ el('progress').textContent=entries().length+' annotations saved';
+ el('label').value=prior.label||'';el('reason').value=prior.reason||'';el('reference').value=prior.lesson_reference||'';el('invalidation').value=prior.invalidation_reason||'';
+ el('previous').disabled=current===0;el('next').disabled=current===packet.tasks.length-1;
+ el('context').textContent='Declared cutoff '+task.as_of_declared_utc+' · '+packet.timeframe_minutes+' minute bars · '+task.unclassified_gaps+' unclassified gaps. UTC mapping is not certified.';
+ const hi=Math.max(...bars.map(b=>b.high)),lo=Math.min(...bars.map(b=>b.low)),span=Math.max(hi-lo,.000001);
+ const y=v=>24+(hi-v)/span*300,step=880/bars.length,width=Math.max(2,step*.65);
+ let svg='';
+ for(let i=0;i<bars.length;i++){const b=bars[i],x=40+(i+.5)*step,color=b.close>=b.open?'#51d9b1':'#fa8591';svg+='<line x1="'+x+'" x2="'+x+'" y1="'+y(b.high)+'" y2="'+y(b.low)+'" stroke="'+color+'"/><rect x="'+(x-width/2)+'" y="'+Math.min(y(b.open),y(b.close))+'" width="'+width+'" height="'+Math.max(1,Math.abs(y(b.open)-y(b.close)))+'" fill="'+color+'"/>';}
+ el('chart').innerHTML=svg;
+ el('provenance').textContent='Packet SHA-256: '+packet.packet_sha256+' · Source SHA-256: '+packet.source_sha256;
+}
+el('save').onclick=()=>{
+ const label=el('label').value,reason=el('reason').value.trim();
+ if(!packet.labels.includes(label)||!reason){el('feedback').textContent='Choose a label and write a reason before saving.';return;}
+ saved[packet.tasks[current].task_id]={label,reason,lesson_reference:el('reference').value.trim(),invalidation_reason:el('invalidation').value.trim(),annotated_at_utc:new Date().toISOString(),independently_reviewed:false};
+ let persisted=true;try{localStorage.setItem(key,JSON.stringify(saved));}catch{persisted=false;}
+ render();el('feedback').textContent=persisted?'Annotation saved locally. Export a copy when finished.':'Saved for this session only. Export now to keep a copy.';
+};
+el('previous').onclick=()=>{if(current>0){current--;render();el('feedback').textContent='';}};
+el('next').onclick=()=>{if(current<packet.tasks.length-1){current++;render();el('feedback').textContent='';}};
+el('export').onclick=()=>{
+ const annotations=entries();if(!annotations.length){el('feedback').textContent='Save at least one annotation before exporting.';return;}
+ const result={version:'blind-ict-annotations-v1',packet_sha256:packet.packet_sha256,source_sha256:packet.source_sha256,annotations,timebase_status:packet.timebase_status,independently_reviewed:false,training_eligible:false,decision:'NO_TRADE'};
+ const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='smarthub-ict-annotations.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ el('feedback').textContent='Annotations exported. They are research judgments, not validated model labels.';
+};
+render();
+</script></html>

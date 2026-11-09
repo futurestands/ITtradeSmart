@@ -29,23 +29,28 @@ from nas100.research import run_research
 from bot.time_integrity import TimebaseEvidence, validate_bar_times
 
 
-def read_candles(path: Path, timeframe_minutes: int):
+def read_candle_stream(stream, timeframe_minutes: int):
+    """Parse one already-open immutable CSV snapshot using existing validation."""
     data = []
-    with path.open(encoding='utf-8', newline='') as stream:
-        reader = csv.DictReader(stream)
-        required = {'time_utc', 'open', 'high', 'low', 'close', 'tick_volume', 'spread_points'}
-        if not required.issubset(reader.fieldnames or []):
-            raise ValueError('CSV missing expected MT5 export columns')
-        for row in reader:
-            stamp = datetime.fromisoformat(row['time_utc'].replace('Z', '+00:00'))
-            if stamp.utcoffset() is None or stamp.utcoffset().total_seconds() != 0:
-                raise ValueError('time_utc must be UTC')
-            data.append(Candle(stamp, float(row['open']), float(row['high']),
-                               float(row['low']), float(row['close']),
-                               float(row['tick_volume']),
-                               None if row['spread_points'] == '' else float(row['spread_points'])))
+    reader = csv.DictReader(stream)
+    required = {'time_utc', 'open', 'high', 'low', 'close', 'tick_volume', 'spread_points'}
+    if not required.issubset(reader.fieldnames or []):
+        raise ValueError('CSV missing expected MT5 export columns')
+    for row in reader:
+        stamp = datetime.fromisoformat(row['time_utc'].replace('Z', '+00:00'))
+        if stamp.utcoffset() is None or stamp.utcoffset().total_seconds() != 0:
+            raise ValueError('time_utc must be UTC')
+        data.append(Candle(stamp, float(row['open']), float(row['high']),
+                           float(row['low']), float(row['close']),
+                           float(row['tick_volume']),
+                           None if row['spread_points'] == '' else float(row['spread_points'])))
     validate_candles(data, timeframe_minutes)
     return data
+
+
+def read_candles(path: Path, timeframe_minutes: int):
+    with path.open(encoding='utf-8', newline='') as stream:
+        return read_candle_stream(stream, timeframe_minutes)
 
 
 def verify_real_dataset(csv_path, bars, timeframe_minutes, point_size, evidence_path, metadata_path,
