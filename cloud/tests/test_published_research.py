@@ -7,6 +7,17 @@ from test_auth import fixture, enrollment, auth
 import published_research as published
 
 
+def test_deployment_lf_bytes_match_pin_and_survive_export(tmp_path, monkeypatch):
+    raw = (published.BUNDLE_ROOT/'reports/synthetic_confluence_stress.json').read_bytes()
+    assert b'\r' not in raw
+    assert hashlib.sha256(raw).hexdigest() == published.EXPECTED_SHA256
+    exported = tmp_path/'reports/synthetic_confluence_stress.json'
+    exported.parent.mkdir()
+    exported.write_bytes(raw.replace(b'\r\n', b'\n'))
+    monkeypatch.setattr(published, 'BUNDLE_ROOT', tmp_path)
+    assert published.published_snapshot()['status'] == 'SYNTHETIC_REPORT_AVAILABLE'
+
+
 def test_authenticated_phone_receives_only_recorded_synthetic_results(fixture):
     store, client, _, _ = fixture
     assert client.get('/api/v5/ai/research-progress').status_code == 401

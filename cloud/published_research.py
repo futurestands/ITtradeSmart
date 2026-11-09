@@ -2,7 +2,7 @@
 from pathlib import Path
 from research_contract import read_progress_snapshot
 BUNDLE_ROOT = Path(__file__).resolve().parent / 'research_bundle'
-EXPECTED_SHA256 = '90272709fec5f236e12773a07a90d45d5fdaf7ce5124f8fb3bad0a0030ce4e67'
+EXPECTED_SHA256 = '1e3781d7294fad14334a30b330fcc051e9beab7b752dcf7e02a63b0c13842938'
 SOURCE_MODIFIED_AT = '2026-11-06T06:38:01.389105+00:00'
 
 def published_snapshot():

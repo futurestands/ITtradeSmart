@@ -15,7 +15,11 @@ Original report SHA-256:
 247d7fb15de8a80b97e11e805defb23a8013ba3d366b73ad73553b4e154c252b
 
 Bundled projection SHA-256:
-90272709fec5f236e12773a07a90d45d5fdaf7ce5124f8fb3bad0a0030ce4e67
+1e3781d7294fad14334a30b330fcc051e9beab7b752dcf7e02a63b0c13842938
+
+The digest covers canonical LF bytes. A scoped Git attribute preserves LF in
+Windows checkouts and Linux deployments. Never pin a workstation's CRLF bytes
+while deploying Git's LF-normalized blob. Integrity rejection remains mandatory.
 
 The displayed modification time preserves the original source file's observed
 mtime (2026-11-06T06:38:01.389105+00:00). It is not an independently attested
