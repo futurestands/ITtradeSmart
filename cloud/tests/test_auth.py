@@ -159,6 +159,45 @@ def test_state_survives_a_new_store_and_application_instance(fixture):
     assert client.get('/api/v5/ai/status', headers=auth(session)).status_code == 401
 
 
+@pytest.mark.parametrize('operation,event', [('enroll', 'DEVICE_ENROLLED'),
+    ('renew', 'SESSION_RENEWED'), ('revoke', 'DEVICE_SELF_REVOKED')])
+def test_success_audit_failure_rolls_back_authentication_mutation(fixture, operation, event):
+    store, client, _, path = fixture
+    if operation == 'enroll':
+        code = store.enrollment_code()
+    else:
+        session, _ = enrollment(store, client)
+    with sqlite3.connect(path) as db:
+        # Simulate an audit write failing after the token mutation, not a
+        # connection failure before the transaction begins.
+        db.execute("CREATE TRIGGER fail_success_audit BEFORE INSERT ON audit "
+                   "WHEN NEW.event='"+event+"' BEGIN SELECT RAISE(ABORT,'TEST_AUDIT_FAILURE'); END")
+    with pytest.raises(sqlite3.IntegrityError, match='TEST_AUDIT_FAILURE'):
+        if operation == 'enroll':
+            store.enroll('test-phone', 'TEST', code)
+        elif operation == 'renew':
+            store.renew(session['refresh_token'])
+        else:
+            store.revoke(session['device_id'])
+    with sqlite3.connect(path) as db:
+        if operation == 'enroll':
+            assert db.execute('SELECT used FROM enrollment WHERE code_hash=?', (digest(code),)).fetchone() == (0,)
+            assert db.execute('SELECT count(*) FROM devices').fetchone() == (0,)
+            assert db.execute('SELECT count(*) FROM sessions').fetchone() == (0,)
+        else:
+            assert db.execute('SELECT refresh_hash FROM sessions').fetchone() == (digest(session['refresh_token']),)
+            assert db.execute('SELECT revoked FROM devices').fetchone() == (0,)
+        db.execute('DROP TRIGGER fail_success_audit')
+    if operation == 'enroll':
+        assert store.enroll('test-phone', 'TEST', code)
+    elif operation == 'renew':
+        assert store.renew(session['refresh_token'])
+    else:
+        assert store.revoke(session['device_id'])
+    with sqlite3.connect(path) as db:
+        assert db.execute('SELECT count(*) FROM audit WHERE event=?', (event,)).fetchone() == (1,)
+
+
 def test_rate_limit_is_durable_and_audited(fixture):
     store, client, _, path = fixture
     for _ in range(10):

@@ -78,7 +78,8 @@ def create_app(store=None):
                 or not data['pairing_code'].startswith('shc_enroll_')):
             return error('INVALID_ENROLLMENT', 400)
         result = backend().enroll(data['device_id'], data['device_name'], data['pairing_code'])
-        backend().audit('DEVICE_ENROLLED' if result else 'ENROLLMENT_REJECTED', data['device_id'])
+        if not result:
+            backend().audit('ENROLLMENT_REJECTED', data['device_id'])
         return (jsonify(result), 201) if result else error('ENROLLMENT_CODE_INVALID_OR_USED', 401)
 
     @app.post('/api/v5/device/renew')
@@ -87,7 +88,8 @@ def create_app(store=None):
         if data is None:
             return error('INVALID_RENEWAL', 400)
         result = backend().renew(data['refresh_token'])
-        backend().audit('SESSION_RENEWED' if result else 'RENEWAL_REJECTED')
+        if not result:
+            backend().audit('RENEWAL_REJECTED')
         return jsonify(result) if result else error('REFRESH_EXPIRED_REVOKED_OR_USED', 401)
 
     @app.post('/api/v5/device/revoke')
@@ -98,7 +100,6 @@ def create_app(store=None):
             return error('ADMIN_SESSION_IS_OPERATOR_CONTROLLED', 403)
         if not backend().revoke(g.device_id):
             return error('DEVICE_NOT_FOUND', 404)
-        backend().audit('DEVICE_SELF_REVOKED', g.device_id)
         return jsonify(status='REVOKED')
 
     @app.post('/api/v5/admin/enrollment-codes')

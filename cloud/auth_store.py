@@ -99,8 +99,11 @@ class Store:
 
     def audit(self, event, principal='anonymous'):
         with self.connect() as db:
-            db.execute('INSERT INTO smarthub_cloud_auth.audit(occurred_at,event,principal_hash) VALUES (%s,%s,%s)',
-                       (self._now(db), event, digest(principal)))
+            self._audit(db, event, principal)
+
+    def _audit(self, db, event, principal='anonymous'):
+        db.execute('INSERT INTO smarthub_cloud_auth.audit(occurred_at,event,principal_hash) VALUES (%s,%s,%s)',
+                   (self._now(db), event, digest(principal)))
 
     def rate(self, scope, identity, limit):
         if scope not in RATE_LIMITS or type(limit) is not int or limit != RATE_LIMITS[scope]:
@@ -158,7 +161,10 @@ class Store:
             device_id = 'cloud-' + secrets.token_hex(16)
             db.execute('INSERT INTO smarthub_cloud_auth.devices (id,name) VALUES (%s,%s)',
                        (device_id, name))
-            return self._session(db, device_id)
+            session = self._session(db, device_id)
+            # Audit failure must roll back code consumption and session creation.
+            self._audit(db, 'DEVICE_ENROLLED', device_id)
+            return session
 
     def renew(self, refresh):
         if not isinstance(refresh, str) or not refresh.startswith('shc_refresh_') or len(refresh) > 100:
@@ -169,9 +175,17 @@ class Store:
                              'AND refresh_until>%s AND EXISTS (SELECT 1 FROM smarthub_cloud_auth.devices d '
                              "WHERE d.id=device_id AND d.revoked=FALSE AND d.role='device') RETURNING device_id",
                              (digest(refresh), self._now(db))).fetchone()
-            return self._session(db, row[0]) if row else None
+            if not row:
+                return None
+            session = self._session(db, row[0])
+            # Do not commit refresh consumption before the success audit.
+            self._audit(db, 'SESSION_RENEWED', row[0])
+            return session
 
     def revoke(self, device_id):
         with self.connect() as db:
-            return db.execute("UPDATE smarthub_cloud_auth.devices SET revoked=TRUE WHERE id=%s AND role='device' RETURNING id",
-                              (device_id,)).fetchone() is not None
+            changed = db.execute("UPDATE smarthub_cloud_auth.devices SET revoked=TRUE WHERE id=%s AND role='device' RETURNING id",
+                                 (device_id,)).fetchone() is not None
+            if changed:
+                self._audit(db, 'DEVICE_SELF_REVOKED', device_id)
+            return changed

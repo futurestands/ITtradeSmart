@@ -90,3 +90,10 @@ The connector rejects Production/unknown environments and privileged/owner/
 operator URLs or sessions, then SET LOCAL ROLEs to runtime. The approved restricted private login and runtime mapping are now active on
 the isolated child in Preview/Development only; see the activation record. SQL
 and maintenance artifacts are excluded from Vercel uploads and never auto-run.
+
+Successful enrollment, refresh rotation and device self-revocation append their
+success audit inside the same transaction as the authentication change. If that
+audit insert fails, code consumption, token rotation or revocation rolls back;
+the client can retry with its original credential. Rejected attempts are audited
+separately. Offline fault-injection tests cover the rollback and retry behavior;
+they do not replace live PostgreSQL or phone acceptance checks.
