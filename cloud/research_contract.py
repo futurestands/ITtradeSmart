@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
+import hashlib
 import os
 from pathlib import Path
 
@@ -57,7 +58,7 @@ def _strict_positive_int(value, maximum):
     return type(value) is int and 1 <= value <= maximum
 
 
-def read_progress_snapshot(lab_root=None):
+def read_progress_snapshot(lab_root=None, *, expected_sha256=None):
     """Read only reports/synthetic_confluence_stress.json from an explicit Lab root.
 
     A missing, overlarge, malformed or unsafe report yields no observations.
@@ -81,6 +82,11 @@ def read_progress_snapshot(lab_root=None):
             return unavailable("INVALID_REPORT")
         raw = candidate.read_bytes()
         if len(raw) > MAX_REPORT_BYTES:
+            return unavailable("INVALID_REPORT")
+        if expected_sha256 is not None and (
+            type(expected_sha256) is not str or
+            hashlib.sha256(raw).hexdigest() != expected_sha256
+        ):
             return unavailable("INVALID_REPORT")
         source = json.loads(
             raw.decode("utf-8"), parse_constant=_reject_constant,

@@ -232,7 +232,7 @@ def test_contracts_no_trade_headers_and_no_execution_routes(fixture):
     response = client.get('/api/v5/ai/status', headers=auth(session))
     assert response.json['model_trained'] is False and response.json['probability'] is None
     research = client.get('/api/v5/ai/research-progress', headers=auth(session))
-    assert research.json['schema_version'] == 1 and research.json['source'] == 'NONE'
+    assert research.json['schema_version'] == 1 and research.json['source'] == 'LOCAL_UNATTESTED_SYNTHETIC_REPORT'
     assert research.json['real_market_training_authorized'] is False
     advisory = client.post('/api/v5/ai/advisory', headers=auth(session), json={'password':'SYNTHETIC_SENTINEL','force_trade':True})
     assert advisory.json['action'] == 'NO_TRADE' and advisory.json['probability'] is None

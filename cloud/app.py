@@ -4,7 +4,7 @@ import re
 from flask import Flask, jsonify, request, g
 from werkzeug.exceptions import HTTPException
 from auth_store import Store
-from research_contract import unavailable as unavailable_research
+from published_research import published_snapshot
 
 
 def create_app(store=None):
@@ -129,7 +129,7 @@ def create_app(store=None):
 
     @app.get('/api/v5/ai/research-progress')
     def research():
-        return jsonify(unavailable_research())  # Reuse existing tested contract, no file load.
+        return jsonify(published_snapshot())
 
     @app.route('/api/v5/ai/advisory', methods=['GET', 'POST'])
     def advisory():

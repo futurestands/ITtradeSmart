@@ -1,0 +1,148 @@
+{
+  "configured_cost_scenarios": [
+    "baseline_synthetic_cost",
+    "double_friction_stress"
+  ],
+  "configured_seeds": [
+    42,
+    1042,
+    2042
+  ],
+  "descriptive_stability_by_scenario_setup_model": [
+    {
+      "cost_scenario": "baseline_synthetic_cost",
+      "market_edge_confirmed": false,
+      "model": "gradient_boosting_calibrated",
+      "model_selection_authorized": false,
+      "seeds_with_positive_confluence_delta": 1,
+      "seeds_with_scored_paired_results": 3,
+      "setup_id": "BREAKOUT_RETEST_V1"
+    },
+    {
+      "cost_scenario": "baseline_synthetic_cost",
+      "market_edge_confirmed": false,
+      "model": "logistic_calibrated",
+      "model_selection_authorized": false,
+      "seeds_with_positive_confluence_delta": 0,
+      "seeds_with_scored_paired_results": 3,
+      "setup_id": "BREAKOUT_RETEST_V1"
+    },
+    {
+      "cost_scenario": "baseline_synthetic_cost",
+      "market_edge_confirmed": false,
+      "model": "gradient_boosting_calibrated",
+      "model_selection_authorized": false,
+      "seeds_with_positive_confluence_delta": 3,
+      "seeds_with_scored_paired_results": 3,
+      "setup_id": "TREND_CONTINUATION_V1"
+    },
+    {
+      "cost_scenario": "baseline_synthetic_cost",
+      "market_edge_confirmed": false,
+      "model": "logistic_calibrated",
+      "model_selection_authorized": false,
+      "seeds_with_positive_confluence_delta": 3,
+      "seeds_with_scored_paired_results": 3,
+      "setup_id": "TREND_CONTINUATION_V1"
+    },
+    {
+      "cost_scenario": "double_friction_stress",
+      "market_edge_confirmed": false,
+      "model": "gradient_boosting_calibrated",
+      "model_selection_authorized": false,
+      "seeds_with_positive_confluence_delta": 2,
+      "seeds_with_scored_paired_results": 3,
+      "setup_id": "BREAKOUT_RETEST_V1"
+    },
+    {
+      "cost_scenario": "double_friction_stress",
+      "market_edge_confirmed": false,
+      "model": "logistic_calibrated",
+      "model_selection_authorized": false,
+      "seeds_with_positive_confluence_delta": 1,
+      "seeds_with_scored_paired_results": 3,
+      "setup_id": "BREAKOUT_RETEST_V1"
+    },
+    {
+      "cost_scenario": "double_friction_stress",
+      "market_edge_confirmed": false,
+      "model": "gradient_boosting_calibrated",
+      "model_selection_authorized": false,
+      "seeds_with_positive_confluence_delta": 2,
+      "seeds_with_scored_paired_results": 3,
+      "setup_id": "TREND_CONTINUATION_V1"
+    },
+    {
+      "cost_scenario": "double_friction_stress",
+      "market_edge_confirmed": false,
+      "model": "logistic_calibrated",
+      "model_selection_authorized": false,
+      "seeds_with_positive_confluence_delta": 3,
+      "seeds_with_scored_paired_results": 3,
+      "setup_id": "TREND_CONTINUATION_V1"
+    }
+  ],
+  "model_selection_authorized": false,
+  "profitability_claim_authorized": false,
+  "real_market_inference_authorized": false,
+  "real_market_training_authorized": false,
+  "run_count": 6,
+  "runs": [
+    {
+      "cost_scenario": "baseline_synthetic_cost",
+      "model_selection_authorized": false,
+      "profitability_claim_authorized": false,
+      "real_market_inference_authorized": false,
+      "real_market_training_authorized": false,
+      "seed": 42,
+      "synthetic_only": true
+    },
+    {
+      "cost_scenario": "double_friction_stress",
+      "model_selection_authorized": false,
+      "profitability_claim_authorized": false,
+      "real_market_inference_authorized": false,
+      "real_market_training_authorized": false,
+      "seed": 42,
+      "synthetic_only": true
+    },
+    {
+      "cost_scenario": "baseline_synthetic_cost",
+      "model_selection_authorized": false,
+      "profitability_claim_authorized": false,
+      "real_market_inference_authorized": false,
+      "real_market_training_authorized": false,
+      "seed": 1042,
+      "synthetic_only": true
+    },
+    {
+      "cost_scenario": "double_friction_stress",
+      "model_selection_authorized": false,
+      "profitability_claim_authorized": false,
+      "real_market_inference_authorized": false,
+      "real_market_training_authorized": false,
+      "seed": 1042,
+      "synthetic_only": true
+    },
+    {
+      "cost_scenario": "baseline_synthetic_cost",
+      "model_selection_authorized": false,
+      "profitability_claim_authorized": false,
+      "real_market_inference_authorized": false,
+      "real_market_training_authorized": false,
+      "seed": 2042,
+      "synthetic_only": true
+    },
+    {
+      "cost_scenario": "double_friction_stress",
+      "model_selection_authorized": false,
+      "profitability_claim_authorized": false,
+      "real_market_inference_authorized": false,
+      "real_market_training_authorized": false,
+      "seed": 2042,
+      "synthetic_only": true
+    }
+  ],
+  "status": "SYNTHETIC_PATH_AND_COST_STRESS_ONLY",
+  "synthetic_only": true
+}
