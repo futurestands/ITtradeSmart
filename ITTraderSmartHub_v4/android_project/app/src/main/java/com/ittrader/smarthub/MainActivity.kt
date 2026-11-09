@@ -191,7 +191,8 @@ class MainActivity : AppCompatActivity() {
                 updateGatewayUrlFromInput(edtGatewayIp)
                 if (!GatewaySession.selectCloud(enabled)) {
                     cloudMode.isChecked = GatewaySession.isCloud
-                    connectionState.text = "Secure mode storage failed. Connection unchanged."
+                    showPairingStatus("Cloud mode could not be saved securely (" + GatewaySession.storageStatus + "). Keep app data intact; do not uninstall or clear storage.")
+                    Toast.makeText(this, "Cloud storage unavailable. See the status below Pair Device.", Toast.LENGTH_LONG).show()
                 } else {
                     edtGatewayIp.setText(GatewaySession.gatewayUrl)
                     edtPairingCode.setText("")
@@ -200,6 +201,7 @@ class MainActivity : AppCompatActivity() {
                     txtNAS100Research.text = NAS100ResearchPresenter.unavailable()+"\nNO_TRADE."
                     txtAIIntelligence.text = AIIntelligencePresenter.unavailable()
                     connectionState.text = if (enabled) "Cloud mode selected. Separate cloud enrollment required. NO_TRADE." else "Local gateway mode restored."
+                    pairingStatus.text = connectionState.text
                     for (button in listOf(btnBotOff, btnBotBacktest, btnBotPaper, btnBotEmergencyStop)) button.isEnabled = !enabled
                 }
             }

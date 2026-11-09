@@ -11,10 +11,14 @@ import java.util.UUID
 /** Existing local preference keys are preserved; cloud sessions are origin-bound. */
 object GatewaySession {
     private var prefs: SharedPreferences? = null
+    private var cloudPrefs: SharedPreferences? = null
+    private const val DEFAULT_CLOUD_URL = "https://ittrader-smarthub-phase3-phone-preview-futurestands.vercel.app"
+    var storageStatus: String = "NOT_INITIALIZED"
+        private set
     private var localToken = ""
     private var localUrl = "https://127.0.0.1:5000"
     private var localIssuedAt = localUrl
-    private var cloudUrl = "https://ittrader-smarthub-phase3-phone-preview-futurestands.vercel.app"
+    private var cloudUrl = DEFAULT_CLOUD_URL
     private var cloudToken = ""
     private var cloudRefresh = ""
     private var cloudExpiry = 0L
@@ -29,47 +33,98 @@ object GatewaySession {
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
 
+    private fun encryptedCloud(context: Context): SharedPreferences = EncryptedSharedPreferences.create(
+        context, "smarthub_cloud_session_v1",
+        MasterKey.Builder(context, "smarthub_cloud_master_key_v1")
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
+
     private fun prefix(url: String): String = "cloud_" + MessageDigest.getInstance("SHA-256")
         .digest(url.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
 
     @Synchronized fun init(context: Context) {
+        initStores({ encrypted(context) }, { encryptedCloud(context) })
+    }
+
+    // Storage providers permit failure-injection tests without an Android
+    // Keystore or touching the installed user's preferences or key aliases.
+    @Synchronized internal fun initStores(legacy: () -> SharedPreferences, cloud: () -> SharedPreferences) {
+        prefs = null; cloudPrefs = null
+        localUrl = "https://127.0.0.1:5000"; localIssuedAt = localUrl; localToken = ""
+        cloudUrl = DEFAULT_CLOUD_URL; cloudToken = ""; cloudRefresh = ""; cloudExpiry = 0
+        cloudIssuedAt = ""; isCloud = false; id = ""; storageStatus = "NOT_INITIALIZED"
         try {
-            prefs = encrypted(context)
+            prefs = legacy()
             localUrl = prefs!!.getString("gateway_url", localUrl) ?: localUrl
             localIssuedAt = localUrl
             localToken = prefs!!.getString("api_token", "") ?: ""
             cloudUrl = prefs!!.getString("cloud_gateway_url", cloudUrl) ?: cloudUrl
             id = prefs!!.getString("device_id", "") ?: ""
-            if (id.isBlank()) {
-                id = "dev-" + UUID.randomUUID().toString().take(12)
-                if (!prefs!!.edit().putString("device_id", id).commit()) throw IllegalStateException()
-            }
-            isCloud = prefs!!.getBoolean("cloud_mode", false)
-            loadCloud()
         } catch (_: Exception) {
             prefs = null
             localToken = ""
-            cloudToken = ""
-            cloudRefresh = ""
-            if (id.isBlank()) id = "dev-" + UUID.randomUUID().toString().take(12)
+            // Preserve the legacy file and key. It must not block the separate
+            // cloud realm or be silently erased as a recovery technique.
         }
+        try {
+            val storage = cloud()
+            if (!storage.getBoolean("cloud_storage_v1", false)) {
+                val url = ConnectionPolicy.endpoint(cloudUrl, true) ?: DEFAULT_CLOUD_URL
+                val key = prefix(url)
+                val legacyMode = try { prefs?.getBoolean("cloud_mode", false) ?: false } catch (_: Exception) { false }
+                val legacySession = try {
+                    Triple(prefs?.getString(key + "_access", "") ?: "",
+                        prefs?.getString(key + "_refresh", "") ?: "",
+                        prefs?.getLong(key + "_expiry", 0) ?: 0)
+                } catch (_: Exception) { Triple("", "", 0L) }
+                val editor = storage.edit().putBoolean("cloud_storage_v1", true)
+                    .putString("cloud_gateway_url", url)
+                    .putBoolean("cloud_mode", legacyMode)
+                // Copy only the currently selected cloud origin from readable
+                // encrypted legacy storage. Never import the local API token.
+                editor.putString(key + "_access", legacySession.first)
+                    .putString(key + "_refresh", legacySession.second)
+                    .putLong(key + "_expiry", legacySession.third)
+                if (!editor.commit()) throw IllegalStateException("Cloud migration commit failed")
+            }
+            cloudUrl = storage.getString("cloud_gateway_url", DEFAULT_CLOUD_URL) ?: DEFAULT_CLOUD_URL
+            if (id.isBlank()) id = storage.getString("device_id", "") ?: ""
+            if (id.isBlank()) id = "dev-" + UUID.randomUUID().toString().take(12)
+            if (!storage.edit().putString("device_id", id).commit()) throw IllegalStateException("Cloud identity commit failed")
+            cloudPrefs = storage
+            loadCloud()
+            isCloud = storage.getBoolean("cloud_mode", false)
+            storageStatus = if (prefs == null) "CLOUD_READY_LEGACY_UNAVAILABLE" else "READY"
+        } catch (error: Exception) {
+            cloudPrefs = null; cloudToken = ""; cloudRefresh = ""; cloudExpiry = 0; isCloud = false
+            // Class names are diagnostics; exception messages may contain data.
+            storageStatus = "CLOUD_STORAGE_UNAVAILABLE:" + error.javaClass.simpleName
+        }
+        if (id.isBlank()) id = "dev-" + UUID.randomUUID().toString().take(12)
     }
 
     private fun loadCloud() {
         val normalized = ConnectionPolicy.endpoint(cloudUrl, true)
         val key = normalized?.let { prefix(it) }
-        cloudToken = key?.let { prefs?.getString(it + "_access", "") } ?: ""
-        cloudRefresh = key?.let { prefs?.getString(it + "_refresh", "") } ?: ""
-        cloudExpiry = key?.let { prefs?.getLong(it + "_expiry", 0) } ?: 0
+        cloudToken = key?.let { cloudPrefs?.getString(it + "_access", "") } ?: ""
+        cloudRefresh = key?.let { cloudPrefs?.getString(it + "_refresh", "") } ?: ""
+        cloudExpiry = key?.let { cloudPrefs?.getLong(it + "_expiry", 0) } ?: 0
         cloudIssuedAt = normalized ?: ""
     }
 
     @Synchronized fun selectCloud(enabled: Boolean): Boolean {
         try {
-            if (prefs?.edit()?.putBoolean("cloud_mode", enabled)?.commit() != true) return false
-        } catch (_: Exception) { return false }
+            loadCloud()
+            if (cloudPrefs?.edit()?.putBoolean("cloud_mode", enabled)?.commit() != true) {
+                if (cloudPrefs != null) storageStatus = "CLOUD_STORAGE_COMMIT_FAILED"
+                return false
+            }
+        } catch (error: Exception) {
+            storageStatus = "CLOUD_STORAGE_UNAVAILABLE:" + error.javaClass.simpleName
+            return false
+        }
         isCloud = enabled
-        loadCloud()
         return true
     }
 
@@ -79,7 +134,7 @@ object GatewaySession {
             if (isCloud) {
                 cloudUrl = value.trim().trimEnd('/')
                 loadCloud()
-                prefs?.edit()?.putString("cloud_gateway_url", cloudUrl)?.commit()
+                cloudPrefs?.edit()?.putString("cloud_gateway_url", cloudUrl)?.commit()
             } else localUrl = value.trim().trimEnd('/')
         }
 
@@ -115,7 +170,7 @@ object GatewaySession {
         if (!access.startsWith("shc_access_") || access.length < 40 ||
             !refresh.startsWith("shc_refresh_") || refresh.length < 40 ||
             expires <= System.currentTimeMillis()/1000) return false
-        val storage = prefs ?: return false
+        val storage = cloudPrefs ?: return false
         val key = prefix(url)
         if (!storage.edit().putString(key + "_access", access)
                 .putString(key + "_refresh", refresh).putLong(key + "_expiry", expires)
@@ -133,7 +188,7 @@ object GatewaySession {
 
     @Synchronized fun logout(context: Context?): Boolean {
         return try {
-            val storage = prefs ?: context?.let { encrypted(it) }
+            val storage = if (isCloud) cloudPrefs else prefs ?: context?.let { encrypted(it) }
             if (isCloud) {
                 val key = prefix(cloudIssuedAt)
                 cloudToken = ""; cloudRefresh = ""; cloudExpiry = 0

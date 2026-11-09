@@ -82,3 +82,17 @@ zero devices. If USB installation is preferred later, connect the phone, allow
 its debugging prompt yourself, and verify a single authorized device before
 using an update install that preserves data. No phone installation has yet been
 observed or claimed.
+
+If the Cloud switch immediately returns to OFF, mode persistence failed; stop
+entering enrollment codes. The Cloud-storage repair build uses an independent
+encrypted preferences file and Android Keystore alias, preserves the legacy file
+and key, and copies a readable currently selected Cloud session once. Local API
+tokens are not imported into the Cloud realm. Existing session files are excluded
+from backup/transfer because restored ciphertext cannot rely on the original
+device's key being available. If the independent Cloud store also fails, the
+screen reports a diagnostic class without an exception message or credential.
+Do not uninstall, clear app data or delete keys as a workaround. Phone acceptance
+is still required; offline storage doubles do not verify a physical Keystore.
+
+The planned account sign-in replacement is described in CLOUD_SIGN_IN_PLAN.md.
+It is not yet live and must not be presented as a working no-code sign-in flow.

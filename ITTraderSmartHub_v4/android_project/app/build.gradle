@@ -41,7 +41,7 @@ android {
         // Java/Kotlin package and release applicationId stay unchanged.
         debug {
             applicationIdSuffix '.research'
-            versionNameSuffix '-nas100-research-pairing-fix'
+            versionNameSuffix '-nas100-research-cloud-storage-fix'
         }
 
         release {

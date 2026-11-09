@@ -6,6 +6,8 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
+        android:fullBackupContent="@xml/smarthub_backup_rules"
+        android:dataExtractionRules="@xml/smarthub_data_extraction_rules"
         android:theme="@style/Theme.ITTraderSmartHub">
         <activity android:name="com.ittrader.smarthub.MainActivity" android:exported="true">
             <intent-filter>
