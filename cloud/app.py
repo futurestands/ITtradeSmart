@@ -5,6 +5,7 @@ from flask import Flask, jsonify, request, g
 from werkzeug.exceptions import HTTPException
 from auth_store import Store
 from published_research import published_snapshot
+from published_paper import published_paper_snapshot
 
 
 def create_app(store=None):
@@ -130,6 +131,12 @@ def create_app(store=None):
     @app.get('/api/v5/ai/research-progress')
     def research():
         return jsonify(published_snapshot())
+
+    @app.get('/api/v5/ai/paper-trial')
+    def paper_trial():
+        if request.args or request.get_data():
+            return error('NO_INPUTS_ACCEPTED',400)
+        return jsonify(published_paper_snapshot())
 
     @app.route('/api/v5/ai/advisory', methods=['GET', 'POST'])
     def advisory():

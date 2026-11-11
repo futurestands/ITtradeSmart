@@ -135,6 +135,7 @@
 
 <ScrollView android:id="@+id/pageResearch" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:clipToPadding="false" android:scrollbars="none" android:paddingLeft="16dp" android:paddingRight="16dp" android:paddingTop="12dp" android:paddingBottom="16dp" android:visibility="gone">
 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+<include layout="@layout/section_paper_trial" />
 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:text="NAS100 RESEARCH LAB" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/text_primary"/>
 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" android:text="Experimental read-only findings. Synthetic results are not verified market predictions." android:textSize="12sp" android:textColor="@color/text_secondary"/>
 

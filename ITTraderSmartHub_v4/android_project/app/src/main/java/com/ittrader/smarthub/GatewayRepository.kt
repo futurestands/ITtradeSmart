@@ -83,6 +83,14 @@ class GatewayRepository {
         return Result.success(trimmed)
     }
 
+    fun queryPaperTrial(callback: (Result<JSONObject>) -> Unit) {
+        if (!GatewaySession.isCloud) {
+            callback(Result.failure(IllegalStateException("Published paper evidence uses Cloud HTTPS mode. NO_TRADE.")))
+            return
+        }
+        cloudGet("/api/v5/ai/paper-trial", callback)
+    }
+
     fun queryAIStatus(callback: (Result<JSONObject>) -> Unit) {
         if (GatewaySession.isCloud) { cloudGet("/api/v5/ai/status", callback); return }
         val endpoint = validateEndpointUrl(GatewaySession.gatewayUrl).getOrElse {

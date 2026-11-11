@@ -132,6 +132,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         // NAS100 research: read-only status from the authenticated Gateway.
+        val paperText = findViewById<TextView>(R.id.txtPaperTrial)
+        val paperRefresh = findViewById<Button>(R.id.btnRefreshPaperTrial)
+        paperRefresh.setOnClickListener {
+            updateGatewayUrlFromInput(edtGatewayIp)
+            paperRefresh.isEnabled = false
+            paperText.setText(R.string.paper_trial_loading)
+            repository.queryPaperTrial { result -> runOnUiThread {
+                paperRefresh.isEnabled = true
+                paperText.text = result.fold(onSuccess = { PaperTrialPresenter.summary(it) },
+                    onFailure = { PaperTrialPresenter.unavailable() })
+            } }
+        }
         // No model inference, trade candidate submission, or bot controls.
         val txtNAS100Research = findViewById<TextView>(R.id.txtNAS100Research)
         val btnRefreshNAS100Research = findViewById<Button>(R.id.btnRefreshNAS100Research)

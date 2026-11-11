@@ -1,0 +1,7 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+    android:padding="16dp" android:layout_marginBottom="16dp" android:background="@drawable/bg_card">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/paper_trial_heading" android:textColor="@color/accent_blue" android:textStyle="bold" />
+    <TextView android:id="@+id/txtPaperTrial" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/paper_trial_initial" android:textColor="@color/text_primary" android:layout_marginTop="10dp" android:accessibilityLiveRegion="polite" />
+    <Button android:id="@+id/btnRefreshPaperTrial" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/paper_trial_refresh" android:textColor="@color/text_primary" app:backgroundTint="@color/card_stroke" />
+</LinearLayout>

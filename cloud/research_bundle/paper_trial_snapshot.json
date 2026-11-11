@@ -1,0 +1,53 @@
+{
+  "captured_at_utc": "2026-11-11T09:15:58.267253+00:00",
+  "clock_certified": false,
+  "costs_certified": false,
+  "decision": "NO_TRADE",
+  "execution_authorized": false,
+  "model_status": "MODEL_NOT_READY",
+  "run_state": "STOPPED",
+  "schema_version": 1,
+  "scope": "PUBLISHED_PAPER_EVIDENCE_NOT_LIVE_STATUS",
+  "status": "PAPER_EVIDENCE_AVAILABLE",
+  "tracks": [
+    {
+      "direction_correct": 0,
+      "directional_scored": 2,
+      "model": "empirical_prior",
+      "paper_closed": 0,
+      "paper_entries": 0,
+      "paper_flat": 0,
+      "paper_losing": 0,
+      "paper_pending": 0,
+      "paper_profitable": 0,
+      "paper_unknown": 0,
+      "paper_waits": 3
+    },
+    {
+      "direction_correct": 0,
+      "directional_scored": 2,
+      "model": "gradient_boosting",
+      "paper_closed": 0,
+      "paper_entries": 0,
+      "paper_flat": 0,
+      "paper_losing": 0,
+      "paper_pending": 0,
+      "paper_profitable": 0,
+      "paper_unknown": 0,
+      "paper_waits": 3
+    },
+    {
+      "direction_correct": 1,
+      "directional_scored": 2,
+      "model": "logistic",
+      "paper_closed": 0,
+      "paper_entries": 0,
+      "paper_flat": 0,
+      "paper_losing": 0,
+      "paper_pending": 0,
+      "paper_profitable": 0,
+      "paper_unknown": 0,
+      "paper_waits": 3
+    }
+  ]
+}
