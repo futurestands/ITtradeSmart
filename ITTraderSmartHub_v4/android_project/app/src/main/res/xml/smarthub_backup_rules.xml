@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
+    <exclude domain="sharedpref" path="smarthub_research_profiles_v1.xml" />
     <exclude domain="sharedpref" path="smarthub_secure_session.xml" />
     <exclude domain="sharedpref" path="smarthub_cloud_session_v1.xml" />
 </full-backup-content>

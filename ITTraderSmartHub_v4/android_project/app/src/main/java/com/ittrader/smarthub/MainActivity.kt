@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
         })
 
         GatewaySession.init(this)
+        ResearchProfilesController(this).bind()
 
         val txtLivePrice = findViewById<TextView>(R.id.txtLivePrice)
         val edtLogs = findViewById<EditText>(R.id.edtLogs)

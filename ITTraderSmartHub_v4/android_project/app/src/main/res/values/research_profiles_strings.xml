@@ -1,0 +1,21 @@
+<resources>
+    <string name="research_profile_heading">SWITCHABLE RESEARCH ACCOUNT PROFILES</string>
+    <string name="research_profile_note">Saved on this phone only. No broker login or password. These profiles do not connect accounts, verify rules or enable trading.</string>
+    <string name="research_profile_new">New research profile</string>
+    <string name="research_profile_select">Select research profile</string>
+    <string name="research_profile_firm">Select firm</string>
+    <string name="research_profile_label">Profile label — no account number</string>
+    <string name="research_profile_programme">Exact programme, e.g. 2-Step</string>
+    <string name="research_profile_stage">Stage, e.g. Phase 1 or Funded</string>
+    <string name="research_profile_currency">Account currency, e.g. USD</string>
+    <string name="research_profile_size">Original advertised size, e.g. 10000</string>
+    <string name="research_profile_terms">Purchase date / applicable terms version</string>
+    <string name="research_profile_save">Save research profile</string>
+    <string name="research_profile_rules">Open official rules in browser</string>
+    <string name="research_profile_unverified">Rules: UNVERIFIED. Opening a website does not approve its rules. Personal ceilings: 0.5% planned risk, 3 entries/day; stricter account rules still apply. NO_TRADE.</string>
+    <string name="research_profile_saved">Profile saved locally. Rules remain UNVERIFIED; no broker or risk settings changed. NO_TRADE.</string>
+    <string name="research_profile_invalid">Complete all fields. Use a positive original size, three-letter currency and at most 20 profiles. Do not enter credentials.</string>
+    <string name="research_profile_storage_error">Profile storage unavailable. Existing data was preserved; no profile change is confirmed.</string>
+    <string name="research_profile_browser_note">Official source opened without account details. Programme-specific terms still need review. NO_TRADE.</string>
+    <string name="research_profile_browser_error">No browser could open the official source. Rules remain UNVERIFIED.</string>
+</resources>
