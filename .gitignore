@@ -49,3 +49,7 @@ mt5_accounts.*.local.json
 .vercel/
 .env.*
 *.private.json
+# Private JVM diagnostic dumps may include local environment information.
+hs_err_pid*.log
+replay_pid*.log
+*.hprof

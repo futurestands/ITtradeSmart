@@ -41,14 +41,17 @@ The compiled state is STOPPED, not RUNNING or READY.
 
 ## Checks
 
-- Android feature build: 59 unit tests passed, no failures/errors/skips; lint
-  passed with zero errors and 205 warnings. Final version metadata bump requires
-  another build before handover. Existing research signing certificate preserved.
-- Selected cloud auth/publication/paper tests: 52 passed. One unchanged SQL-parser
-  test was deselected because pglast is unavailable in this local interpreter.
-  The unchanged connection-identity suite also requires unavailable psycopg.
-  Attempts to install pinned dependencies did not succeed. No claim is made that
-  those tests were rerun. Schema, auth store, privileges and migrations unchanged.
+- Final Android build: 59 unit tests passed, no failures/errors/skips; lint
+  passed with zero errors and 205 warnings. Version 1.1-nas100-research-consolidated,
+  version code 2. A native JVM access violation interrupted one attempt; the
+  subsequent single-worker build with a smaller heap completed successfully.
+  Diagnostic logs were preserved locally and excluded from Git. Existing research
+  signing certificate preserved.
+- Complete cloud suite: 125 passed with no failures/errors/skips, including
+  PostgreSQL SQL-parser/security and connection-identity tests. Initial attempts
+  in an incomplete interpreter failed; the existing cloud-env environment had
+  the required dependencies and resolved that test-environment limitation.
+  Schema, auth store, privileges and migrations unchanged.
 - Earlier local paper regressions: 382 passed before the status-writer fix;
   55 targeted checks passed afterward. These are overlapping suites.
 - Published artifact tampering, unsafe fields, fake readiness, count mismatches,
@@ -70,6 +73,24 @@ The compiled state is STOPPED, not RUNNING or READY.
    retain exactly one candidate for handover. No uninstall or re-pair is part
    of this release. Actual phone UI testing happens after that single update;
    it cannot be claimed in advance.
+
+## Verified Preview outcome
+
+Deployment `dpl_3WwsWNLzgndCgZ8TE7aP1sE3o6Fo` is READY in Preview. Only the
+existing phone hostname was assigned to it. Public health returns 200 without
+a Vercel browser login; the paper endpoint returns application 401 without a
+device token. Production remains `dpl_4aVmWQqV445GiPNZAMRGgyzuoy5S` and the
+provider environment-state fingerprint is unchanged. Database variables remain
+Preview/Development only, with zero Production database variables.
+
+A separate temporary-device live check passed enrollment, authenticated old and
+new paper evidence, token rotation, replay rejection and immediate revocation.
+Authenticated paper data exactly matched the sanitized pinned artifact. The
+temporary device was revoked and its record retained for audit. Baseline checks
+confirmed that existing devices and sessions were unchanged. No phone token was
+used and no administrator or database runtime login was created. Provider checks
+confirmed Neon child `br-autumn-scene-bcqp4rjv`, endpoint `ep-winter-cake-bcffwgio`,
+database `neondb`, project `winter-hat-40889380` before the temporary auth test.
 
 Remaining product work beyond this test release: automatic programme-specific
 rule discovery with source coverage, persisted reviewed-policy bindings and
